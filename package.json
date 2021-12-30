@@ -1,0 +1,18 @@
+{
+  "name": "discordddbot",
+  "version": "1.0.0",
+  "description": "discordDDBot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "K.T.",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^12.5.3",
+    "express": "^4.17.2",
+    "pg": "^8.7.1",
+    "request": "^2.88.2"
+  }
+}

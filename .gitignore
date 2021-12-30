@@ -1,0 +1,12 @@
+
+.vscode
+node_modules
+
+*.lnk
+*.csv
+*.bat
+Thumbs.db
+
+debug.js
+ngrok
+ngrok.zip
