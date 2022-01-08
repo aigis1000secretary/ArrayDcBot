@@ -7,6 +7,7 @@ module.exports = {
         if (!message.guild) { return false; }
         if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
         const { command, args } = CONFIG[message.guild.id].fixMessage(message.content);
+        if (!command) { return false; }
 
         if ('共鳴' != command) { return; }
         if (message.author.id != '353625493876113440') { return; }
