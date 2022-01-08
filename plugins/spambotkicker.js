@@ -67,7 +67,7 @@ module.exports = {
             if (role) { await author.roles.remove(role); }
         } else {
             // kick
-            // author.kick().catch(console.log);
+            author.kick().catch(console.log);
         }
 
         // delete msg
