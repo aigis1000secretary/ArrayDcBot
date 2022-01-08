@@ -98,16 +98,17 @@ class memberCheckerCore {
                 // get cache
                 let video = this.cacheStreamList[vID];
                 // check stream started
-                if (video.snippet.liveBroadcastContent == 'live') { continue; }
+                if (video.snippet.liveBroadcastContent != 'upcoming') { continue; }
                 // (disable free talk)
                 let startTime = Date.parse(video.liveStreamingDetails.scheduledStartTime);
                 if (startTime > Date.now()) { continue; }   // (disable free talk)
 
+                // recheck upcoming
                 await this.cacheStreamLists();
                 break;
             }
 
-            // didn't watching stream
+            // try trace watching stream
             this.traceStreamChat();
 
         }, 5 * 1000);  // check every 5sec
@@ -141,6 +142,7 @@ class memberCheckerCore {
                 maxResults: 5, type: "video",
                 key: YOUTUBE.getAPIKey()
             }
+            mclog(url, { channelId, eventType, order, publishedAfter });
             const res = await get({ url, qs: params, json: true });
             const data = res.body;
 
@@ -169,6 +171,7 @@ class memberCheckerCore {
                 id: vID,
                 key: YOUTUBE.getAPIKey()
             }
+            mclog(url, vID);
             const res = await get({ url, qs: params, json: true });
             const data = res.body;
 
@@ -199,6 +202,7 @@ class memberCheckerCore {
                 liveChatId,
                 pageToken
             }
+            mclog(url, liveChatId, pageToken);
             const res = await get({ url, qs: params, json: true });
             const data = res.body;
 
@@ -225,6 +229,18 @@ class memberCheckerCore {
                 return null;
             }
 
+            // forbidden
+            if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'forbidden' &&
+                error.message == 'You do not have the necessary permissions to retrieve messages for the specified chat.'
+            ) {
+                console.log(`forbidden!`);
+                // clear cache
+                this.cacheStreamList = {};
+                this.cacheMemberList = [];
+                this.cacheStreamID = null;
+                return null;
+            }
+
             console.log('Oops!');
             console.log(error);
             this.cacheStreamID = null;
@@ -236,14 +252,27 @@ class memberCheckerCore {
 
     // main logic method
     async loopgetStreamChat(liveChatId) {
+        // get chat
         let pageToken = null;
+        let vID = this.cacheStreamID;
+        let data = await this.getStreamChat(liveChatId, pageToken);
+
+        // todo
+        // member only ?
+        if (data == null) { return; }
+
+        let video = this.cacheStreamList[vID];
+        let thumbnails;
+        thumbnails = video.snippet.thumbnails.default.url ? video.snippet.thumbnails.default.url : thumbnails;
+        thumbnails = video.snippet.thumbnails.medium.url ? video.snippet.thumbnails.medium.url : thumbnails;
+        thumbnails = video.snippet.thumbnails.high.url ? video.snippet.thumbnails.high.url : thumbnails;
+        this.dcPush(new MessageEmbed().setColor('DARK_GOLD').setDescription(`直播開始: [${video.snippet.title}](http://youtu.be/${vID})`).setThumbnail(thumbnails));
+        if (this.startTagChannelID && this.client.channels.cache.has(this.startTagChannelID)) {
+            const channel = this.client.channels.cache.get(this.startTagChannelID);
+            channel.send(`!yt_start http://youtu.be/${vID}`).catch(console.error);
+        }
 
         while (true) {
-
-            // get chat
-            let data = await this.getStreamChat(liveChatId, pageToken);
-            // liveChatEnded
-            if (data === null) { break; }
 
             // set database / discord role
             this.readStreamChatData(data);
@@ -254,6 +283,10 @@ class memberCheckerCore {
             mclog(` -- ${data.items.length.toString().padStart(3, ' ')} messages returned -- ${nextTime} ${pageToken}`)
             await sleep(nextTime);
 
+            // get chat
+            data = await this.getStreamChat(liveChatId, pageToken);
+            // liveChatEnded
+            if (data === null) { break; }
         }
     }
     async cacheStreamLists() {
@@ -288,28 +321,17 @@ class memberCheckerCore {
     async traceStreamChat() {
         let vIDs = Object.keys(this.cacheStreamList);
         for (let vID of vIDs) {
-            // get cache
+            // get video from cache
             let video = this.cacheStreamList[vID];
 
             // check stream started
             if (video.snippet.liveBroadcastContent != 'live') { continue; }
 
-            let thumbnails;
-            thumbnails = video.snippet.thumbnails.default.url ? video.snippet.thumbnails.default.url : thumbnails;
-            thumbnails = video.snippet.thumbnails.medium.url ? video.snippet.thumbnails.medium.url : thumbnails;
-            thumbnails = video.snippet.thumbnails.high.url ? video.snippet.thumbnails.high.url : thumbnails;
-
             // get chat id
             this.cacheStreamID = vID;
             // start trace
             mclog(`start trace <${video.snippet.title}>`);
-            this.dcPush(new MessageEmbed().setColor('DARK_GOLD').setDescription(`直播開始: [${video.snippet.title}](http://youtu.be/${vID})`).setThumbnail(thumbnails));
             this.loopgetStreamChat(video.liveStreamingDetails.activeLiveChatId);
-
-            if (this.startTagChannelID && this.client.channels.cache.has(this.startTagChannelID)) {
-                const channel = this.client.channels.cache.get(this.startTagChannelID);
-                channel.send(`!yt_start http://youtu.be/${vID}`).catch(console.error);
-            }
         }
     }
     async readStreamChatData(data = { items: [] }, clear = false) {
@@ -581,8 +603,11 @@ module.exports = {
 
     async execute(message) {
         if (!message.guild) { return false; }
+
         if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
-        const { command, args } = CONFIG[message.guild.id].fixMessage(message.content);
+        let config = CONFIG[message.guild.id].fixMessage(message.content);
+        const { command, args } = config;
+        if (!command) { return false; }
 
         // check core
         let core = coreArray.find((core) => { return (core.botID == message.client.user.id && core.guild.id == message.guild.id); });
@@ -717,7 +742,6 @@ app.all('/callback', async (req, res) => {
         body += '&scope=connections'
         // get oauth2 token
         let tokenResponse = await post({ url: `${API_ENDPOINT}/oauth2/token`, headers, body, json: true })
-        mclog(tokenResponse)
         let { access_token } = tokenResponse.body;
         // response.body = {
         //     access_token: '------------------------------', expires_in: 604800,
@@ -727,9 +751,7 @@ app.all('/callback', async (req, res) => {
         // get user connections
         headers = { Authorization: "Bearer " + access_token }
         let identify = await get({ url: `${API_ENDPOINT}/users/@me`, headers, json: true })
-        mclog(identify)
         let connections = await get({ url: `${API_ENDPOINT}/users/@me/connections`, headers, json: true })
-        mclog(connections)
         // get user data
         let dID = identify.body.id;
         username = identify.body.username;
