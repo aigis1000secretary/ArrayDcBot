@@ -22,11 +22,10 @@ module.exports.terminate = () => {
         await sleep(100);
     }
 
-    //await sleep(1000);
+    await sleep(1000);
+    let client = clients[0];
 
-    //let client = clients[0];
-    /*
-    for (let cID of [DEBUG_CHANNEL_ID, '713623232070156309']) {
+    for (let cID of [DEBUG_CHANNEL_ID]) {
         // await client.channels.fetch();
         const logChannel = client.channels.cache.get(cID);
         let delcount = 0;
@@ -43,7 +42,7 @@ module.exports.terminate = () => {
         console.log(`Bulk deleted ${delcount} messages in ${logChannel.name}`)
     }//*/
     /*
-    for (let cID of [DEBUG_CHANNEL_ID]) {
+    for (let cID of [DEBUG_CHANNEL_ID, '713623232070156309']) {
         const logChannel = client.channels.cache.get(cID);
         logChannel.bulkDelete(100)
             .then(messages => console.log(`Bulk deleted ${messages.size} messages in ${logChannel.name}`))
