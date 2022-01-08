@@ -58,19 +58,19 @@ module.exports = {
                 LOG_CHANNEL_ID: '713623232070156309',
             },
 
-            memberChecker: [{
-                holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB,
-                botID: '713624995372466179',
-                expiresKey: 'ssrb_expires',
-                memberRoleID: '927501058484371487',
-                logChannelID: '927500904410787871',
-            }, {
-                holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
-                botID: '928492714482343997',
-                expiresKey: 'kzmi_expires',
-                memberRoleID: '928092487044710441',
-                logChannelID: '927500904410787871',
-            }],
+            // memberChecker: [{
+            //     holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB,
+            //     botID: '713624995372466179',
+            //     expiresKey: 'ssrb_expires',
+            //     memberRoleID: '927501058484371487',
+            //     logChannelID: '927500904410787871',
+            // }, {
+            //     holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
+            //     botID: '928492714482343997',
+            //     expiresKey: 'kzmi_expires',
+            //     memberRoleID: '928092487044710441',
+            //     logChannelID: '927500904410787871',
+            // }],
 
             twitterListener: [{
                 RETWEET_CHANNEL_ID: '928838586957197345',

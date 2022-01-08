@@ -619,7 +619,6 @@ module.exports = {
             return true;
         }
         if (command == 'member') {
-            console.log(core.get301Url())
             message.channel.send(core.get301Url());
             return true;
         }
