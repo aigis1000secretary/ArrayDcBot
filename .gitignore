@@ -1,12 +1,13 @@
 
 .vscode
 node_modules
+.env
 
 *.lnk
 *.csv
 *.bat
 Thumbs.db
 
-debug.js
 ngrok
 ngrok.zip
+
