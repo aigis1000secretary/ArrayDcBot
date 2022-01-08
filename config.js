@@ -187,7 +187,8 @@ module.exports = {
         APIKEY: [
             process.env.YOUTUBE_APIKEY_0, process.env.YOUTUBE_APIKEY_1, process.env.YOUTUBE_APIKEY_2,
             process.env.YOUTUBE_APIKEY_3, process.env.YOUTUBE_APIKEY_4, process.env.YOUTUBE_APIKEY_5,
-            process.env.YOUTUBE_APIKEY_6
+            process.env.YOUTUBE_APIKEY_6, process.env.YOUTUBE_APIKEY_7, process.env.YOUTUBE_APIKEY_8,
+            process.env.YOUTUBE_APIKEY_9, process.env.YOUTUBE_APIKEY_A, process.env.YOUTUBE_APIKEY_B,
         ],
         KEYINDEX: fs.existsSync("./.env") ? 6 : 0,
 
