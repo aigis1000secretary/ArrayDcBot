@@ -5,6 +5,7 @@ module.exports = {
     description: "check arraybot in this guild",
     execute(message) {
         if (!message.guild) { return false; }
+        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
         const { command, args } = CONFIG[message.guild.id].fixMessage(message.content);
 
         if ('共鳴' != command) { return; }

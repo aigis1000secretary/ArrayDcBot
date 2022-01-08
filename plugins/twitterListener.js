@@ -126,6 +126,7 @@ module.exports = {
             const guild = message.guild;
 
             if (!guild) { return; }  // skip PM
+            if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
             if (user.bot) { return; }   // skip bot reaction
 
             // skip other emoji

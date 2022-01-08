@@ -12,8 +12,9 @@ module.exports = {
         // skip DM
         if (!message.guild) { return false; }
         // get config
+        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
         const config = CONFIG[message.guild.id].spambotKicker;
-        if (!config)  { return false; }
+        if (!config) { return false; }
         const { LOG_CHANNEL_ID, PERMISSION_ROLE_ID, BAN_CHANNEL } = config;
         const { client, guild, channel, content } = message;
 

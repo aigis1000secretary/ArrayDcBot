@@ -543,6 +543,7 @@ module.exports = {
     async execute(message) {
         if (!message.guild) { return false; }
         // if (message.author.bot) { return false; }
+        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
 
         const core = coreArray.find((core) => {
             return core.guild.id == message.guild.id;

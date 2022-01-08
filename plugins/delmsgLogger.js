@@ -13,7 +13,10 @@ module.exports = {
             // Ignore direct messages
             if (!message.guild) return;
             if (!message.content && !message.author && !message.embeds.length) return;
+            
+            if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
             if (!CONFIG[message.guild.id].delmsgLogger) return;
+            const { LOG_CHANNEL_ID } = CONFIG[message.guild.id].delmsgLogger;
 
             // Define the author
             let author = message.author ? message.author.username : 'UNKNOWN';
@@ -61,7 +64,6 @@ module.exports = {
             //     return await channel.send(msg)
             // }
 
-            const { LOG_CHANNEL_ID } = CONFIG[message.guild.id].delmsgLogger;
             const logChannel = message.client.channels.cache.get(LOG_CHANNEL_ID);
 
             await logChannel.send(delMsg)

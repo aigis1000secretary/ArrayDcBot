@@ -8,9 +8,11 @@ module.exports = {
         // skip DM
         if (!message.guild) { return false; }
         // get config
+        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
         const config = CONFIG[message.guild.id].reactionVote;
         const { channel, content } = message;
-        if (!config || !config.VOTE_CHANNELS.includes(channel.id)) { return false; }
+        if (!config.VOTE_CHANNELS.includes(channel.id)) { return false; }
+
 
         // get message
         const lines = content.split('\n');

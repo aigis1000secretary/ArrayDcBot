@@ -581,6 +581,7 @@ module.exports = {
 
     async execute(message) {
         if (!message.guild) { return false; }
+        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
         const { command, args } = CONFIG[message.guild.id].fixMessage(message.content);
 
         // check core
