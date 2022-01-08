@@ -219,7 +219,7 @@ class youtubeVideo {
         })
 
         // output result 
-        let logBuffer = [`!yt_start <https://www.youtube.com/watch?v=${this.vID}>`];
+        let logBuffer = [`@yt_start <https://www.youtube.com/watch?v=${this.vID}>`];
 
         // set tags
         for (let tag of this.tagList) {
@@ -227,7 +227,7 @@ class youtubeVideo {
             let tagTime = tag.time;
 
             // set tag log string
-            let newString = `!set ${parseInt(tagTime / 1000)} ${tag.text}`;
+            let newString = `@set ${parseInt(tagTime / 1000)} ${tag.text}`;
 
             // check length
             if (logBuffer[logBuffer.length - 1].length + newString.length < 1999) {
@@ -542,7 +542,7 @@ module.exports = {
     description: "timeTag cmd for youtube",
     async execute(message) {
         if (!message.guild) { return false; }
-        if (message.author.bot) { return false; }
+        // if (message.author.bot) { return false; }
 
         const core = coreArray.find((core) => {
             return core.guild.id == message.guild.id;
@@ -550,9 +550,6 @@ module.exports = {
         if (!core) { return false; }
 
         let executed = false;
-
-        // set reply method
-        const reply = message.channel.send;
 
         // get args
         const content = message.content;

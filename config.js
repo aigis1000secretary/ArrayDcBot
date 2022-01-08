@@ -89,11 +89,11 @@ module.exports = {
             // reactionRole: { RULE_CHANNEL_ID: '826994163907428382' },
             // reactionVote: { VOTE_CHANNELS: ['861842027048861706'] },
 
-            timeTag: {
-                botID: '928492714482343997',
-                TIME_TAG_CHANNEL_ID: '827069773039796245',
-                DEBUG_TAG_LOG_CHANNEL_ID: '851618481350770738',
-            },
+            // timeTag: {
+            //     botID: '928492714482343997',
+            //     TIME_TAG_CHANNEL_ID: '827069773039796245',
+            //     DEBUG_TAG_LOG_CHANNEL_ID: '851618481350770738',
+            // },
         },
 
         '716270880493404172': {
@@ -118,6 +118,7 @@ module.exports = {
                 expiresKey: 'ssrb_expires',
                 memberRoleID: '847652060903243846',
                 logChannelID: '904053455377825833',
+                startTagChannelID: '775100135515750470',
             }],
 
             twitterListener: [{

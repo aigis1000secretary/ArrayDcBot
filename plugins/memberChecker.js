@@ -39,7 +39,7 @@ class memberCheckerCore {
     client = null;
     dcPush = () => { };
     holoChannelID; expiresKey;
-    guild; memberRole; logChannelID;
+    guild; memberRole; logChannelID; startTagChannelID;
     botID; clientSecret;
 
     constructor(_client, config, guild, role) {
@@ -53,6 +53,7 @@ class memberCheckerCore {
         this.guild = guild;
         this.memberRole = role;
         this.logChannelID = config.logChannelID;
+        this.startTagChannelID = config.startTagChannelID;
         // set bot var
         this.botID = config.botID;
         this.clientSecret = DISCORD.getBot(config.botID).CLIENT_SECRET;
@@ -304,6 +305,11 @@ class memberCheckerCore {
             mclog(`start trace <${video.snippet.title}>`);
             this.dcPush(new MessageEmbed().setColor('DARK_GOLD').setDescription(`直播開始: [${video.snippet.title}](http://youtu.be/${vID})`).setThumbnail(thumbnails));
             this.loopgetStreamChat(video.liveStreamingDetails.activeLiveChatId);
+
+            if (this.startTagChannelID && this.client.channels.cache.has(this.startTagChannelID)) {
+                const channel = this.client.channels.cache.get(this.startTagChannelID);
+                channel.send(`!yt_start http://youtu.be/${vID}`).catch(console.error);
+            }
         }
     }
     async readStreamChatData(data = { items: [] }, clear = false) {
