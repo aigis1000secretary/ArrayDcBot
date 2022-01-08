@@ -716,6 +716,7 @@ app.all('/callback', async (req, res) => {
         body += '&scope=connections'
         // get oauth2 token
         let tokenResponse = await post({ url: `${API_ENDPOINT}/oauth2/token`, headers, body, json: true })
+        mclog(tokenResponse)
         let { access_token } = tokenResponse.body;
         // response.body = {
         //     access_token: '------------------------------', expires_in: 604800,
@@ -725,7 +726,9 @@ app.all('/callback', async (req, res) => {
         // get user connections
         headers = { Authorization: "Bearer " + access_token }
         let identify = await get({ url: `${API_ENDPOINT}/users/@me`, headers, json: true })
+        mclog(identify)
         let connections = await get({ url: `${API_ENDPOINT}/users/@me/connections`, headers, json: true })
+        mclog(connections)
         // get user data
         let dID = identify.body.id;
         username = identify.body.username;
@@ -756,7 +759,7 @@ app.all('/callback', async (req, res) => {
 
         // delete this user's data from cache if on stream
         if (core.cacheMemberList.includes(cID)) { core.cacheMemberList = core.cacheMemberList.filter((e) => e != cID); }
-        
+
         let html = [
             `User: ${username}`,
             `Youtube channel: https://www.youtube.com/channel/${cID}`,
