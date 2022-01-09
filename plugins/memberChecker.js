@@ -104,8 +104,10 @@ class memberCheckerCore {
                 if (startTime > Date.now()) { continue; }   // (disable free talk)
 
                 // recheck upcoming
-                await this.cacheStreamLists();
-                break;
+                // get REALLY video data
+                let newStatus = await this.getVideoStatus(vID);
+                if (!newStatus) { continue; }
+                this.cacheStreamList[vID] = newStatus;
             }
 
             // try trace watching stream
