@@ -13,7 +13,7 @@ module.exports = {
             // Ignore direct messages
             if (!message.guild) return;
             if (!message.content && !message.author && !message.embeds.length) return;
-            
+
             if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
             if (!CONFIG[message.guild.id].delmsgLogger) return;
             const { LOG_CHANNEL_ID } = CONFIG[message.guild.id].delmsgLogger;
@@ -31,7 +31,7 @@ module.exports = {
 
             // Since there's only 1 audit log entry in this collection, grab the first one
             let deletor = null;
-            if (message.guild.me.permissions.has("VIEW_AUDIT_LOG")){
+            if (message.guild.me.permissions.has("VIEW_AUDIT_LOG")) {
                 deletor = await message.guild.fetchAuditLogs({ limit: 1, type: "MESSAGE_DELETE" })
                     .then((audit) => audit.entries.first());
                 // Check channel and if message author deleted it
@@ -49,7 +49,6 @@ module.exports = {
             const delMsg = new Discord.MessageEmbed()
                 .setAuthor(`${author} ${message.author}`, `https://cdn.discordapp.com/avatars/${message.author.id}/${message.author.avatar}.png?size=256`)
                 .setTitle(`刪除訊息:`).setDescription(content)
-                .setColor('RED')
                 .addField(`訊息位置:`, `[${message.channel.toString()}](${message.url})`)
                 .setTimestamp();
 
@@ -66,9 +65,9 @@ module.exports = {
 
             const logChannel = message.client.channels.cache.get(LOG_CHANNEL_ID);
 
-            await logChannel.send(delMsg)
+            await logChannel.send(delMsg).catch(console.log);
             if (message.embeds.length) {
-                await logChannel.send(message.embeds)
+                await logChannel.send(message.embeds).catch(console.log);
             }
 
             /*
