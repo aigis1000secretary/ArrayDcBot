@@ -74,7 +74,7 @@ class youtubeVideo {
 
     async addTag(text, ms = null) {
         // get start data
-        await this.checkStatus();
+        // await this.checkStatus();
 
         // wait live start
         if (this.status == "upcoming") { return null; }
@@ -93,7 +93,7 @@ class youtubeVideo {
 
     async adjTag(ms) {
         // get start data
-        await this.checkStatus();
+        // await this.checkStatus();
 
         // wait live start
         if (this.status == "upcoming") { return null; }
@@ -317,18 +317,17 @@ class timeTagCore {
             this.workingVideo = new youtubeVideo(vID);
             await this.workingVideo.init();
 
+            if (this.workingVideo.status != 'live') {
+                this.workingVideo = null;
+                return { success: false, message: [embed], emoji: EMOJI_INFINITY };
+            }
+
             // set dc status
             this.client.user.setPresence({ activity: { name: this.workingVideo.title, type: 'WATCHING' } });
 
             // reply
-            const colorArray = {
-                "none": "YELLOW",
-                "upcoming": "BLUE",
-                "live": "GREEN"
-            }
-            const color = colorArray[this.workingVideo.status];
             const embed = new MessageEmbed()
-                .setColor(color)
+                .setColor('GREEN')
                 .setTitle(`Tags ${this.workingVideo.vID}`)
                 .setDescription(`[${this.workingVideo.title}](https://www.youtube.com/watch?v=${this.workingVideo.vID})\nNow ${this.workingVideo.status}`);
             if (this.workingVideo.thumbnails) {
