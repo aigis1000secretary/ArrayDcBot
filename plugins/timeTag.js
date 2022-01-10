@@ -715,12 +715,13 @@ const util = require('util');
 const get = util.promisify(request.get);
 
 const getVideoStatus = async (vID) => {
+    let key = YOUTUBE.getRandomAPIKey();
     try {
         let url = 'https://www.googleapis.com/youtube/v3/videos';
         let params = {
             part: 'id,snippet,liveStreamingDetails',
             id: vID,
-            key: YOUTUBE.getAPIKey(),
+            key
         }
         const res = await get({ url, qs: params, json: true });
         const data = res.body;
@@ -732,8 +733,8 @@ const getVideoStatus = async (vID) => {
     } catch (error) {
         // quotaExceeded
         if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
-            console.log(`ERR! quotaExceeded key #${YOUTUBE.KEYINDEX}: <${YOUTUBE.getAPIKey()}>`);
-            let keyValid = YOUTUBE.shiftAPIKey();
+            console.log(`ERR! quotaExceeded key: <${key}>`);
+            let keyValid = YOUTUBE.keyQuotaExceeded(key);
             // retry
             if (keyValid) { return await getVideoStatus(vID); }
         }

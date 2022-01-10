@@ -185,26 +185,41 @@ module.exports = {
 
     YOUTUBE: {
         APIKEY: [
-            process.env.YOUTUBE_APIKEY_0, process.env.YOUTUBE_APIKEY_1, process.env.YOUTUBE_APIKEY_2,
-            process.env.YOUTUBE_APIKEY_3, process.env.YOUTUBE_APIKEY_4, process.env.YOUTUBE_APIKEY_5,
-            process.env.YOUTUBE_APIKEY_6, process.env.YOUTUBE_APIKEY_7, process.env.YOUTUBE_APIKEY_8,
+            process.env.YOUTUBE_APIKEY_0,
+            // process.env.YOUTUBE_APIKEY_1, process.env.YOUTUBE_APIKEY_2, process.env.YOUTUBE_APIKEY_3,
+            // process.env.YOUTUBE_APIKEY_4, process.env.YOUTUBE_APIKEY_5, process.env.YOUTUBE_APIKEY_6, 
+            process.env.YOUTUBE_APIKEY_7, process.env.YOUTUBE_APIKEY_8,
             process.env.YOUTUBE_APIKEY_9, process.env.YOUTUBE_APIKEY_A, process.env.YOUTUBE_APIKEY_B,
         ],
-        KEYINDEX: fs.existsSync("./.env") ? 6 : 0,
+        PICKKEY: [
+        ],
+        quotaExceeded: [
+        ],
 
-        resetAPIKey() {
-            this.KEYINDEX = 0;
-        },
-        shiftAPIKey() {
-            if (fs.existsSync("./.env")) { this.KEYINDEX--; } else { this.KEYINDEX++; }
-            // return (this.KEYINDEX < this.APIKEY.length);
-            return !!this.getAPIKey();
+        KEYINDEX: fs.existsSync("./.env") ? this.APIKEY.length : 0,
+
+        keyQuotaExceeded(key) {
+            let i = this.APIKEY.indexOf(key);
+            this.quotaExceeded.push(this.APIKEY.splice(i, 1));
+            return !!this.getRandomAPIKey();
         },
 
-        getAPIKey() {
-            if (this.KEYINDEX >= this.APIKEY.length) { return null; }
-            if (this.KEYINDEX < 0) { return null; }
-            return this.APIKEY[this.KEYINDEX];
+        getRandomAPIKey() {
+            if (this.APIKEY.length > 0) {
+                let index = parseInt(Math.random() * this.APIKEY.length);
+                return this.APIKEY[index];
+            }
+            return null;
+        },
+
+        pickRandomAPIKey() {
+            if (this.APIKEY.length > 0) {
+                let i = parseInt(Math.random() * this.APIKEY.length);
+                let key = this.APIKEY[i];
+                this.PICKKEY.push(this.APIKEY.splice(i, 1));
+                return key;
+            }
+            return null;
         }
     }
 }

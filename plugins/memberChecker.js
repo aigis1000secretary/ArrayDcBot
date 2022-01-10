@@ -41,6 +41,7 @@ class memberCheckerCore {
     holoChannelID; expiresKey;
     guild; memberRole; logChannelID; startTagChannelID;
     botID; clientSecret;
+    apiKey;
 
     constructor(_client, config, guild, role) {
         console.log(`    memberCheckerCore.init ${guild} @${role.name}`)
@@ -63,6 +64,8 @@ class memberCheckerCore {
         if (channel) {
             this.dcPush = (msg) => { return channel.send(msg).catch(console.error); };
         }
+
+        this.apiKey = YOUTUBE.pickRandomAPIKey();
     };
 
     async coreInit() {
@@ -142,7 +145,7 @@ class memberCheckerCore {
                 part: 'id,snippet', channelId,
                 eventType, order, publishedAfter,
                 maxResults: 5, type: "video",
-                key: YOUTUBE.getAPIKey()
+                key: this.apiKey
             }
             mclog(url, { channelId, eventType, order, publishedAfter });
             const res = await get({ url, qs: params, json: true });
@@ -155,10 +158,13 @@ class memberCheckerCore {
         } catch (error) {
             // quotaExceeded
             if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
-                console.log(`ERR! quotaExceeded key #${YOUTUBE.KEYINDEX}: <${YOUTUBE.getAPIKey()}>`);
-                let keyValid = YOUTUBE.shiftAPIKey();
-                // retry
-                if (keyValid) { return await this.getVideoSearch({ channelId, eventType, order, publishedAfter }); }
+                console.log(`ERR! quotaExceeded key: <${this.apiKey}>`);
+                let keyValid = YOUTUBE.keyQuotaExceeded(this.apiKey);
+                if (keyValid) {
+                    // retry            
+                    this.apiKey = YOUTUBE.pickRandomAPIKey();
+                    return await this.getVideoSearch({ channelId, eventType, order, publishedAfter });
+                }
             }
 
             console.log(error);
@@ -171,7 +177,7 @@ class memberCheckerCore {
             const params = {
                 part: 'id,snippet,liveStreamingDetails',
                 id: vID,
-                key: YOUTUBE.getAPIKey()
+                key: this.apiKey
             }
             mclog(url, vID);
             const res = await get({ url, qs: params, json: true });
@@ -184,10 +190,13 @@ class memberCheckerCore {
         } catch (error) {
             // quotaExceeded
             if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
-                console.log(`ERR! quotaExceeded key #${YOUTUBE.KEYINDEX}: <${YOUTUBE.getAPIKey()}>`);
-                let keyValid = YOUTUBE.shiftAPIKey();
-                // retry
-                if (keyValid) { return await this.getVideoStatus(vID); }
+                console.log(`ERR! quotaExceeded key: <${this.apiKey}>`);
+                let keyValid = YOUTUBE.keyQuotaExceeded(this.apiKey);
+                if (keyValid) {
+                    // retry            
+                    this.apiKey = YOUTUBE.pickRandomAPIKey();
+                    return await this.getVideoSearch({ channelId, eventType, order, publishedAfter });
+                }
             }
 
             console.log(error.errors[0]);
@@ -200,7 +209,7 @@ class memberCheckerCore {
             const url = 'https://www.googleapis.com/youtube/v3/liveChat/messages';
             const params = {
                 part: 'id,snippet,authorDetails',
-                key: YOUTUBE.getAPIKey(),
+                key: this.apiKey,
                 liveChatId,
                 pageToken
             }
@@ -215,10 +224,13 @@ class memberCheckerCore {
         } catch (error) {
             // quotaExceeded
             if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
-                console.log(`ERR! quotaExceeded key #${YOUTUBE.KEYINDEX}: <${YOUTUBE.getAPIKey()}>`);
-                let keyValid = YOUTUBE.shiftAPIKey();
-                // retry
-                if (keyValid) { return await this.getStreamChat(liveChatId, pageToken); }
+                console.log(`ERR! quotaExceeded key: <${this.apiKey}>`);
+                let keyValid = YOUTUBE.keyQuotaExceeded(this.apiKey);
+                if (keyValid) {
+                    // retry            
+                    this.apiKey = YOUTUBE.pickRandomAPIKey();
+                    return await this.getVideoSearch({ channelId, eventType, order, publishedAfter });
+                }
             }
 
             // liveChatEnded
