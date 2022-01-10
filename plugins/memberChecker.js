@@ -314,6 +314,7 @@ class memberCheckerCore {
         // search videos in last day
         // let videos = await this.getVideoSearch({ order: 'date', publishedAfter: date.toISOString() });
         let videos = await await this.getVideoSearch({ eventType: "live" });
+        if (videos == null) { return; }
         videos = videos.concat(
             // get free chat video
             (await this.getVideoSearch({ eventType: "upcoming" })).filter((newVideo) => !videos.find((video) => video.id.videoId == newVideo.id.videoId)),
@@ -325,6 +326,7 @@ class memberCheckerCore {
             // get REALLY video data
             let vID = video.id.videoId;
             let videoStatus = await this.getVideoStatus(vID);
+            if (videoStatus == null) { break; }
 
             // check result status AGAIN
             let status = videoStatus.snippet.liveBroadcastContent;
