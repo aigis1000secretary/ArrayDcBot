@@ -84,7 +84,7 @@ class memberCheckerCore {
         await this.checkExpiresUser();
 
         // debug
-        this.cacheStreamLists();
+        // this.cacheStreamLists();
         // await this.traceStreamChat();
 
         // clock
