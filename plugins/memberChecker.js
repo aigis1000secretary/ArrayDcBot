@@ -65,7 +65,8 @@ class memberCheckerCore {
             this.dcPush = (msg) => { return channel.send(msg).catch(console.error); };
         }
 
-        this.apiKey = YOUTUBE.pickRandomAPIKey();
+        // this.apiKey = YOUTUBE.pickRandomAPIKey();
+        this.apiKey = config.apiKey;
     };
 
     async coreInit() {
@@ -146,7 +147,7 @@ class memberCheckerCore {
                 part: 'id,snippet', channelId,
                 eventType, order, publishedAfter,
                 maxResults: 5, type: "video",
-                key: this.apiKey
+                key: this.apiKey[0]
             }
             const res = await get({ url, qs: params, json: true });
             const data = res.body;
@@ -158,13 +159,13 @@ class memberCheckerCore {
         } catch (error) {
             // quotaExceeded
             if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
-                console.log(`ERR! quotaExceeded key: <${this.apiKey}>`);
-                let keyValid = YOUTUBE.keyQuotaExceeded(this.apiKey);
-                if (keyValid) {
-                    // retry            
-                    this.apiKey = YOUTUBE.pickRandomAPIKey();
-                    return await this.getVideoSearch({ channelId, eventType, order, publishedAfter });
-                }
+                console.log(`ERR! quotaExceeded key: <${this.apiKey[0]}>`);
+                // let keyValid = YOUTUBE.keyQuotaExceeded(this.apiKey);
+                // if (keyValid) {
+                //     // retry            
+                //     this.apiKey = YOUTUBE.pickRandomAPIKey();
+                //     return await this.getVideoSearch({ channelId, eventType, order, publishedAfter });
+                // }
             }
 
             console.log(error);
@@ -178,7 +179,7 @@ class memberCheckerCore {
             const params = {
                 part: 'id,snippet,liveStreamingDetails',
                 id: vID,
-                key: this.apiKey
+                key: this.apiKey[0]
             }
             mclog(url, vID);
             const res = await get({ url, qs: params, json: true });
@@ -191,13 +192,13 @@ class memberCheckerCore {
         } catch (error) {
             // quotaExceeded
             if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
-                console.log(`ERR! quotaExceeded key: <${this.apiKey}>`);
-                let keyValid = YOUTUBE.keyQuotaExceeded(this.apiKey);
-                if (keyValid) {
-                    // retry            
-                    this.apiKey = YOUTUBE.pickRandomAPIKey();
-                    return await this.getVideoStatus(vID);
-                }
+                console.log(`ERR! quotaExceeded key: <${this.apiKey[0]}>`);
+                // let keyValid = YOUTUBE.keyQuotaExceeded(this.apiKey);
+                // if (keyValid) {
+                //     // retry            
+                //     this.apiKey = YOUTUBE.pickRandomAPIKey();
+                //     return await this.getVideoStatus(vID);
+                // }
             }
 
             console.log(error.errors[0]);
@@ -209,8 +210,9 @@ class memberCheckerCore {
         try {
             const url = 'https://www.googleapis.com/youtube/v3/liveChat/messages';
             const params = {
-                part: 'id,snippet,authorDetails',
-                key: this.apiKey,
+                // part: 'id,snippet,authorDetails',
+                part: 'id,authorDetails',
+                key: this.apiKey[1],
                 liveChatId,
                 pageToken
             }
@@ -225,13 +227,13 @@ class memberCheckerCore {
         } catch (error) {
             // quotaExceeded
             if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
-                console.log(`ERR! quotaExceeded key: <${this.apiKey}>`);
-                let keyValid = YOUTUBE.keyQuotaExceeded(this.apiKey);
-                if (keyValid) {
-                    // retry            
-                    this.apiKey = YOUTUBE.pickRandomAPIKey();
-                    return await this.getStreamChat(liveChatId, pageToken);
-                }
+                console.log(`ERR! quotaExceeded key: <${this.apiKey[1]}>`);
+                // let keyValid = YOUTUBE.keyQuotaExceeded(this.apiKey);
+                // if (keyValid) {
+                //     // retry            
+                //     this.apiKey = YOUTUBE.pickRandomAPIKey();
+                //     return await this.getStreamChat(liveChatId, pageToken);
+                // }
             }
 
             // liveChatEnded
@@ -399,12 +401,12 @@ class memberCheckerCore {
             if (isChatSponsor && isSpecalUser) {
                 mclog(`found dc user, Update Expires! : ${chatMessage.authorDetails.displayName}`);
                 this.dcPush(new MessageEmbed().setColor('AQUA').setDescription(`認證成功, 延展期限: ${user.user.tag} ${user}`));
-                this.pgUpdateExpires(dID, (Date.parse(chatMessage.snippet.publishedAt) + memberTime));
+                this.pgUpdateExpires(dID, (Date.now() + memberTime));
             }
             if (isChatSponsor && !isSpecalUser) {
                 mclog(`found dc user, Add Role! : ${chatMessage.authorDetails.displayName}`);
                 this.dcPush(new MessageEmbed().setColor('BLUE').setDescription(`認證成功, 新增身分組(${this.memberRole}): ${user.user.tag} ${user}`));
-                this.pgUpdateExpires(dID, (Date.parse(chatMessage.snippet.publishedAt) + memberTime));
+                this.pgUpdateExpires(dID, (Date.now() + memberTime));
                 user.roles.add(this.memberRole).catch(console.error);
             }
 

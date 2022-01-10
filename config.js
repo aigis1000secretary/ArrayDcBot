@@ -119,6 +119,7 @@ module.exports = {
                 memberRoleID: '847652060903243846',
                 logChannelID: '904053455377825833',
                 startTagChannelID: '775100135515750470',
+                apiKey: [process.env.YOUTUBE_APIKEY_0, process.env.YOUTUBE_APIKEY_7]
             }],
 
             twitterListener: [{
@@ -160,6 +161,7 @@ module.exports = {
                 expiresKey: 'kzmi_expires',
                 memberRoleID: '929327680216780841',
                 logChannelID: '929328558684405790',
+                apiKey: [process.env.YOUTUBE_APIKEY_8, process.env.YOUTUBE_APIKEY_9]
             }],
 
             spambotKicker: {
@@ -185,11 +187,9 @@ module.exports = {
 
     YOUTUBE: {
         APIKEY: [
-            process.env.YOUTUBE_APIKEY_0,
             // process.env.YOUTUBE_APIKEY_1, process.env.YOUTUBE_APIKEY_2, process.env.YOUTUBE_APIKEY_3,
             // process.env.YOUTUBE_APIKEY_4, process.env.YOUTUBE_APIKEY_5, process.env.YOUTUBE_APIKEY_6, 
-            process.env.YOUTUBE_APIKEY_7, process.env.YOUTUBE_APIKEY_8,
-            process.env.YOUTUBE_APIKEY_9, process.env.YOUTUBE_APIKEY_A, process.env.YOUTUBE_APIKEY_B,
+            process.env.YOUTUBE_APIKEY_A, process.env.YOUTUBE_APIKEY_B,
         ],
         PICKKEY: [
         ],
