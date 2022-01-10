@@ -196,8 +196,6 @@ module.exports = {
         quotaExceeded: [
         ],
 
-        KEYINDEX: fs.existsSync("./.env") ? this.APIKEY.length : 0,
-
         keyQuotaExceeded(key) {
             let i = this.APIKEY.indexOf(key);
             this.quotaExceeded.push(this.APIKEY.splice(i, 1));

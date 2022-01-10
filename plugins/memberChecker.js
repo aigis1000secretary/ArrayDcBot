@@ -94,7 +94,7 @@ class memberCheckerCore {
 
             // check stream task
             let nowTime = new Date(Date.now());
-            if (nowTime.getMinutes() == 3 && nowTime.getSeconds() < 5) {
+            if (nowTime.getMinutes() == 3 && nowTime.getSeconds() < 15) {
                 await this.cacheStreamLists();
             }
             for (let vID of Object.keys(this.cacheStreamList)) {
@@ -116,7 +116,7 @@ class memberCheckerCore {
             // try trace watching stream
             this.traceStreamChat();
 
-        }, 5 * 1000);  // check every 5sec
+        }, 15 * 1000);  // check every 5sec
         this.client.once('close', () => {
             clearInterval(interval);
         });
@@ -139,6 +139,7 @@ class memberCheckerCore {
 
     // youtube api
     async getVideoSearch({ channelId = this.holoChannelID, eventType, order, publishedAfter }) {
+        mclog(`getVideoSearch ${channelId}`);
         try {
             const url = 'https://www.googleapis.com/youtube/v3/search';
             const params = {
@@ -147,7 +148,6 @@ class memberCheckerCore {
                 maxResults: 5, type: "video",
                 key: this.apiKey
             }
-            mclog(url, { channelId, eventType, order, publishedAfter });
             const res = await get({ url, qs: params, json: true });
             const data = res.body;
 
@@ -172,6 +172,7 @@ class memberCheckerCore {
         }
     }
     async getVideoStatus(vID) {
+        mclog(`getVideoStatus ${vID}`);
         try {
             const url = 'https://www.googleapis.com/youtube/v3/videos';
             const params = {
@@ -195,7 +196,7 @@ class memberCheckerCore {
                 if (keyValid) {
                     // retry            
                     this.apiKey = YOUTUBE.pickRandomAPIKey();
-                    return await this.getVideoSearch({ channelId, eventType, order, publishedAfter });
+                    return await this.getVideoStatus(vID);
                 }
             }
 
@@ -229,7 +230,7 @@ class memberCheckerCore {
                 if (keyValid) {
                     // retry            
                     this.apiKey = YOUTUBE.pickRandomAPIKey();
-                    return await this.getVideoSearch({ channelId, eventType, order, publishedAfter });
+                    return await this.getStreamChat(liveChatId, pageToken);
                 }
             }
 
@@ -309,11 +310,11 @@ class memberCheckerCore {
         date = new Date(date.setHours(3, 0, 0, 0));             // last day 03:00
 
         // search videos in last day
-        let videos = await this.getVideoSearch({ order: 'date', publishedAfter: date.toISOString() });
+        // let videos = await this.getVideoSearch({ order: 'date', publishedAfter: date.toISOString() });
+        let videos = await await this.getVideoSearch({ eventType: "live" });
         videos = videos.concat(
             // get free chat video
             (await this.getVideoSearch({ eventType: "upcoming" })).filter((newVideo) => !videos.find((video) => video.id.videoId == newVideo.id.videoId)),
-            (await this.getVideoSearch({ eventType: "live" })).filter((newVideo) => !videos.find((video) => video.id.videoId == newVideo.id.videoId))
             // skip upcoming new video
         )
 
@@ -480,7 +481,7 @@ class memberCheckerCore {
 
             // set user role
             if (isSpecalUser) {
-                mclog(`found dc user with member role! : ${dID}`);
+                // mclog(`found dc user with member role! : ${dID}`);
             } else if (expires > Date.now() + memberTemp) {
                 mclog(`found dc user, add role! : ${dID}`);
                 this.dcPush(new MessageEmbed().setColor('BLUE').setDescription(`確認期限, 恢復身分組(${this.memberRole}): ${user.user.tag} ${user}`));
@@ -671,7 +672,7 @@ module.exports = {
         if (command == 'freechat') {
             core.dcPush(new MessageEmbed().setColor('DARK_GOLD').setDescription(`手動認證: ${message.author.tag} ${message.author}`));
 
-            await core.cacheStreamLists();
+            // await core.cacheStreamLists();
 
             let vIDs = Object.keys(core.cacheStreamList);
             for (let vID of vIDs) {
@@ -680,7 +681,7 @@ module.exports = {
 
                 // check stream start time
                 let status = video.snippet.liveBroadcastContent;
-                if (status == 'live') { continue; }
+                if (status != 'upcoming') { continue; }
 
                 // start trace
                 mclog(`trace <${video.snippet.title}>`);
