@@ -1,6 +1,6 @@
 
-let mclog = () => { };
-// let mclog = console.log;
+const fs = require('fs');
+let mclog = fs.existsSync("./.env") ? console.log : () => { };
 const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms)); };
 
 // bot core
@@ -101,6 +101,7 @@ class memberCheckerCore {
             for (let vID of Object.keys(this.cacheStreamList)) {
                 // get cache
                 let video = this.cacheStreamList[vID];
+                if (!video) { continue; }
                 // check stream started
                 if (video.snippet.liveBroadcastContent != 'upcoming') { continue; }
                 // (disable free talk)
@@ -140,7 +141,7 @@ class memberCheckerCore {
 
     // youtube api
     async getVideoSearch({ channelId = this.holoChannelID, eventType, order, publishedAfter }) {
-        mclog(`getVideoSearch ${channelId}`);
+        console.log(`youtube.getVideoSearch`, channelId, eventType);
         try {
             const url = 'https://www.googleapis.com/youtube/v3/search';
             const params = {
@@ -173,7 +174,7 @@ class memberCheckerCore {
         }
     }
     async getVideoStatus(vID) {
-        mclog(`getVideoStatus ${vID}`);
+        console.log(`youtube.getVideoStatus ${vID}`);
         try {
             const url = 'https://www.googleapis.com/youtube/v3/videos';
             const params = {
@@ -181,7 +182,6 @@ class memberCheckerCore {
                 id: vID,
                 key: this.apiKey[0]
             }
-            mclog(url, vID);
             const res = await get({ url, qs: params, json: true });
             const data = res.body;
 
@@ -240,7 +240,7 @@ class memberCheckerCore {
             if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'liveChatEnded') {
                 console.log(`liveChatEnded!`);
                 // clear cache
-                this.cacheStreamList = {};
+                // this.cacheStreamList = {};
                 this.cacheMemberList = [];
                 this.cacheStreamID = null;
                 return null;
@@ -279,11 +279,14 @@ class memberCheckerCore {
         if (data == null) { return; }
 
         let video = this.cacheStreamList[vID];
+        let description = video ? video.snippet.title : vID;
         let thumbnails;
-        thumbnails = video.snippet.thumbnails.default.url ? video.snippet.thumbnails.default.url : thumbnails;
-        thumbnails = video.snippet.thumbnails.medium.url ? video.snippet.thumbnails.medium.url : thumbnails;
-        thumbnails = video.snippet.thumbnails.high.url ? video.snippet.thumbnails.high.url : thumbnails;
-        this.dcPush(new MessageEmbed().setColor('DARK_GOLD').setDescription(`直播開始: [${video.snippet.title}](http://youtu.be/${vID})`).setThumbnail(thumbnails));
+        if (video) {
+            thumbnails = video.snippet.thumbnails.default.url ? video.snippet.thumbnails.default.url : thumbnails;
+            thumbnails = video.snippet.thumbnails.medium.url ? video.snippet.thumbnails.medium.url : thumbnails;
+            thumbnails = video.snippet.thumbnails.high.url ? video.snippet.thumbnails.high.url : thumbnails;
+        }
+        this.dcPush(new MessageEmbed().setColor('DARK_GOLD').setDescription(`直播開始: [${description}](http://youtu.be/${vID})`).setThumbnail(thumbnails));
         if (this.startTagChannelID && this.client.channels.cache.has(this.startTagChannelID)) {
             const channel = this.client.channels.cache.get(this.startTagChannelID);
             channel.send(`!yt_start http://youtu.be/${vID}`).catch(console.error);
@@ -297,7 +300,7 @@ class memberCheckerCore {
             // next request
             pageToken = data.nextPageToken;
             let nextTime = data.pollingIntervalMillis;
-            mclog(` -- ${data.items.length.toString().padStart(3, ' ')} messages returned -- ${nextTime} ${pageToken}`)
+            console.log(` -- ${data.items.length.toString().padStart(3, ' ')} messages returned -- ${nextTime} ${pageToken}`)
             await sleep(nextTime);
 
             // get chat
@@ -305,6 +308,7 @@ class memberCheckerCore {
             // liveChatEnded
             if (data === null) { break; }
         }
+        this.cacheStreamList[vID] = null;
     }
     async cacheStreamLists() {
         mclog('cacheStreamLists');
@@ -321,7 +325,9 @@ class memberCheckerCore {
             // skip upcoming new video
         )
 
-        mclog(`now time:`, new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }));
+        sleep(1000).then(() => {
+            mclog(`now time:`, new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }));
+        });
         for (let video of videos) {
             // get REALLY video data
             let vID = video.id.videoId;
@@ -331,7 +337,9 @@ class memberCheckerCore {
             // check result status AGAIN
             let status = videoStatus.snippet.liveBroadcastContent;
             let startTime = videoStatus.liveStreamingDetails.scheduledStartTime;
-            mclog(`stream at`, new Date(Date.parse(startTime)).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }), vID, status.padStart(8, ' '), videoStatus.snippet.title);
+            sleep(1000).then(() => {
+                mclog(`stream at`, new Date(Date.parse(startTime)).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }), vID, status.padStart(8, ' '), videoStatus.snippet.title);
+            });
 
             if (!['upcoming', 'live'].includes(status)) { continue; }
             this.cacheStreamList[vID] = videoStatus;
@@ -342,6 +350,7 @@ class memberCheckerCore {
         for (let vID of vIDs) {
             // get video from cache
             let video = this.cacheStreamList[vID];
+            if (!video) { continue; }
 
             // check stream started
             if (video.snippet.liveBroadcastContent != 'live') { continue; }
@@ -682,6 +691,7 @@ module.exports = {
             for (let vID of vIDs) {
                 // get cache
                 let video = core.cacheStreamList[vID];
+                if (!video) { continue; }
 
                 // check stream start time
                 let status = video.snippet.liveBroadcastContent;

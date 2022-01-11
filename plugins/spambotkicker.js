@@ -16,29 +16,30 @@ module.exports = {
         const config = CONFIG[message.guild.id].spambotKicker;
         if (!config) { return false; }
         const { LOG_CHANNEL_ID, PERMISSION_ROLE_ID, BAN_CHANNEL } = config;
-        const { client, guild, channel, content } = message;
+        const { client, guild, channel, author, content } = message;
 
         // kick?
         let kick = false;
-        if (content.startsWith('@everyone') ||
-            content.startsWith('@here')) { kick = true; }   // try mentions everyone message
+        if (content.includes('@everyone') ||
+            content.includes('@here')) { kick = true; }   // try mentions everyone message
         if (BAN_CHANNEL && channel.id == BAN_CHANNEL) { kick = true; }  // msg in decoy channel
         // exempt?
-        const author = guild.members.cache.get(message.author.id);
-        if (channel.memberPermissions(author).has("MENTION_EVERYONE")) { kick = false; };  // admin mentions  // if (message.mentions.everyone){}
+        const guilAuthor = guild.members.cache.get(author.id);
+        // if (content == '!kick me') { kick = true; }  // test cmd
+        if (channel.memberPermissions(guilAuthor).has("MENTION_EVERYONE")) { kick = false; };  // admin mentions  // if (message.mentions.everyone){}
 
         if (!kick) { return; }
 
         // let gID = `<${guild.name}> [${guild.id}]`;
         // let cID = `<${channel.name}> [${channel.id}]`;
-        // let uID = `<${message.author.username}> [${message.author.id}]`;
-        // console.log(`\n${gID}\n${cID}\n${uID} : ${message.content.trim()}`);
+        // let uID = `<${author.username}> [${author.id}]`;
+        // console.log(`\n${gID}\n${cID}\n${uID} : ${content.trim()}`);
 
         // log to LOG_CHANNEL
         if (LOG_CHANNEL_ID) {
             // get role data
             let roleList = [], roleLog = [];
-            for (let [rID, role] of author.roles.cache) {
+            for (let [rID, role] of guilAuthor.roles.cache) {
                 if (role.name == '@everyone') continue;
                 roleList.push(role);
             }
@@ -47,7 +48,7 @@ module.exports = {
 
             // log
             let embed = new Discord.MessageEmbed()
-                .setColor('RED')
+                .setColor('#FF0000')
                 .setAuthor(`${author.username} ${author}`, `https://cdn.discordapp.com/avatars/${author.id}/${author.avatar}.png?size=256`)
                 .setTitle(`洗頻訊息:`).setDescription(content)
                 .addField(`訊息位置:`, `[${channel.toString()}](${message.url})`)
@@ -65,10 +66,10 @@ module.exports = {
         if (PERMISSION_ROLE_ID) {
             let roles = await guild.roles.fetch();
             let role = roles.cache.get(PERMISSION_ROLE_ID);  // 已驗證V粉
-            if (role) { await author.roles.remove(role); }
+            if (role) { await guilAuthor.roles.remove(role); }
         } else {
             // kick
-            author.kick().catch(console.log);
+            guilAuthor.kick().catch(console.log);
         }
 
         // delete msg
