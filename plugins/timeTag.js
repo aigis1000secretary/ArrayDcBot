@@ -6,7 +6,7 @@ const { DEBUG_CHANNEL_ID } = require('../config.js');
 // DEBUG_TAG_LOG_CHANNEL_ID perfix, TIME_TAG_CHANNEL_ID
 
 const { MessageEmbed } = require('discord.js');
-const [EMOJI_OCTAGONAL_SIGN, EMOJI_THUMBSUP, EMOJI_INFINITY, EMOJI_QUESTION, EMOJI_CROSS] = ['🛑', '👍', '♾️', '❓', '❌']
+const [EMOJI_OCTAGONAL_SIGN, EMOJI_THUMBSUP, EMOJI_INFINITY, EMOJI_QUESTION, EMOJI_CROSS, EMOJI_LABEL] = ['🛑', '👍', '♾️', '❓', '❌', '🏷️']
 
 // base class
 class timeTag {
@@ -515,7 +515,32 @@ class timeTagCore {
                 return { success: false, message: [embed] };
             }
 
-            let r = await this.workingVideo.delTag(line);
+            let r = false;
+            if (args.length == 1) {
+                r = await this.workingVideo.delTag(line);
+            } else {
+                // get args time
+                let timeStr, newTag;
+                let match = [, timeStr, newTag] = line.match(/^(\d+:\d+:\d+|\d+:\d+|\d+)\s+([\s\S]+)$/i);
+
+                // get time in sec
+                let th = 0, tm = 0, ts = 0;
+                if (match = timeStr.match(/(\d+):(\d+):(\d+)/)) {
+                    [, th, tm, ts] = match;
+                } else if (match = timeStr.match(/(\d+):(\d+)/)) {
+                    [, tm, ts] = match;
+                } else if (match = timeStr.match(/(\d+)/)) {
+                    [, ts] = match;
+                }
+                th = parseInt(th || 0);
+                tm = parseInt(tm || 0);
+                ts = parseInt(ts || 0);
+                // console.log(th, tm, ts, newTag);
+
+                let timeInSec = th * 60 * 60 + tm * 60 + ts;
+                r = await this.workingVideo.delTag(newTag, parseInt(timeInSec * 1000));
+            }
+
             if (r) {
                 let embed = new MessageEmbed()
                     .setDescription("刪除TAG:\t```" + r + "```");
@@ -622,7 +647,7 @@ module.exports = {
         }
 
         if (resultDelete) {
-            message.delete();
+            message.delete().catch(console.log);
         }
 
         return executed;
@@ -665,6 +690,60 @@ module.exports = {
         }, 3 * 60 * 1000);  // check every 3min
         client.once('close', () => {
             clearInterval(interval);
+        });
+
+
+        const reactionRole = async (reaction, user, add) => {
+            if (reaction.emoji.name != EMOJI_LABEL) { return false; }
+            if (reaction.message.partial) await reaction.message.fetch();
+
+            const { message } = reaction;
+            if (!message.guild) { return false; }
+            if (message.author.bot) { return false; }
+
+            // get config
+            const { client, content, createdTimestamp } = message;
+            let config = client.config[message.guild.id];
+            if (!config) { return false; }
+
+            const core = coreArray.find((core) => { return (core.client.user.id == client.user.id && core.guild.id == message.guild.id); });
+            if (!core) { return false; }
+
+            // get message time
+            let resultEmoji = [];
+            let dTime = createdTimestamp - core.workingVideo.startTime;
+            if (core.status != "none") { dTime = dTime - 12000; }  // 12sec time lag
+            if (dTime < 0) { return null; }  // not set tag
+
+            const command = add ? 'set' : 'deltag';
+            const args = [`${parseInt(dTime / 1000)}`, `${content.split('\n').shift()}`];
+
+            let result = await core.timeTagCore(command, args);
+            // collect result data
+            // emoji
+            if (result.emoji) {
+                if (!resultEmoji.includes(result.emoji)) {
+                    resultEmoji.push(result.emoji);
+                }
+            }
+
+            // backup tag
+            if (core.workingVideo) {
+                await core.workingVideo.outputLog(core.client, core.config.DEBUG_TAG_LOG_CHANNEL_ID);
+            }
+
+            // emoji
+            for (let emoji of resultEmoji) {
+                await message.react(emoji);
+            }
+        }
+
+        client.on('messageReactionAdd', async (reaction, user) => {
+            await reactionRole(reaction, user, true);
+        });
+
+        client.on('messageReactionRemove', async (reaction, user) => {
+            await reactionRole(reaction, user, false);
         });
 
         /*// Slash Commands 
