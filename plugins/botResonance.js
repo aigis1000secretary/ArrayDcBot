@@ -1,12 +1,17 @@
-const { DISCORD, CONFIG } = require('../config.js');
+const { DISCORD } = require('../config.js');
 
 module.exports = {
     name: 'resonance',
     description: "check arraybot in this guild",
     execute(message) {
         if (!message.guild) { return false; }
-        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
-        const { command, args } = CONFIG[message.guild.id].fixMessage(message.content);
+
+        // get config
+        const { client, content } = message;
+        let config = client.config[message.guild.id];
+        if (!config) { return false; }
+
+        const { command, args } = config.fixMessage(content);
         if (!command) { return false; }
 
         if ('共鳴' != command) { return; }

@@ -1,12 +1,16 @@
-const { CONFIG } = require('../config.js');
 
 module.exports = {
     name: 'reboot',
     description: "reboot command",
     execute(message) {
         if (!message.guild) { return false; }
-        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
-        const { command, args } = CONFIG[message.guild.id].fixMessage(message.content);
+
+        // get config
+        const { client, content } = message;
+        let config = client.config[message.guild.id];
+        if (!config) { return false; }
+
+        const { command, args } = config.fixMessage(content);
         if (!command) { return false; }
 
         if ('reboot' != command) { return; }

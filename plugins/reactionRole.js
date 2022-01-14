@@ -1,6 +1,4 @@
 
-const { CONFIG } = require('../config.js');
-
 const reactionRole = async (reaction, user, add) => {
     // skip bot
     if (user.bot) return;
@@ -10,12 +8,13 @@ const reactionRole = async (reaction, user, add) => {
     if (reaction.message.partial) await reaction.message.fetch();
     if (reaction.partial) await reaction.fetch();
 
-    // get config
     const message = reaction.message;
-    if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
-    const config = CONFIG[message.guild.id].reactionRole;
-    const { channel, content } = message;
-    if (!config || channel.id != config.RULE_CHANNEL_ID) { return false; }
+
+    // get config
+    const { client, channel, content } = message;
+    let config = client.config[message.guild.id];
+    if (!config || !config.reactionRole) { return false; }
+    if (channel.id != config.reactionRole.RULE_CHANNEL_ID) { return false; }
 
     // get message
     const emojiRoles = [];
@@ -50,11 +49,12 @@ module.exports = {
     async execute(message) {
         // skip DM
         if (!message.guild) { return false; }
+
         // get config
-        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
-        const config = CONFIG[message.guild.id].reactionRole;
-        const { channel, content } = message;
-        if (channel.id != config.RULE_CHANNEL_ID) { return false; }
+        const { client, channel, content } = message;
+        let config = client.config[message.guild.id];
+        if (!config || !config.reactionRole) { return false; }
+        if (channel.id != config.reactionRole.RULE_CHANNEL_ID) { return false; }
 
         // get message
         const lines = content.split('\n');

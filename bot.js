@@ -5,9 +5,10 @@ const { DEBUG_CHANNEL_ID } = require('./config.js');
 const Discord = require('discord.js');
 
 module.exports = {
-    async init({ BOT_NAME, DISCORD_TOKEN, PLUGINS }) {
+    async init({ botName, DISCORD_TOKEN, PLUGINS, CONFIG }) {
         // client init
         const client = new Discord.Client({ partials: ["MESSAGE", "CHANNEL", "REACTION"] });
+        client.config = CONFIG;
         client.commands = new Discord.Collection();
 
         // load plugins
@@ -52,11 +53,11 @@ module.exports = {
         client.once('ready', async () => {
 
             // dc bot online
-            console.log(`=====${BOT_NAME} is online!=====`);
+            console.log(`=====${botName} is online!=====`);
             if (!fs.existsSync("./.env")) {
                 const nowDate = new Date(Date.now());
                 const channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
-                await channel.send(`${BOT_NAME} is online! <${nowDate.getHours()}:${nowDate.getMinutes()}>`)
+                await channel.send(`${botName} is online! <${nowDate.getHours()}:${nowDate.getMinutes()}>`)
             }
 
             // setup
@@ -72,7 +73,7 @@ module.exports = {
 
         client.once('close', () => {
             // offline msg
-            console.log(`${BOT_NAME} is offline!`);
+            console.log(`${botName} is offline!`);
 
             // destroy dc thread
             client.destroy();

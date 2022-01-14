@@ -1,5 +1,4 @@
 ﻿
-const { CONFIG } = require('../config.js');
 const Discord = require('discord.js');
 
 // @everyone 
@@ -11,12 +10,12 @@ module.exports = {
         if (message.author.bot) return;
         // skip DM
         if (!message.guild) { return false; }
+
         // get config
-        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
-        const config = CONFIG[message.guild.id].spambotKicker;
-        if (!config) { return false; }
-        const { LOG_CHANNEL_ID, PERMISSION_ROLE_ID, BAN_CHANNEL } = config;
         const { client, guild, channel, author, content } = message;
+        let config = client.config[message.guild.id];
+        if (!config || !config.spambotKicker) { return false; }
+        const { LOG_CHANNEL_ID, PERMISSION_ROLE_ID, BAN_CHANNEL } = config.spambotKicker;
 
         // kick?
         let kick = false;
@@ -74,6 +73,6 @@ module.exports = {
 
         // delete msg
         const botPerms = channel.memberPermissions(guild.me);
-        if (botPerms.has("MANAGE_MESSAGES")) { message.delete(); }
+        if (botPerms.has("MANAGE_MESSAGES")) { message.delete().catch(); }
     }
 }

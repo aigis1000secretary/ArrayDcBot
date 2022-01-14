@@ -1,6 +1,4 @@
 
-const { CONFIG } = require('../config.js');
-
 const Discord = require('discord.js');
 
 module.exports = {
@@ -14,9 +12,11 @@ module.exports = {
             if (!message.guild) return;
             if (!message.content && !message.author && !message.embeds.length) return;
 
-            if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
-            if (!CONFIG[message.guild.id].delmsgLogger) return;
-            const { LOG_CHANNEL_ID } = CONFIG[message.guild.id].delmsgLogger;
+            // get config
+            const { client } = message;
+            let config = client.config[message.guild.id];
+            if (!config || !config.delmsgLogger) { return false; }
+            const { LOG_CHANNEL_ID } = config.delmsgLogger;
 
             // Define the author
             let author = message.author ? message.author.username : 'UNKNOWN';
@@ -31,7 +31,7 @@ module.exports = {
 
             // Since there's only 1 audit log entry in this collection, grab the first one
             let deletor = null;
-            if (message.guild.me.permissions.has("VIEW_AUDIT_LOG")) {
+            if (message.guild.me.permissions.has("VIEW_AUDIT_LOG") && message.author) {
                 deletor = await message.guild.fetchAuditLogs({ limit: 1, type: "MESSAGE_DELETE" })
                     .then((audit) => audit.entries.first());
                 // Check channel and if message author deleted it

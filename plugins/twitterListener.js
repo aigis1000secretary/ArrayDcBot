@@ -1,5 +1,5 @@
 
-const { TWITTER, CONFIG } = require('../config.js');
+const { TWITTER } = require('../config.js');
 const [EMOJI_RECYCLE] = ['♻️']
 
 // const Discord = require('discord.js');
@@ -100,10 +100,10 @@ module.exports = {
             const nowMinutes = new Date(Date.now()).getMinutes();
             if (3 <= nowMinutes && nowMinutes < 6) {
 
-                for (let gID of Object.keys(CONFIG)) {
-                    if (!CONFIG[gID].twitterListener) { continue; }
+                for (let gID of Object.keys(client.config)) {
+                    if (!client.config[gID].twitterListener) { continue; }
 
-                    for (const { RETWEET_CHANNEL_ID, RETWEET_KEYWORD } of CONFIG[gID].twitterListener) {
+                    for (const { RETWEET_CHANNEL_ID, RETWEET_KEYWORD } of client.config[gID].twitterListener) {
                         const rtChannel = client.channels.cache.get(RETWEET_CHANNEL_ID);
                         if (!rtChannel) { continue; }
 
@@ -121,23 +121,27 @@ module.exports = {
             if (reaction.partial) await reaction.fetch();
             if (reaction.users.partial) await reaction.users.fetch();
 
+            // skip other emoji
+            if (reaction.emoji.toString() != EMOJI_RECYCLE) { return; }
+
             // get msg data
             const message = reaction.message;
             const guild = message.guild;
 
-            if (!guild) { return; }  // skip PM
-            if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
-            if (user.bot) { return; }   // skip bot reaction
-
-            // skip other emoji
-            if (reaction.emoji.toString() != EMOJI_RECYCLE) { return; }
-
             // skip not-deletable
             if (!message.deletable) { return; }
+            if (message.author.id != guild.me.id) { return; }
+
+            if (!guild) { return; }  // skip PM
+            if (user.bot) { return; }   // skip bot reaction
+
+            // get config
+            const { client } = reaction;
+            let config = client.config[message.guild.id];
+            if (!config || !config.twitterListener) { return false; }
 
             // skip not target
-            if (message.author.id != guild.me.id) { return; }
-            if (message.channel.id != CONFIG[guild.id].RETWEET_CHANNEL_ID) { return; }
+            if (!config.twitterListener.find((cfg) => { return message.channel.id == cfg.RETWEET_CHANNEL_ID })) { return; }
 
             if (reaction.count <= 5) { return; }
 

@@ -18,7 +18,7 @@ const redirectUri = `https://arraydcbot.herokuapp.com`;
 const API_ENDPOINT = 'https://discord.com/api'
 
 // youtube API
-const { DISCORD, CONFIG, YOUTUBE } = require('../config.js');
+const { DISCORD } = require('../config.js');
 
 // database api
 const { Pool } = require('pg');
@@ -29,7 +29,6 @@ const memberTime = 1000 * 60 * 60 * 24 * 35;    // 1000 ms  *  60 sec  *  60 min
 const memberTemp = 1000 * 60 * 60 * 24;         // 1000 ms  *  60 sec  *  60 min  *  24 hr
 
 const coreArray = [];
-
 class memberCheckerCore {
     cacheStreamList = {};
     cacheMemberList = [];
@@ -56,8 +55,8 @@ class memberCheckerCore {
         this.logChannelID = config.logChannelID;
         this.startTagChannelID = config.startTagChannelID;
         // set bot var
-        this.botID = config.botID;
-        this.clientSecret = DISCORD.getBot(config.botID).CLIENT_SECRET;
+        this.botID = _client.user.id;
+        this.clientSecret = DISCORD.getBot(_client.user.id).CLIENT_SECRET;
 
         // set dcPush method
         const channel = this.client.channels.cache.get(this.logChannelID);
@@ -485,7 +484,7 @@ class memberCheckerCore {
             // get user data in guild
             let user = this.guild.members.cache.get(dID);
             if (!user) {
-                mclog(`user <@${dID}> not in guild <${this.guild}>`);
+                // mclog(`user <@${dID}> not in guild <${this.guild}>`);
                 continue;
             }
 
@@ -632,78 +631,85 @@ module.exports = {
     async execute(message) {
         if (!message.guild) { return false; }
 
-        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
-        let config = CONFIG[message.guild.id].fixMessage(message.content);
-        const { command, args } = config;
+        // get config
+        const { client, content } = message;
+        let config = client.config[message.guild.id];
+        if (!config) { return false; }
+
+        const { command, args } = config.fixMessage(content);
         if (!command) { return false; }
 
         // check core
-        let core = coreArray.find((core) => { return (core.botID == message.client.user.id && core.guild.id == message.guild.id); });
-        if (!core) { return false; }
+        let cores = coreArray.filter((core) => { return (core.botID == client.user.id && core.guild.id == message.guild.id); });
+        if (cores.length <= 0) { return false; }
 
-        const isLogChannel = (message.channel.id == core.logChannelID);
-        if (isLogChannel && command == 'database') {
-            // get expires data
-            let data = await core.pgListUserData();
-            let expiresKey = core.expiresKey;
-            let response = [];
+        for (let core of cores) {
+            const isLogChannel = (message.channel.id == core.logChannelID);
 
-            // sort
-            data.sort((a, b) => a[expiresKey] == b[expiresKey] ? 0 : (a[expiresKey] > b[expiresKey] ? 1 : -1));
-            // set log
-            for (let user of data) {
-                let { discord_id: dID, youtube_id: yID } = user;
-                let expires = parseInt(user[expiresKey]);
-                if (expires == 0) { continue; }
+            if (isLogChannel && command == 'mcdebug') {
+                mclog = (mclog == console.log) ?
+                    (() => { }) : console.log;
+                return true;
+            }
 
-                let t = (expires - Date.now()) / (1000 * 60 * 60);
-                let timeLeft = `${parseInt(t / 24).toString().padStart(2, ' ')}days ${parseInt(t % 24).toString().padStart(2, ' ')}hours`;
-                let dateLimit = new Date(expires).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }).padStart(23, ' ');
+            if (isLogChannel && command == 'database') {
+                // get expires data
+                let data = await core.pgListUserData();
+                let expiresKey = core.expiresKey;
+                let response = [];
 
-                mclog(dID, yID, timeLeft, dateLimit, expires);
-                if (t < (memberTemp / (1000 * 60 * 60))) {
-                    response.push(`<@${dID}> ${yID}\n${timeLeft} ${dateLimit}`);
+                // sort
+                data.sort((a, b) => a[expiresKey] == b[expiresKey] ? 0 : (a[expiresKey] > b[expiresKey] ? 1 : -1));
+                // set log
+                for (let user of data) {
+                    let { discord_id: dID, youtube_id: yID } = user;
+                    let expires = parseInt(user[expiresKey]);
+                    if (expires == 0) { continue; }
+
+                    let t = (expires - Date.now()) / (1000 * 60 * 60);
+                    let timeLeft = `${parseInt(t / 24).toString().padStart(2, ' ')}days ${parseInt(t % 24).toString().padStart(2, ' ')}hours`;
+                    let dateLimit = new Date(expires).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }).padStart(23, ' ');
+
+                    mclog(dID, yID, timeLeft, dateLimit, expires);
+                    if (t < (memberTemp / (1000 * 60 * 60))) {
+                        response.push(`<@${dID}> ${yID}\n${timeLeft} ${dateLimit}`);
+                    }
                 }
+
+                if (response.length > 0) {
+                    let embed = new MessageEmbed()
+                        .setDescription(response.join('\n'));
+                    message.channel.send(embed);
+                }
+                continue;
             }
-
-            if (response.length > 0) {
-                let embed = new MessageEmbed()
-                    .setDescription(response.join('\n'));
-                message.channel.send(embed);
+            if (command == 'member') {
+                message.channel.send(core.get301Url());
+                continue;
             }
-            return true;
-        }
-        if (isLogChannel && command == 'mcdebug') {
-            mclog = (mclog == console.log) ?
-                (() => { }) : console.log;
-            return true;
-        }
-        if (command == 'member') {
-            message.channel.send(core.get301Url());
-            return true;
-        }
-        if (command == 'freechat') {
-            core.dcPush(new MessageEmbed().setColor('DARK_GOLD').setDescription(`手動認證: ${message.author.tag} ${message.author}`));
+            if (command == 'freechat') {
+                core.dcPush(new MessageEmbed().setColor('DARK_GOLD').setDescription(`手動認證: ${message.author.tag} ${message.author}`));
 
-            // await core.cacheStreamLists();
+                // await core.cacheStreamLists();
 
-            let vIDs = Object.keys(core.cacheStreamList);
-            for (let vID of vIDs) {
-                // get cache
-                let video = core.cacheStreamList[vID];
-                if (!video) { continue; }
+                let vIDs = Object.keys(core.cacheStreamList);
+                for (let vID of vIDs) {
+                    // get cache
+                    let video = core.cacheStreamList[vID];
+                    if (!video) { continue; }
 
-                // check stream start time
-                let status = video.snippet.liveBroadcastContent;
-                if (status != 'upcoming') { continue; }
+                    // check stream start time
+                    let status = video.snippet.liveBroadcastContent;
+                    if (status != 'upcoming') { continue; }
 
-                // start trace
-                mclog(`trace <${video.snippet.title}>`);
-                let data = await core.getStreamChat(video.liveStreamingDetails.activeLiveChatId);
-                core.readStreamChatData(data, true);
+                    // start trace
+                    mclog(`trace <${video.snippet.title}>`);
+                    let data = await core.getStreamChat(video.liveStreamingDetails.activeLiveChatId);
+                    core.readStreamChatData(data, true);
+                }
+
+                continue;
             }
-
-            return true;
         }
 
         return false;
@@ -711,21 +717,19 @@ module.exports = {
 
     async setup(client) {
         // get guild list if bot made for it
-        for (let gID of Object.keys(CONFIG)) {
-            if (!CONFIG[gID].memberChecker) { continue; }
+        for (let gID of Object.keys(client.config)) {
+            if (!client.config[gID].memberChecker) { continue; }
 
-            for (let config of CONFIG[gID].memberChecker) {
-                if (config.botID != client.user.id) { continue; }
-
+            for (let mcConfig of client.config[gID].memberChecker) {
                 const guild = client.guilds.cache.get(gID);
                 if (!guild) { continue; }    // bot not in guild
                 if (!guild.me.permissions.has("MANAGE_ROLES")) { continue; }
                 // if (!guild.me.permissions.has("SEND_MESSAGES")) { continue; }
 
-                const role = guild.roles.cache.get(config.memberRoleID);
+                const role = guild.roles.cache.get(mcConfig.memberRoleID);
                 if (!role) { continue; }    // cant found role
 
-                let newCore = new memberCheckerCore(client, config, guild, role);
+                let newCore = new memberCheckerCore(client, mcConfig, guild, role);
                 await newCore.coreInit();
                 coreArray.push(newCore);
             }
@@ -753,13 +757,14 @@ app.all('/callback', async (req, res) => {
     const param = req.query.state;
     const [, botID, expiresKey] = (param.match(/^(\d{18})(\S{12})$/) || [, 'null', 'null']);
 
-    let core = coreArray.find((core) => { return (core.botID == botID && core.expiresKey == expiresKey); });
-    if (!core) {
+    let cores = coreArray.filter((core) => { return (core.botID == botID && core.expiresKey == expiresKey); });
+    if (cores.length <= 0) {
         res.status(404).send(`ERR! cant found member checker core (${botID}, ${expiresKey})`);
         console.log(`ERR! cant found member checker core (${botID}, ${expiresKey})`);
         return;
     }
 
+    let core = cores[0];
     let cID = null, username = null;
     try {
         let headers = { "Content-Type": "application/x-www-form-urlencoded" };
@@ -807,10 +812,6 @@ app.all('/callback', async (req, res) => {
 
         // insert data
         let userData = await core.pgInsertData(dID, cID);
-        core.dcPush(new MessageEmbed().setColor('GREEN').setDescription(`申請完成: ${username}@${tag} <@${dID}>`));
-
-        // delete this user's data from cache if on stream
-        if (core.cacheMemberList.includes(cID)) { core.cacheMemberList = core.cacheMemberList.filter((e) => e != cID); }
 
         let html = [
             `User: ${username}`,
@@ -819,6 +820,14 @@ app.all('/callback', async (req, res) => {
         ].join('<br>')
 
         res.send(html);
+
+        for (core of cores) {
+            // log
+            core.dcPush(new MessageEmbed().setColor('GREEN').setDescription(`申請完成: ${username}@${tag} <@${dID}>`));
+
+            // delete this user's data from cache if on stream
+            if (core.cacheMemberList.includes(cID)) { core.cacheMemberList = core.cacheMemberList.filter((e) => e != cID); }
+        }
         return;
     } catch (e) {
         console.log(e)

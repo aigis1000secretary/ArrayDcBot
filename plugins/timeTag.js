@@ -3,7 +3,7 @@
 const { YOUTUBE, CONFIG } = require('../config.js');
 const { DEBUG_CHANNEL_ID } = require('../config.js');
 
-// DEBUG_TAG_LOG_CHANNEL_ID PREFIX, TIME_TAG_CHANNEL_ID
+// DEBUG_TAG_LOG_CHANNEL_ID perfix, TIME_TAG_CHANNEL_ID
 
 const { MessageEmbed } = require('discord.js');
 const [EMOJI_OCTAGONAL_SIGN, EMOJI_THUMBSUP, EMOJI_INFINITY, EMOJI_QUESTION, EMOJI_CROSS] = ['🛑', '👍', '♾️', '❓', '❌']
@@ -542,20 +542,21 @@ module.exports = {
     async execute(message) {
         if (!message.guild) { return false; }
         // if (message.author.bot) { return false; }
-        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
 
-        const core = coreArray.find((core) => {
-            return core.guild.id == message.guild.id;
-        });
+        // get config
+        const { client, content } = message;
+        let config = client.config[message.guild.id];
+        if (!config) { return false; }
+
+        const core = coreArray.find((core) => { return (core.client.user.id == client.user.id && core.guild.id == message.guild.id); });
         if (!core) { return false; }
 
         let executed = false;
 
         // get args
-        const content = message.content;
         let resultEmoji = [], resultMessage = [], resultOutput = [], resultTimeout = -1, resultDelete = false;
         for (let line of content.split('\n')) {
-            const { command, args } = CONFIG[message.guild.id].fixMessage(line);
+            const { command, args } = config.fixMessage(line);
             if (!command) continue;
 
             let result = await core.timeTagCore(command, args);
@@ -621,7 +622,7 @@ module.exports = {
         }
 
         if (resultDelete) {
-            message.delete().catch(console.log);
+            message.delete();
         }
 
         return executed;
@@ -629,10 +630,11 @@ module.exports = {
 
     setup(client) {
         // get guild list if bot made for it
-        for (let gID of Object.keys(CONFIG)) {
-            let config = CONFIG[gID].timeTag;
+        for (let gID of Object.keys(client.config)) {
+            if (!client.config[gID].timeTag) { continue; }
+
+            let config = client.config[gID].timeTag;
             if (!config) { continue; }
-            if (config.botID != client.user.id) { continue; }
 
             const guild = client.guilds.cache.get(gID);
             if (!guild) { continue; }    // bot not in guild

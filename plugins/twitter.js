@@ -1,5 +1,5 @@
 ﻿
-const { CONFIG, TWITTER } = require('../config.js');
+const { TWITTER } = require('../config.js');
 const [EMOJI_RECYCLE] = ['♻️']
 const Discord = require('discord.js');
 
@@ -40,12 +40,17 @@ module.exports = {
     description: "get twitter really images",
     async execute(message) {
         if (!message.guild) { return false; }
-        if (!Object.keys(CONFIG).includes(message.guild.id)) { return false; }
-        const { command, args } = CONFIG[message.guild.id].fixMessage(message.content);
+
+        // get config
+        const { client, content } = message;
+        let config = client.config[message.guild.id];
+        if (!config) { return false; }
+
+        const { command, args } = config.fixMessage(content);
         if (!command) { return false; }
 
         // get args
-        if (!command || command.toLowerCase() != 'twitter') { return; }
+        if (command.toLowerCase() != 'twitter') { return; }
         if (args.length < 1 || !/(\/)(\d{18,19})(\?|\/|$)/.test(args[0])) { return; }
         const tweetId = /\d{18,19}/.exec(args[0]).toString();
 
