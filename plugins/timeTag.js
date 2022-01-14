@@ -317,9 +317,9 @@ class timeTagCore {
             this.workingVideo = new youtubeVideo(vID);
             await this.workingVideo.init();
 
-            if (this.workingVideo.status != 'live') {
+            if (this.workingVideo.status != 'live' && this.workingVideo.status != 'none') {
                 this.workingVideo = null;
-                return { success: false, message: [embed], emoji: EMOJI_INFINITY };
+                return { success: false, emoji: EMOJI_INFINITY };
             }
 
             // set dc status
@@ -621,7 +621,7 @@ module.exports = {
         }
 
         if (resultDelete) {
-            message.delete();
+            message.delete().catch(console.log);
         }
 
         return executed;
