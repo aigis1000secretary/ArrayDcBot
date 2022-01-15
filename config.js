@@ -158,14 +158,23 @@ module.exports = {
                     },
                 }
             }
-        // }, {
-        //     botName: 'DLsite',
-        //     botID: '920485085935984641',
-        //     DISCORD_TOKEN: process.env.DISCORD_920485085935984641_BOTTOKEN,
-        //     CLIENT_SECRET: null,
-        //     RESONANCE: 'ぬる',
-        //     PLUGINS: ['dlsitebot.js'],
-        //     CONFIG: {}
+        }, {
+            botName: 'DLsite',
+            botID: '920485085935984641',
+            DISCORD_TOKEN: process.env.DISCORD_920485085935984641_BOTTOKEN,
+            CLIENT_SECRET: null,
+            RESONANCE: 'ぬる',
+            PLUGINS: [
+                'spambotkicker.js',
+                // 'dlsitebot.js'
+            ],
+            CONFIG: {
+                spambotKicker: {
+                    LOG_CHANNEL_ID: '713623232070156309',
+                    PERMISSION_ROLE_ID: null,
+                    BAN_CHANNEL: null
+                },
+            }
         }],
 
         getBot(uID) {
