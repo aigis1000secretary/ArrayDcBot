@@ -6,6 +6,7 @@ const CLOCK_B = ['<:clockb_0:895230403164655627>', '<:clockb_1:89523044733486694
 const CLOCK_C = ['<:clockc_0:895230214026723358>', '<:clockc_1:895230244976488459>', '<:clockc_2:895230274487603220>', '<:clockc_3:895230287817084949>', '<:clockc_4:895230308239175701>', '<:clockc_5:895230324139761674>'];
 const CLOCK_D = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
 const CLOCK_Colon = '🔹';
+const EMOJI_RECYCLE = '♻️';
 const regUrl = /((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?/;
 
 // youtube api
@@ -105,15 +106,43 @@ module.exports = {
             let message = await channel.send(embed);
 
             let status = data.snippet.liveBroadcastContent;
-            if (status != "upcoming") { return false; }
-            let startTime = new Date(Date.parse(data.liveStreamingDetails.scheduledStartTime));
-            let time = `${startTime.getHours().toString().padStart(2, '0')}${startTime.getMinutes().toString().padStart(2, '0')}`;
+            if (status == "upcoming") {
+                let startTime = new Date(Date.parse(data.liveStreamingDetails.scheduledStartTime));
+                let time = `${startTime.getHours().toString().padStart(2, '0')}${startTime.getMinutes().toString().padStart(2, '0')}`;
 
-            await message.react(CLOCK_A[parseInt(time[0])]).catch();
-            await message.react(CLOCK_B[parseInt(time[1])]).catch();
-            await message.react(CLOCK_Colon).catch();
-            await message.react(CLOCK_C[parseInt(time[2])]).catch();
-            await message.react(CLOCK_D[parseInt(time[3])]).catch();
+                await message.react(CLOCK_A[parseInt(time[0])]).catch();
+                await message.react(CLOCK_B[parseInt(time[1])]).catch();
+                await message.react(CLOCK_Colon).catch();
+                await message.react(CLOCK_C[parseInt(time[2])]).catch();
+                await message.react(CLOCK_D[parseInt(time[3])]).catch();
+            }
+            await message.react(EMOJI_RECYCLE).catch();
+        });
+
+
+        client.on("messageReactionAdd", async (reaction, user) => {
+            if (reaction.message.partial) await reaction.message.fetch();
+            if (reaction.partial) await reaction.fetch();
+
+            // skip other emoji
+            if (reaction.emoji.toString() != EMOJI_RECYCLE) { return; }
+            // skip bot reaction
+            if (user.bot) { return; }
+
+            // get msg data
+            const { message } = reaction;
+            // not send by bot
+            if (message.author.id != client.user.id) { return; }
+            // // skip not-deletable
+            // if (!message.deletable) { return; }
+
+            // check origin author
+            if (message.embeds.length <= 0 ||                                           // no embeds
+                !message.embeds[0].author ||                                            // no author
+                !message.embeds[0].author.name ||                                       // no author name
+                !message.embeds[0].author.name.includes(`${user.toString()}`)) { return; }    // user is not author
+
+            message.delete({ timeout: 250 }).catch(console.log);
         });
     }
 }
