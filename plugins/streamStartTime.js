@@ -1,4 +1,5 @@
 const { YOUTUBE } = require('../config.js');
+const { MessageEmbed } = require('discord.js');
 
 const CLOCK_A = ['<:clocka_0:895230067104440350>', '<:clocka_1:895230174382129162>', '<:clocka_2:895230190169509919>'];
 const CLOCK_B = ['<:clockb_0:895230403164655627>', '<:clockb_1:895230447334866944>', '<:clockb_2:895230469992505355>', '<:clockb_3:895230483783368705>', '<:clockb_4:895230502397677628>', '<:clockb_5:895230515752357888>', '<:clockb_6:895230534169530390>', '<:clockb_7:895230548958654474>', '<:clockb_8:895230563835863072>', '<:clockb_9:895230578725638154>'];
@@ -20,16 +21,15 @@ const getVideoStatus = async (vID) => {
             id: vID,
             key
         }
-        const req = await get({ url, qs: params });
-        // console.log(JSON.stringify(req, null, 2));
+        const res = await get({ url, qs: params, json: true });
+        const data = res.body;
 
-        if (!req.body) return null;
+        if (!data) return null;
+        if (data.error) { throw data.error; }
+        if (data.pageInfo.totalResults == 0) { throw 'video not found.'; }
 
-        let result = JSON.parse(req.body);
-        if (result.pageInfo.totalResults == 0) return null;
-
-        return result.items[0];
-    } catch (e) {
+        return data.items[0];
+    } catch (error) {
         // quotaExceeded
         if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
             console.log(`ERR! quotaExceeded key: <${key}>`);
@@ -38,8 +38,7 @@ const getVideoStatus = async (vID) => {
             if (keyValid) { return await getVideoStatus(vID); }
         }
 
-        console.log(e);
-        console.log(req.body);
+        console.log(error);
         return null;
     }
 }
@@ -57,20 +56,64 @@ module.exports = {
     name: 'Stream Start Time',
     description: "rection stream start time",
     async execute(message) {
-        try {
-            const { content } = message;
+        const { content } = message;
+        if (!regUrl.test(content)) { return; }
+
+        // get vID
+        const [, , , , , vID] = content.match(regUrl);
+        let time = await getStreamStatus(vID);
+        // console.log(time)
+
+        if (time) {
+            await message.react(CLOCK_A[parseInt(time[0])]).catch();
+            await message.react(CLOCK_B[parseInt(time[1])]).catch();
+            await message.react(CLOCK_Colon).catch();
+            await message.react(CLOCK_C[parseInt(time[2])]).catch();
+            await message.react(CLOCK_D[parseInt(time[3])]).catch();
+        }
+    },
+    setup(client) {
+        client.on('messageReactionAdd', async (reaction, user) => {
+            if (reaction.emoji.name != CLOCK_Colon) { return false; }
+            if (user.bot) { return false; }
+            if (reaction.message.partial) await reaction.message.fetch();
+
+            const { message: rawMessage } = reaction;
+            const { content, channel } = rawMessage;
             if (!regUrl.test(content)) { return; }
 
             // get vID
             const [, , , , , vID] = content.match(regUrl);
-            let time = await getStreamStatus(vID);
-            // console.log(time)
+            let data = await getVideoStatus(vID);
 
-            await message.react(CLOCK_A[parseInt(time[0])]);
-            await message.react(CLOCK_B[parseInt(time[1])]);
-            await message.react(CLOCK_Colon);
-            await message.react(CLOCK_C[parseInt(time[2])]);
-            await message.react(CLOCK_D[parseInt(time[3])]);
-        } catch (e) { }
+            // get image
+            let thumbnails = '';
+            thumbnails = data.snippet.thumbnails.default.url ? data.snippet.thumbnails.default.url : thumbnails;
+            thumbnails = data.snippet.thumbnails.medium.url ? data.snippet.thumbnails.medium.url : thumbnails;
+            thumbnails = data.snippet.thumbnails.high.url ? data.snippet.thumbnails.high.url : thumbnails;
+
+            // set embed
+            let embed = new MessageEmbed()
+                .setAuthor(`${user.username} ${user}`, `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`)
+                .setColor('#FF0000')
+                .setTitle(data.snippet.channelTitle)
+                // .setURL(`https://www.youtube.com/channel/${data.snippet.channelId}`)
+                .setDescription(`**[${data.snippet.title}](http://youtu.be/${vID})**`)
+            if (thumbnails != '') { embed.setImage(thumbnails); }
+
+            // reply new embed
+            let message = await channel.send(embed);
+
+            let status = data.snippet.liveBroadcastContent;
+            if (status != "upcoming") { return false; }
+            let startTime = new Date(Date.parse(data.liveStreamingDetails.scheduledStartTime));
+            let time = `${startTime.getHours().toString().padStart(2, '0')}${startTime.getMinutes().toString().padStart(2, '0')}`;
+
+            await message.react(CLOCK_A[parseInt(time[0])]).catch();
+            await message.react(CLOCK_B[parseInt(time[1])]).catch();
+            await message.react(CLOCK_Colon).catch();
+            await message.react(CLOCK_C[parseInt(time[2])]).catch();
+            await message.react(CLOCK_D[parseInt(time[3])]).catch();
+        });
     }
 }
