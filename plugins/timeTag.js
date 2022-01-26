@@ -1,6 +1,6 @@
 
 
-const { YOUTUBE, CONFIG } = require('../config.js');
+const { YOUTUBE } = require('../config.js');
 const { DEBUG_CHANNEL_ID } = require('../config.js');
 
 // DEBUG_TAG_LOG_CHANNEL_ID perfix, TIME_TAG_CHANNEL_ID
@@ -675,17 +675,16 @@ module.exports = {
             let nowMinutes = new Date(Date.now()).getMinutes();
             if (![1, 9, 17].includes(nowHours) || nowMinutes < 57) { return; }
 
-            let reboot = false;
+            let reboot = true;
             for (let core of coreArray) {
-                if (core.workingVideo == null) { continue; }
-                reboot = true;
+                if (core.workingVideo != null) { reboot = false; }
             }
 
-            if (!reboot) { return; }
+            if (reboot === false) { return; }
 
             let channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
-            if (channel) { await channel.sned(`BOT reboot! <${new Date(Date.now()).getHours()}:${new Date(Date.now()).getMinutes()}>`) }
-            client.emit('close');
+            if (channel) { await channel.send(`BOT reboot! <${nowHours.toString().padStart(2, '0')}:${nowMinutes.toString().padStart(2, '0')}>`) }
+            require('../index.js').terminate();
 
         }, 3 * 60 * 1000);  // check every 3min
         client.once('close', () => {

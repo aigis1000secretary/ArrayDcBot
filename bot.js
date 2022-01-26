@@ -57,7 +57,7 @@ module.exports = {
             if (!fs.existsSync("./.env")) {
                 const nowDate = new Date(Date.now());
                 const channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
-                await channel.send(`${botName} is online! <${nowDate.getHours()}:${nowDate.getMinutes()}>`)
+                await channel.send(`${botName} is online! <${nowDate.getHours().toString().padStart(2, '0')}:${nowDate.getMinutes().toString().padStart(2, '0')}>`)
             }
 
             // setup
