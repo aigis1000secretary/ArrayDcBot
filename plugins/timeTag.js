@@ -105,6 +105,20 @@ class youtubeVideo {
         return `!set ${parseInt(this.tagList[i].time / 1000)} ${this.tagList[i].text}`;
     }
 
+    async fixTag(newTag) {
+        // get start data
+        await this.checkStatus();
+
+        // wait live start
+        if (this.status == "upcoming") { return null; }
+
+        // shift last tag
+        let i = this.tagList.length - 1;
+        if (!this.tagList[i]) { return null; }
+        this.tagList[i].text = newTag;
+        return `!set ${parseInt(this.tagList[i].time / 1000)} ${this.tagList[i].text}`;
+    }
+
     // only call by core
     delTag(text, time = null) {
         let targets = this.tagList.filter(tag => tag.text == text);
@@ -345,6 +359,8 @@ class timeTagCore {
                 "```!t-15 <TAG>```",
                 "修改上一個TAG的秒數",
                 "```!adj -10```",
+                "修改上一個TAG的文字",
+                "```!fix <TAG>```",
                 "設置新TAG",
                 "```!set hh:mm:ss <TAG>```",
                 "確認當前TAG紀錄",
@@ -445,6 +461,28 @@ class timeTagCore {
             } else {
                 return { success: false, emoji: EMOJI_QUESTION };
             }
+        } else if (cmd == 'fix') {
+            // check working video
+            if (this.workingVideo == null) {
+                return { success: false, emoji: EMOJI_QUESTION };
+            }
+
+            // check arg
+            if (args.length <= 0) {
+                let embed = new Discord.MessageEmbed()
+                    .setColor('YELLOW')
+                    .setDescription(`!fix <NEW TAG>`);
+
+                return { success: false, message: [embed] };
+            }
+
+            let r = await this.workingVideo.fixTag(line);
+
+            if (r) {
+                return { success: true, emoji: EMOJI_THUMBSUP };
+            } else {
+                return { success: false, emoji: EMOJI_QUESTION };
+            }
 
         } else if (cmd == 'set') {
             // check working video
@@ -510,7 +548,7 @@ class timeTagCore {
             if (args.length <= 0) {
                 let embed = new MessageEmbed()
                     .setColor('YELLOW')
-                    .setDescription(`!t <TAG>`);
+                    .setDescription(`!deltag <TAG>`);
 
                 return { success: false, message: [embed] };
             }
