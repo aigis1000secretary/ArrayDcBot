@@ -260,14 +260,14 @@ class youtubeVideo {
                 // set new dc msg object if didn't exist
                 let channel = client.channels.cache.get(channelID)
                 if (channel) {
-                    this.logMsgs[key] = await channel.send(log).catch(console.log);
+                    this.logMsgs[key] = await channel.send({ content: log }).catch(console.log);
                 } else {
                     console.log(`ERR! cant backup message to <#${channelID}>`)
                 }
 
             } else if (this.logMsgs[key].content != log) {
                 // update dc msg obj text
-                this.logMsgs[key] = await this.logMsgs[key].edit(log).catch(console.log);
+                this.logMsgs[key] = await this.logMsgs[key].edit({ content: log }).catch(console.log);
 
             } else {
                 // dc msg obj exist, text same with this log, skip
@@ -337,7 +337,7 @@ class timeTagCore {
             }
 
             // set dc status
-            this.client.user.setPresence({ activity: { name: this.workingVideo.title, type: 'WATCHING' } });
+            this.client.user.setPresence({ activities: [{ name: this.workingVideo.title, type: 'WATCHING' }] });
 
             // reply
             const embed = new MessageEmbed()
@@ -381,7 +381,7 @@ class timeTagCore {
         if (cmd == 'yt_end') {
             // check working video
             if (this.workingVideo == null) {
-                // message.channel.send('There is no live on work');
+                // message.channel.send({ content: 'There is no live on work' });
                 return { success: false, emoji: EMOJI_QUESTION };
             }
 
@@ -390,7 +390,7 @@ class timeTagCore {
             this.workingVideo = null;
 
             // dc status
-            this.client.user.setPresence({ activity: null });
+            this.client.user.setPresence({ activities: null });
 
             // reply
             return { success: true, emoji: EMOJI_OCTAGONAL_SIGN, output: array };
@@ -398,7 +398,7 @@ class timeTagCore {
         } else if (cmd == 't' || /t[\+\-]?\d+/i.test(cmd)) {
             // check working video
             if (this.workingVideo == null) {
-                // message.channel.send('There is no live on work');
+                // message.channel.send({ content: 'There is no live on work' });
                 return { success: false, emoji: EMOJI_QUESTION };
             }
 
@@ -431,7 +431,7 @@ class timeTagCore {
         } else if (cmd == 'adj' || cmd == 'adjust') {
             // check working video
             if (this.workingVideo == null) {
-                // message.channel.send('There is no live on work');
+                // message.channel.send({ content: 'There is no live on work' });
                 return { success: false, emoji: EMOJI_QUESTION };
             }
 
@@ -487,7 +487,7 @@ class timeTagCore {
         } else if (cmd == 'set') {
             // check working video
             if (this.workingVideo == null) {
-                // message.channel.send('There is no live on work');
+                // message.channel.send({ content: 'There is no live on work' });
                 return { success: false, emoji: EMOJI_QUESTION };
             }
 
@@ -527,7 +527,7 @@ class timeTagCore {
         } else if (cmd == 'tags') {
             // check working video
             if (this.workingVideo == null) {
-                // message.channel.send('There is no live on work');
+                // message.channel.send({ content: 'There is no live on work' });
                 return { success: false, emoji: EMOJI_QUESTION };
             }
 
@@ -540,7 +540,7 @@ class timeTagCore {
         } else if (cmd == 'deltag') {
             // check working video
             if (this.workingVideo == null) {
-                // message.channel.send('There is no live on work');
+                // message.channel.send({ content: 'There is no live on work' });
                 return { success: false, emoji: EMOJI_QUESTION };
             }
 
@@ -654,10 +654,10 @@ module.exports = {
 
         // reply all data
         // embed array
-        for (let embed of resultMessage) {
-            let r = await message.channel.send(embed);
+        if (resultMessage.length > 0) {
+            let r = await message.channel.send({ embeds: resultMessage });
             if (resultTimeout != -1) {
-                r.delete({ timeout: resultTimeout });
+                setTimeout(() => r.delete(), resultTimeout);
             }
             executed = true;
         }
@@ -668,10 +668,10 @@ module.exports = {
         }
 
         // output array
-        for (let embed of resultOutput) {
+        if (resultOutput.length > 0) {
             let channel = core.client.channels.cache.get(core.config.TIME_TAG_CHANNEL_ID)
             if (channel) {
-                await channel.send(embed);
+                await channel.send({ embeds: resultOutput });
             } else {
                 console.log(`ERR! cant output message to <#${core.config.TIME_TAG_CHANNEL_ID}>`)
             }
@@ -721,7 +721,11 @@ module.exports = {
             if (reboot === false) { return; }
 
             let channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
-            if (channel) { await channel.send(`BOT reboot! <${nowHours.toString().padStart(2, '0')}:${nowMinutes.toString().padStart(2, '0')}>`) }
+            if (channel) {
+                const hours = nowDate.getHours().toString().padStart(2, '0');
+                const minutes = nowDate.getMinutes().toString().padStart(2, '0');
+                await channel.send({ content: `BOT reboot! <${hours}:${minutes}>` });
+            }
             require('../index.js').terminate();
 
         }, 3 * 60 * 1000);  // check every 3min

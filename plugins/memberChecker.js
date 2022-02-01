@@ -4,7 +4,7 @@ let mclog = fs.existsSync("./.env") ? console.log : () => { };
 const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms)); };
 
 // bot core
-const { MessageEmbed } = require('discord.js');
+const { Permissions, MessageEmbed } = require('discord.js');
 // discord api
 const request = require('request');
 const util = require('util');
@@ -36,7 +36,7 @@ class memberCheckerCore {
 
     // setting
     client = null;
-    dcPush = () => { };
+    dcPushEmbed = () => { };
     holoChannelID; expiresKey;
     guild; memberRole; logChannelID; startTagChannelID;
     botID; clientSecret;
@@ -61,7 +61,7 @@ class memberCheckerCore {
         // set dcPush method
         const channel = this.client.channels.cache.get(this.logChannelID);
         if (channel) {
-            this.dcPush = (msg) => { return channel.send(msg).catch(console.error); };
+            this.dcPushEmbed = (embed) => { return channel.send({ embeds: [embed] }).catch(console.error); };
         }
 
         // this.apiKey = YOUTUBE.pickRandomAPIKey();
@@ -285,10 +285,10 @@ class memberCheckerCore {
             thumbnails = video.snippet.thumbnails.medium.url ? video.snippet.thumbnails.medium.url : thumbnails;
             thumbnails = video.snippet.thumbnails.high.url ? video.snippet.thumbnails.high.url : thumbnails;
         }
-        this.dcPush(new MessageEmbed().setColor('DARK_GOLD').setDescription(`直播開始: [${description}](http://youtu.be/${vID})`).setThumbnail(thumbnails));
+        this.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`直播開始: [${description}](http://youtu.be/${vID})`).setThumbnail(thumbnails));
         if (this.startTagChannelID && this.client.channels.cache.has(this.startTagChannelID)) {
             const channel = this.client.channels.cache.get(this.startTagChannelID);
-            channel.send(`!yt_start http://youtu.be/${vID}`).catch(console.error);
+            channel.send({ content: `!yt_start http://youtu.be/${vID}` }).catch(console.error);
         }
 
         while (true) {
@@ -410,25 +410,25 @@ class memberCheckerCore {
             // set user role
             if (isChatSponsor && isSpecalUser) {
                 mclog(`found dc user, Update Expires! : ${chatMessage.authorDetails.displayName}`);
-                this.dcPush(new MessageEmbed().setColor('AQUA').setDescription(`認證成功, 延展期限: ${user.user.tag} ${user}`));
+                this.dcPushEmbed(new MessageEmbed().setColor('AQUA').setDescription(`認證成功, 延展期限: ${user.user.tag} ${user.toString()}`));
                 this.pgUpdateExpires(dID, (Date.now() + memberTime));
             }
             if (isChatSponsor && !isSpecalUser) {
                 mclog(`found dc user, Add Role! : ${chatMessage.authorDetails.displayName}`);
-                this.dcPush(new MessageEmbed().setColor('BLUE').setDescription(`認證成功, 新增身分組(${this.memberRole}): ${user.user.tag} ${user}`));
+                this.dcPushEmbed(new MessageEmbed().setColor('BLUE').setDescription(`認證成功, 新增身分組(${this.memberRole}): ${user.user.tag} ${user.toString()}`));
                 this.pgUpdateExpires(dID, (Date.now() + memberTime));
                 user.roles.add(this.memberRole).catch(console.error);
             }
 
             if (!isChatSponsor && isSpecalUser) {
                 mclog(`found dc user, Disable role! : ${chatMessage.authorDetails.displayName}`);
-                this.dcPush(new MessageEmbed().setColor('RED').setDescription(`非會員, 刪除身分組(${this.memberRole}): ${user.user.tag} ${user}`));
+                this.dcPushEmbed(new MessageEmbed().setColor('RED').setDescription(`非會員, 刪除身分組(${this.memberRole}): ${user.user.tag} ${user.toString()}`));
                 this.pgUpdateExpires(dID, 0);
                 user.roles.remove(this.memberRole).catch(console.log);
             }
             if (!isChatSponsor && !isSpecalUser && dbItem[this.expiresKey] > 0) {
                 mclog(`found dc user, Delete apply! : ${chatMessage.authorDetails.displayName}`);
-                this.dcPush(new MessageEmbed().setColor('ORANGE').setDescription(`申請無效, 清除申請: ${user.user.tag} ${user}`));
+                this.dcPushEmbed(new MessageEmbed().setColor('ORANGE').setDescription(`申請無效, 清除申請: ${user.user.tag} ${user.toString()}`));
                 this.pgUpdateExpires(dID, 0);
             }
         }
@@ -460,12 +460,12 @@ class memberCheckerCore {
             // set user role
             if (isSpecalUser) {
                 mclog(`found dc user, Disable role! : ${dID}`);
-                this.dcPush(new MessageEmbed().setColor('RED').setDescription(`非會員, 刪除身分組(${this.memberRole}): ${user.user.tag} ${user}`));
+                this.dcPushEmbed(new MessageEmbed().setColor('RED').setDescription(`非會員, 刪除身分組(${this.memberRole}): ${user.user.tag} ${user.toString()}`));
                 this.pgUpdateExpires(dID, 0);
                 user.roles.remove(this.memberRole).catch(console.log);
             } else {
                 mclog(`found dc user, Delete apply! : ${dID}`);
-                this.dcPush(new MessageEmbed().setColor('ORANGE').setDescription(`申請過期, 清除申請: ${user.user.tag} ${user}`));
+                this.dcPushEmbed(new MessageEmbed().setColor('ORANGE').setDescription(`申請過期, 清除申請: ${user.user.tag} ${user.toString()}`));
                 this.pgUpdateExpires(dID, 0);
             }
         }
@@ -496,7 +496,7 @@ class memberCheckerCore {
                 // mclog(`found dc user with member role! : ${dID}`);
             } else if (expires > Date.now() + memberTemp) {
                 mclog(`found dc user, add role! : ${dID}`);
-                this.dcPush(new MessageEmbed().setColor('BLUE').setDescription(`確認期限, 恢復身分組(${this.memberRole}): ${user.user.tag} ${user}`));
+                this.dcPushEmbed(new MessageEmbed().setColor('BLUE').setDescription(`確認期限, 恢復身分組(${this.memberRole}): ${user.user.tag} ${user.toString()}`));
                 user.roles.add(this.memberRole).catch(console.log);
             }
         }
@@ -562,7 +562,7 @@ class memberCheckerCore {
     async pgGetDataByDiscordID(discordID) {
         const sql = [
             `SELECT * FROM user_connections`,
-            `WHERE discord_id='${discordID}'`
+            `WHERE discord_id='${discordID}';`
         ].join(' ');
         const res = await pool.query(sql);
         return res.rows[0];
@@ -651,6 +651,13 @@ module.exports = {
                     (() => { }) : console.log;
                 return true;
             }
+            if (isLogChannel && command == 'user') {
+                let data = await core.pgGetDataByDiscordID(args[0].trim());
+                message.channel.send({ content: args[0] });
+                message.channel.send({ content: JSON.stringify(data, null, 2) });
+                console.log(data)
+                return true;
+            }
 
             if (isLogChannel && command == 'database') {
                 // get expires data
@@ -677,18 +684,17 @@ module.exports = {
                 }
 
                 if (response.length > 0) {
-                    let embed = new MessageEmbed()
-                        .setDescription(response.join('\n'));
-                    message.channel.send(embed);
+                    let embeds = [new MessageEmbed().setDescription(response.join('\n'))];
+                    message.channel.send({ embeds });
                 }
                 continue;
             }
             if (command == 'member') {
-                message.channel.send(core.get301Url());
+                message.channel.send({ content: core.get301Url() });
                 continue;
             }
             if (command == 'freechat') {
-                core.dcPush(new MessageEmbed().setColor('DARK_GOLD').setDescription(`手動認證: ${message.author.tag} ${message.author}`));
+                core.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`手動認證: ${message.author.tag} ${message.author.toString()}`));
 
                 // await core.cacheStreamLists();
 
@@ -723,8 +729,8 @@ module.exports = {
             for (let mcConfig of client.config[gID].memberChecker) {
                 const guild = client.guilds.cache.get(gID);
                 if (!guild) { continue; }    // bot not in guild
-                if (!guild.me.permissions.has("MANAGE_ROLES")) { continue; }
-                // if (!guild.me.permissions.has("SEND_MESSAGES")) { continue; }
+                if (!guild.me.permissions.has(Permissions.FLAGS.MANAGE_ROLES)) { continue; }
+                // if (!guild.me.permissions.has(Permissions.FLAGS.SEND_MESSAGES)) { continue; }
 
                 const role = guild.roles.cache.get(mcConfig.memberRoleID);
                 if (!role) { continue; }    // cant found role
@@ -823,7 +829,7 @@ app.all('/callback', async (req, res) => {
 
         for (core of cores) {
             // log
-            core.dcPush(new MessageEmbed().setColor('GREEN').setDescription(`申請完成: ${username}@${tag} <@${dID}>`));
+            core.dcPushEmbed(new MessageEmbed().setColor('GREEN').setDescription(`申請完成: ${username}@${tag} <@${dID}>`));
 
             // delete this user's data from cache if on stream
             if (core.cacheMemberList.includes(cID)) { core.cacheMemberList = core.cacheMemberList.filter((e) => e != cID); }

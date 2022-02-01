@@ -26,6 +26,7 @@ module.exports.terminate = () => {
     let client = clients[0];
 
     for (let cID of [DEBUG_CHANNEL_ID]) {
+    // for (let cID of [DEBUG_CHANNEL_ID, '713623232070156309']) {
         // await client.channels.fetch();
         const logChannel = client.channels.cache.get(cID);
         let delcount = 0;

@@ -37,11 +37,11 @@ module.exports = {
                         RETWEET_KEYWORD: '(#ししらーと)'
                     }],
 
-                    spambotKicker: {
-                        LOG_CHANNEL_ID: '713623232070156309',
-                        PERMISSION_ROLE_ID: '827153475891626025',
-                        BAN_CHANNEL: '928570341448626176'
-                    },
+                    // spambotKicker: {
+                    //     LOG_CHANNEL_ID: '713623232070156309',
+                    //     PERMISSION_ROLE_ID: '827153475891626025',
+                    //     BAN_CHANNEL: '928570341448626176'
+                    // },
 
                     // reactionRole: { RULE_CHANNEL_ID: '826994163907428382' },
                     // reactionVote: { VOTE_CHANNELS: ['861842027048861706'] },
@@ -166,14 +166,48 @@ module.exports = {
             RESONANCE: 'ぬる',
             PLUGINS: [
                 'spambotkicker.js',
-                // 'dlsitebot.js'
+                'dlsitebot.js'
             ],
             CONFIG: {
-                spambotKicker: {
-                    LOG_CHANNEL_ID: '713623232070156309',
-                    PERMISSION_ROLE_ID: null,
-                    BAN_CHANNEL: null
+                '713622845682614302': {
+                    NAME: 'KTG',
+                    perfix: /(^[\/\-!~])[\S]/,
+                    fixMessage(message) {
+                        let args, command;
+                        if (this.perfix.test(message)) {
+                            args = message.slice(1).split(/\s+/);
+                            command = args.shift().toLowerCase();
+                        }
+                        return { args, command }
+                    },
+
+                    spambotKicker: {
+                        LOG_CHANNEL_ID: '938143077166612512',
+                        // PERMISSION_ROLE_ID: '827153475891626025',
+                        PERMISSION_ROLE_ID: null,
+                        BAN_CHANNEL: '938143126843973693'
+                    },
+
                 },
+
+                '254526419953123330': {
+                    NAME: 'K島同人音聲',
+                    perfix: /^[!][\S]/,
+                    fixMessage(message) {
+                        let args, command;
+                        if (this.perfix.test(message)) {
+                            args = message.slice(1).split(/\s+/);
+                            command = args.shift().toLowerCase();
+                        }
+                        return { args, command }
+                    },
+
+                    spambotKicker: {
+                        LOG_CHANNEL_ID: '713623232070156309',
+                        PERMISSION_ROLE_ID: null,
+                        BAN_CHANNEL: null
+                    },
+                }
             }
         }],
 

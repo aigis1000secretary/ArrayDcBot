@@ -1,4 +1,6 @@
 
+const { Permissions } = require('discord.js');
+
 const reactionRole = async (reaction, user, add) => {
     // skip bot
     if (user.bot) return;
@@ -34,7 +36,7 @@ const reactionRole = async (reaction, user, add) => {
     const emojiRole = emojiRoles.find(({ emoji }) => { return emoji == reaction.emoji.name; });
     if (!emojiRole) { return; }
 
-    if (!message.guild.me.permissions.has("MANAGE_ROLES")) { return; }
+    if (!message.guild.me.permissions.has(Permissions.FLAGS.MANAGE_ROLES)) { return; }
 
     const target = message.guild.members.cache.get(user.id);
     if (add) { await target.roles.add(emojiRole.role).catch(console.log); }

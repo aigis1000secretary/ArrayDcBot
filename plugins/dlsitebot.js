@@ -1,6 +1,6 @@
 
 // const fs = require('fs');
-const Discord = require('discord.js')
+const { Permissions, MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 
 // web crawler
 const request = require('request');
@@ -8,14 +8,14 @@ const util = require('util');
 const get = util.promisify(request.get);
 const cheerio = require("cheerio");
 
-let indexReg = /([RBV]J\d{6})/;
+let indexReg = /([RBV]J\d{6})/i;
 
 const getDLsitePage = async (index) => {
     console.log(index)
     let req, url;
 
     try {
-        url = `https://www.dlsite.com/home/announce/=/product_id/${index}.html`;
+        url = `https://www.dlsite.com/home/announce/=/product_id/${index.toUpperCase()}.html`;
 
         // request
         req = await get({ url });
@@ -155,7 +155,7 @@ const createDLsitePageMessage = (result) => {
         description += `\n${pair[0]}： ${pair[1]}`;
     }
 
-    const embed = new Discord.MessageEmbed()
+    const embed = new MessageEmbed()
         .setColor('#010d85')
         .setTitle(`${result.title} [${result.index}]`)
         .setURL(result.url)
@@ -173,33 +173,33 @@ const createDLsitePageMessage = (result) => {
             // get last img tag
             let [, imgTag] = result.thumb[1].match(/_img_([^\.\d]+)/);
 
-            components = [new Discord.MessageActionRow()
+            components = [new MessageActionRow()
                 .addComponents(
-                    new Discord.MessageButton()
+                    new MessageButton()
                         .setStyle("PRIMARY")
                         .setLabel("|<")
                         .setCustomId("dlThumbMain")
                 )
                 .addComponents(
-                    new Discord.MessageButton()
+                    new MessageButton()
                         .setStyle("PRIMARY")
                         .setLabel("<<")
                         .setCustomId("dlThumbPrve")
                 )
                 .addComponents(
-                    new Discord.MessageButton()
+                    new MessageButton()
                         .setStyle("PRIMARY")
                         .setLabel(`1/${result.thumb.length}`)
                         .setCustomId("dlThumbNum")
                 )
                 .addComponents(
-                    new Discord.MessageButton()
+                    new MessageButton()
                         .setStyle("PRIMARY")
                         .setLabel(">>")
                         .setCustomId("dlThumbNext")
                 )
                 .addComponents(
-                    new Discord.MessageButton()
+                    new MessageButton()
                         .setStyle("PRIMARY")
                         .setLabel(">|")
                         .setCustomId(`dlThumbEnd ${imgTag} ${result.thumb.length}`)
@@ -215,24 +215,36 @@ const createDLsitePageMessage = (result) => {
 module.exports = {
     name: 'DLsiteBot',
     description: "get dl page data",
-    async execute(message, args) {
+    async execute(message) {
+        if (!message.guild) { return false; }
+
+        // get config
+        const { client, content } = message;
+        let config = client.config[message.guild.id];
+        if (!config) { return false; }
+
+        const { command, args } = config.fixMessage(content);
+        if (!command) { return false; }
 
         // check index code
-        let arg = args.shift().toUpperCase();
-        if (!indexReg.test(arg)) { return false; }
-        let [, index] = arg.match(indexReg);
+        if (!indexReg.test(command)) { return false; }
+        let [, index] = command.match(indexReg);
 
         // get permissions
         let permissions = message.channel.permissionsFor(message.member.guild.me);
-        // for (let key of ['SEND_MESSAGES', 'EMBED_LINKS', 'MANAGE_MESSAGES']) { console.log(key, permissions.has(key)) }
+        // for (let key of [
+        //     Permissions.FLAGS.SEND_MESSAGES,
+        //     Permissions.FLAGS.EMBED_LINKS,
+        //     Permissions.FLAGS.MANAGE_MESSAGES
+        // ]) { console.log(key, permissions.has(key)) }
         // check permissions
-        if (!permissions.has('SEND_MESSAGES')) {
+        if (!permissions.has(Permissions.FLAGS.SEND_MESSAGES)) {
             console.log('Missing Permissions: SEND_MESSAGES');
             return false;
         }
-        if (!permissions.has('EMBED_LINKS')) {
+        if (!permissions.has(Permissions.FLAGS.EMBED_LINKS)) {
             console.log('Missing Permissions: EMBED_LINKS');
-            message.channel.send('Missing Permissions: EMBED_LINKS');
+            message.channel.send({ content: 'Missing Permissions: EMBED_LINKS' });
             return false;
         }
 
@@ -245,7 +257,7 @@ module.exports = {
         message.channel.send(messagePayload).catch(console.log);
 
         // check manager permissions
-        if (!permissions.has('MANAGE_MESSAGES')) {
+        if (!permissions.has(Permissions.FLAGS.MANAGE_MESSAGES)) {
             console.log('Missing Permissions: MANAGE_MESSAGES');
             return true;
         }
@@ -308,7 +320,7 @@ module.exports = {
         if (label) { label.setLabel(`${imgIndex + 1}/${imgLength}`) }
         else {
             row.components.splice(2, 0,
-                new Discord.MessageButton().setStyle("PRIMARY")
+                new MessageButton().setStyle("PRIMARY")
                     .setLabel(`${imgIndex + 1}/${imgLength}`)
                     .setCustomId("dlThumbNum")
             );

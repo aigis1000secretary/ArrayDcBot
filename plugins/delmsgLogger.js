@@ -1,5 +1,5 @@
 
-const Discord = require('discord.js');
+const { Permissions, MessageEmbed } = require('discord.js');
 
 module.exports = {
     name: 'delmsgLogger',
@@ -19,7 +19,7 @@ module.exports = {
             const { LOG_CHANNEL_ID } = config.delmsgLogger;
 
             // Define the author
-            let author = message.author ? message.author.username : 'UNKNOWN';
+            let authorName = message.author ? message.author.username : 'UNKNOWN';
 
             // Define the message
             let content = message.content || (message.embeds.length ? '*嵌入式訊息*' : '*不明訊息*');
@@ -31,7 +31,7 @@ module.exports = {
 
             // Since there's only 1 audit log entry in this collection, grab the first one
             let deletor = null;
-            if (message.guild.me.permissions.has("VIEW_AUDIT_LOG") && message.author) {
+            if (message.guild.me.permissions.has(Permissions.FLAGS.VIEW_AUDIT_LOG) && message.author) {
                 deletor = await message.guild.fetchAuditLogs({ limit: 1, type: "MESSAGE_DELETE" })
                     .then((audit) => audit.entries.first());
                 // Check channel and if message author deleted it
@@ -46,8 +46,12 @@ module.exports = {
             // let gID = message.guild.id, cID = message.channel.id, mID = message.id, uID = message.author.id;
 
             // Generate embed
-            const delMsg = new Discord.MessageEmbed()
-                .setAuthor(`${author} ${message.author}`, `https://cdn.discordapp.com/avatars/${message.author.id}/${message.author.avatar}.png?size=256`)
+            const delMsg = new MessageEmbed()
+                // .setColor(0xFF0000)
+                .setAuthor({
+                    name: `${authorName} ${message.author.toString()}`,
+                    iconURL: `https://cdn.discordapp.com/avatars/${message.author.id}/${message.author.avatar}.png?size=256`
+                })
                 .setTitle(`刪除訊息:`).setDescription(content)
                 .addField(`訊息位置:`, `[${message.channel.toString()}](${message.url})`)
                 .setTimestamp();
@@ -56,19 +60,10 @@ module.exports = {
                 delMsg.addField(`刪除者:`, `${deletor.executor.username}`)
             }
 
-
-            // // discord push
-            // const dcPush = async (channelID, msg) => {
-            //     const channel = message.client.channels.cache.get(channelID);
-            //     return await channel.send(msg)
-            // }
-
             const logChannel = message.client.channels.cache.get(LOG_CHANNEL_ID);
 
-            await logChannel.send(delMsg).catch(console.log);
-            if (message.embeds.length) {
-                await logChannel.send(message.embeds).catch(console.log);
-            }
+            let embeds = [delMsg].concat(message.embeds)
+            await logChannel.send({ embeds }).catch(() => { });
 
             /*
             // Perform a coherence check to make sure that there's *something*
@@ -83,7 +78,7 @@ module.exports = {
             // Also run a check to make sure that the log returned was for the same author's message
             let author = message.author || target;
             let content = message.content || (message.embeds.length ? '*嵌入式訊息*' : '*不明訊息*');
-            const embed = new Discord.MessageEmbed()
+            const embed = new MessageEmbed()
                 .addField(`${executor.tag} 刪除訊息`, `頻道: ${message.channel.toString()}`)
                 .addField(`${author.tag}:`, `${content}`)
                 .setTimestamp();

@@ -18,7 +18,7 @@ module.exports = {
         if (message.author.id != '353625493876113440') { return; }
 
         const bot = DISCORD.getBot(message.client.user.id);
-        message.channel.send(`${bot.RESONANCE}${bot.RESONANCE}${bot.RESONANCE}${bot.RESONANCE}`);
+        message.channel.send({ content: `${bot.RESONANCE}${bot.RESONANCE}${bot.RESONANCE}${bot.RESONANCE}` });
         return true;
     },
 }

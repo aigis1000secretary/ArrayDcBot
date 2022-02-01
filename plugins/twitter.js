@@ -1,7 +1,7 @@
 ﻿
 const { TWITTER } = require('../config.js');
-const [EMOJI_RECYCLE] = ['♻️']
-const Discord = require('discord.js');
+const [EMOJI_RECYCLE] = ['♻️'];
+const { Permissions, MessageEmbed } = require('discord.js');
 
 const request = require("request");
 const util = require('util');
@@ -59,36 +59,40 @@ module.exports = {
         if (!guild) { return console.log("[twitterBot] !guild"); }  // skip PM
 
         const botPerms = message.channel.memberPermissions(guild.me);
-        if (!botPerms.has("SEND_MESSAGES")) { return console.log("[twitterBot] SEND_MESSAGES"); }
+        if (!botPerms.has(Permissions.FLAGS.SEND_MESSAGES)) { return console.log("[twitterBot] SEND_MESSAGES"); }
 
         // send image msg
         let tweet_data = await getTweet(tweetId);
         if (!tweet_data.includes) { return console.log("[twitterBot] !tweet_data.includes"); }
 
         // set author info embed
-        let embed = new Discord.MessageEmbed()
+        let embed = new MessageEmbed()
             .setColor(0x333333)
-            .setAuthor(`${tweet_data.includes.users[0].name} @${tweet_data.includes.users[0].username} <@${message.author.id}>`,
-                tweet_data.includes.users[0].profile_image_url)
+            .setAuthor({
+                name: `${tweet_data.includes.users[0].name} @${tweet_data.includes.users[0].username} ${message.author.toString()}`,
+                iconURL: tweet_data.includes.users[0].profile_image_url
+            })
             .setDescription(tweet_data.data.text)
-        message.channel.send({ embed }).then(reply => reply.react(EMOJI_RECYCLE));
+        message.channel.send({ embeds: [embed] }).then(reply => reply.react(EMOJI_RECYCLE));
 
         // reply image
         if (Array.isArray(tweet_data.includes.media) && tweet_data.includes.media.length > 0) {
             for (let media of tweet_data.includes.media) {
                 if (media.type == "photo") {
-                    embed = new Discord.MessageEmbed()
+                    embed = new MessageEmbed()
                         .setColor(0x333333)
-                        .setAuthor(`${tweet_data.includes.users[0].name} @${tweet_data.includes.users[0].username} <@${message.author.id}>`,
-                            tweet_data.includes.users[0].profile_image_url)
+                        .setAuthor({
+                            name: `${tweet_data.includes.users[0].name} @${tweet_data.includes.users[0].username} ${message.author.toString()}`,
+                            iconURL: tweet_data.includes.users[0].profile_image_url
+                        })
                         .setImage(media.url);
-                    message.channel.send({ embed }).then(reply => reply.react(EMOJI_RECYCLE));
+                    message.channel.send({ embeds: [embed] }).then(reply => reply.react(EMOJI_RECYCLE));
                 }
             }
         }
 
-        if (!botPerms.has("MANAGE_MESSAGES")) { return console.log("[twitterBot] MANAGE_MESSAGES"); }
-        message.delete({ timeout: 250 }).catch(console.log); // Attempt at preventing client glitch where messages don't dissapear
+        if (!botPerms.has(Permissions.FLAGS.MANAGE_MESSAGES)) { return console.log("[twitterBot] MANAGE_MESSAGES"); }
+        setTimeout(() => message.delete(), 250); // Attempt at preventing client glitch where messages don't dissapear
         return true;
     },
 
@@ -127,7 +131,7 @@ module.exports = {
             // }
             // if (!reactionMe) { return; }
 
-            message.delete({ timeout: 250 }).catch(console.log);
+            setTimeout(() => message.delete(), 250);
         });
     }
 }

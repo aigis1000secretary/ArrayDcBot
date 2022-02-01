@@ -18,7 +18,7 @@ module.exports = {
             });
             console.log(`討論串建立完成: ${thread.name}`);
             thread.members.add(message.member.id);
-            thread.send(`<@${message.member.id}>您好\n請放心，這個討論串只有您與 <@&766316861427023882> 看的見\n請將您要投訴的內容、訊息鏈結、截圖都貼在這個地方，會由管理員進行處置。`);
+            thread.send({ content: `<@${message.member.id}>您好\n請放心，這個討論串只有您與 <@&766316861427023882> 看的見\n請將您要投訴的內容、訊息鏈結、截圖都貼在這個地方，會由管理員進行處置。` });
             // await message.reply({ content: '投訴專用討論串已為您建立，請放心的在該討論串進行投訴', ephemeral: true });
             message.delete();
         }

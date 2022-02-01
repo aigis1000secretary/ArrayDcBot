@@ -66,11 +66,11 @@ module.exports = {
         // console.log(time)
 
         if (time) {
-            await message.react(CLOCK_A[parseInt(time[0])]).catch();
-            await message.react(CLOCK_B[parseInt(time[1])]).catch();
-            await message.react(CLOCK_Colon).catch();
-            await message.react(CLOCK_C[parseInt(time[2])]).catch();
-            await message.react(CLOCK_D[parseInt(time[3])]).catch();
+            await message.react(CLOCK_A[parseInt(time[0])]).catch(() => { });
+            await message.react(CLOCK_B[parseInt(time[1])]).catch(() => { });
+            await message.react(CLOCK_Colon).catch(() => { });
+            await message.react(CLOCK_C[parseInt(time[2])]).catch(() => { });
+            await message.react(CLOCK_D[parseInt(time[3])]).catch(() => { });
         }
     },
     setup(client) {
@@ -95,7 +95,10 @@ module.exports = {
 
             // set embed
             let embed = new MessageEmbed()
-                .setAuthor(`${user.username} ${user}`, `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`)
+                .setAuthor({
+                    name: `${user.username} ${user.toString()}`,
+                    iconURL: `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`
+                })
                 .setColor('#FF0000')
                 .setTitle(data.snippet.channelTitle)
                 // .setURL(`https://www.youtube.com/channel/${data.snippet.channelId}`)
@@ -103,20 +106,20 @@ module.exports = {
             if (thumbnails != '') { embed.setImage(thumbnails); }
 
             // reply new embed
-            let message = await channel.send(embed);
+            let message = await channel.send({ embeds: [embed] });
 
             let status = data.snippet.liveBroadcastContent;
             if (status == "upcoming") {
                 let startTime = new Date(Date.parse(data.liveStreamingDetails.scheduledStartTime));
                 let time = `${startTime.getHours().toString().padStart(2, '0')}${startTime.getMinutes().toString().padStart(2, '0')}`;
 
-                await message.react(CLOCK_A[parseInt(time[0])]).catch();
-                await message.react(CLOCK_B[parseInt(time[1])]).catch();
-                await message.react(CLOCK_Colon).catch();
-                await message.react(CLOCK_C[parseInt(time[2])]).catch();
-                await message.react(CLOCK_D[parseInt(time[3])]).catch();
+                await message.react(CLOCK_A[parseInt(time[0])]).catch(() => { });
+                await message.react(CLOCK_B[parseInt(time[1])]).catch(() => { });
+                await message.react(CLOCK_Colon).catch(() => { });
+                await message.react(CLOCK_C[parseInt(time[2])]).catch(() => { });
+                await message.react(CLOCK_D[parseInt(time[3])]).catch(() => { });
             }
-            await message.react(EMOJI_RECYCLE).catch();
+            await message.react(EMOJI_RECYCLE).catch(() => { });
         });
 
 
@@ -142,7 +145,8 @@ module.exports = {
                 !message.embeds[0].author.name ||                                       // no author name
                 !message.embeds[0].author.name.includes(`${user.toString()}`)) { return; }    // user is not author
 
-            message.delete({ timeout: 250 }).catch(console.log);
+            setTimeout(() => message.delete(), 250);
+
         });
     }
 }

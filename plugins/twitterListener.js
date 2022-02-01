@@ -82,7 +82,7 @@ const searchNewTweet = async (keyword, rtChannel) => {
         if (!tweetID || !screenName) { continue; }
 
         // post
-        const message = await rtChannel.send({ "content": `https://twitter.com/${screenName}/status/${tweetID}` });
+        const message = await rtChannel.send({ content: `https://twitter.com/${screenName}/status/${tweetID}` });
         message.react(EMOJI_RECYCLE);  // RECYCLE EMOJI
 
     }
@@ -155,7 +155,7 @@ module.exports = {
             // }
             // if (!reactionMe) { return; }
 
-            message.delete({ timeout: 250 }).catch(console.log);
+            setTimeout(() => message.delete(), 250);
         });
     }
 }

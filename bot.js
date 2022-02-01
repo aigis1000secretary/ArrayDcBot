@@ -7,7 +7,10 @@ const Discord = require('discord.js');
 module.exports = {
     async init({ botName, DISCORD_TOKEN, PLUGINS, CONFIG }) {
         // client init
-        const client = new Discord.Client({ partials: ["MESSAGE", "CHANNEL", "REACTION"] });
+        const client = new Discord.Client({
+            intents: ['GUILDS', 'GUILD_MEMBERS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS'],
+            partials: ["MESSAGE", "CHANNEL", "REACTION"]
+        });
         client.config = CONFIG;
         client.commands = new Discord.Collection();
 
@@ -28,7 +31,7 @@ module.exports = {
 
 
         // text command 
-        client.on('message', async (message) => {
+        client.on('messageCreate', async (message) => {
             // Emitted 
             for (let [key, value] of client.commands) {
                 if (!value.execute || typeof (value.execute) != "function") { continue; }
@@ -38,14 +41,14 @@ module.exports = {
             }
         });
         // for discord.js v13
-        // client.on('interactionCreate', async (interaction) => {
-        //     // Emitted 
-        //     for (let [key, value] of client.commands) {
-        //         if (!value.interacted || typeof (value.interacted) != "function") { continue; }
+        client.on('interactionCreate', async (interaction) => {
+            // Emitted 
+            for (let [key, value] of client.commands) {
+                if (!value.interacted || typeof (value.interacted) != "function") { continue; }
 
-        //         value.interacted(interaction);
-        //     }
-        // });
+                value.interacted(interaction);
+            }
+        });
 
 
 
@@ -57,7 +60,9 @@ module.exports = {
             if (!fs.existsSync("./.env")) {
                 const nowDate = new Date(Date.now());
                 const channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
-                await channel.send(`${botName} is online! <${nowDate.getHours().toString().padStart(2, '0')}:${nowDate.getMinutes().toString().padStart(2, '0')}>`)
+                const hours = nowDate.getHours().toString().padStart(2, '0');
+                const minutes = nowDate.getMinutes().toString().padStart(2, '0');
+                await channel.send({ content: `${botName} is online! <${hours}:${minutes}>` })
             }
 
             // setup
