@@ -1,16 +1,19 @@
 {
   "name": "arraydcbot",
   "version": "1.0.0",
+  "engines": {
+    "node": "16.x"
+  },
   "description": "arraydcbot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm init -y && npm i --save-dev node@16 && npm config set prefix=$(pwd)/node_modules/node && export PATH=$(pwd)/node_modules/node/bin:$PATH && exit 0",
   },
   "author": "K.T.",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^12.5.3",
+    "discord.js": "^13.3.1",
     "dotenv": "^10.0.0",
     "express": "^4.17.2",
     "pg": "^8.7.1",
