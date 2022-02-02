@@ -722,9 +722,9 @@ module.exports = {
 
             let channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
             if (channel) {
-                const hours = nowDate.getHours().toString().padStart(2, '0');
-                const minutes = nowDate.getMinutes().toString().padStart(2, '0');
-                await channel.send({ content: `BOT reboot! <${hours}:${minutes}>` });
+                const hours = nowHours.toString().padStart(2, '0');
+                const minutes = nowMinutes.toString().padStart(2, '0');
+                await channel.send({ content: `<${hours}:${minutes}> BOT reboot!` });
             }
             require('../index.js').terminate();
 

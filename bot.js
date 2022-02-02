@@ -62,7 +62,7 @@ module.exports = {
                 const channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
                 const hours = nowDate.getHours().toString().padStart(2, '0');
                 const minutes = nowDate.getMinutes().toString().padStart(2, '0');
-                await channel.send({ content: `${botName} is online! <${hours}:${minutes}>` })
+                await channel.send({ content: `<${hours}:${minutes}> ${botName} is online!` })
             }
 
             // setup
