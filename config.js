@@ -10,9 +10,9 @@ module.exports = {
             DISCORD_TOKEN: process.env.DISCORD_713624995372466179_BOTTOKEN,
             CLIENT_SECRET: process.env.DISCORD_713624995372466179_SECRET,
             RESONANCE: 'ぼた',
-            PLUGINS: ['timeTag.js', 'memberChecker.js',
-                'spambotkicker.js', 'streamStartTime.js',
-                'delmsgLogger.js', 'twitterListener.js', 'twitter.js',
+            PLUGINS: ['timeTag.js', 'memberChecker.js', 'streamStartTime.js',
+                'spambotkicker.js', 'delmsgLogger.js', 'reportThread.js',
+                'twitter.js', 'twitterListener.js',
                 // 'reactionRole.js', 'reactionVote.js', 'reboot.js', 'botResonance.js',
             ],
             CONFIG: {
@@ -90,6 +90,11 @@ module.exports = {
                         TIME_TAG_CHANNEL_ID: '828259412257800222',
                         DEBUG_TAG_LOG_CHANNEL_ID: '851618481350770738',
                     },
+
+                    reportThread: {
+                        REPORT_CHANNEL_ID: '850912764967780372',
+                        ADMIN_ROLE_ID: '766316861427023882',
+                    },
                 },
             }
         }, {
@@ -98,9 +103,9 @@ module.exports = {
             DISCORD_TOKEN: process.env.DISCORD_928492714482343997_BOTTOKEN,
             CLIENT_SECRET: process.env.DISCORD_928492714482343997_SECRET,
             RESONANCE: 'ジャキン',
-            PLUGINS: ['timeTag.js', 'memberChecker.js',
-                'spambotkicker.js', 'streamStartTime.js', 'twitter.js',
-                // 'delmsgLogger.js', 'twitterListener.js',
+            PLUGINS: ['timeTag.js', 'memberChecker.js', 'streamStartTime.js',
+                'spambotkicker.js', // 'delmsgLogger.js',
+                'twitter.js', // 'twitterListener.js',
                 // 'reactionRole.js', 'reactionVote.js', 'reboot.js', 'botResonance.js',
             ],
             CONFIG: {
@@ -166,7 +171,8 @@ module.exports = {
             RESONANCE: 'ぬる',
             PLUGINS: [
                 'spambotkicker.js',
-                'dlsitebot.js'
+                'reportThread.js',
+                'dlsitebot.js',
             ],
             CONFIG: {
                 '713622845682614302': {
@@ -188,6 +194,10 @@ module.exports = {
                         BAN_CHANNEL: '938143126843973693'
                     },
 
+                    // reportThread:{
+                    //     REPORT_CHANNEL_ID: '938342278500593714',
+                    //     ADMIN_ROLE_ID: '881775866835763240',
+                    // },
                 },
 
                 '254526419953123330': {
