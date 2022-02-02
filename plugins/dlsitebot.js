@@ -15,7 +15,7 @@ const getDLsitePage = async (index) => {
     let req, url;
 
     try {
-        url = `https://www.dlsite.com/home/announce/=/product_id/${index.toUpperCase()}.html`;
+        url = `https://www.dlsite.com/home/announce/=/product_id/${index}.html`;
 
         // request
         req = await get({ url });
@@ -232,11 +232,8 @@ module.exports = {
 
         // get permissions
         let permissions = message.channel.permissionsFor(message.member.guild.me);
-        // for (let key of [
-        //     Permissions.FLAGS.SEND_MESSAGES,
-        //     Permissions.FLAGS.EMBED_LINKS,
-        //     Permissions.FLAGS.MANAGE_MESSAGES
-        // ]) { console.log(key, permissions.has(key)) }
+        // let { SEND_MESSAGES, EMBED_LINKS, MANAGE_MESSAGES } = Permissions.FLAGS;
+        // for (let key of [SEND_MESSAGES, EMBED_LINKS, MANAGE_MESSAGES]) { console.log(key, permissions.has(key)) }
         // check permissions
         if (!permissions.has(Permissions.FLAGS.SEND_MESSAGES)) {
             console.log('Missing Permissions: SEND_MESSAGES');
@@ -248,20 +245,30 @@ module.exports = {
             return false;
         }
 
+        // keep message space
+        let embed = new MessageEmbed().setDescription('Loading...');
+        let replyMsg = await message.channel.send({ embeds: [embed] }).catch(console.log);
+
         // download dlsite page
-        let result = await getDLsitePage(index);
-        if (!result) { return false; }
+        let result = await getDLsitePage(index.toUpperCase());
+        if (!result) {
+            embed = new MessageEmbed().setColor('#FF0000').setDescription('Data Error!');
+            await replyMsg.edit({ embeds: [embed] });
+            setTimeout(() => replyMsg.delete(), 5000);
+            return false;
+        }
 
         // create Message Payload
         let messagePayload = createDLsitePageMessage(result);
-        message.channel.send(messagePayload).catch(console.log);
+        replyMsg.edit(messagePayload).catch(console.log);
 
         // check manager permissions
         if (!permissions.has(Permissions.FLAGS.MANAGE_MESSAGES)) {
             console.log('Missing Permissions: MANAGE_MESSAGES');
             return true;
+        } else {
+            message.suppressEmbeds(true).catch(console.log);
         }
-        message.suppressEmbeds(true).catch(console.log);
 
         return true;
     },
@@ -283,7 +290,7 @@ module.exports = {
             let [, index] = embed.url.match(indexReg);
 
             // download dlsite page
-            let result = await getDLsitePage(index);
+            let result = await getDLsitePage(index.toUpperCase());
             if (!result) { return true; }
 
             // create Message Payload
