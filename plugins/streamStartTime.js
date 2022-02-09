@@ -46,6 +46,8 @@ const getVideoStatus = async (vID) => {
 
 const getStreamStatus = async (vID) => {
     let data = await getVideoStatus(vID);
+    if (!data) { return false; }
+
     let status = data.snippet.liveBroadcastContent;
     if (status != "upcoming") { return false; }
 
