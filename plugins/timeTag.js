@@ -711,20 +711,37 @@ module.exports = {
             // check time
             let nowHours = new Date(Date.now()).getHours();
             let nowMinutes = new Date(Date.now()).getMinutes();
-            if (![1, 9, 17].includes(nowHours) || nowMinutes < 57) { return; }
+            if (![1, 9, 17].includes(nowHours) || nowMinutes < 55 || 58 <= nowMinutes) { return; }
 
             let reboot = true;
+            let log = [];
             for (let core of coreArray) {
                 if (core.workingVideo != null) { reboot = false; }
+
+                let userName = core.client ? core.client.user.username : "unknown client";
+                log.push(`${userName} workingVideo not null`);
             }
 
-            if (reboot === false) { return; }
-
             let channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
+
+            if (reboot === false) {
+                // keep reboot fail log
+                if (channel) {
+                    await channel.send({
+                        content: `BOT can't reboot!\n${log.join('\n')}`
+                    })
+                }
+
+                return;
+            }
+
             if (channel) {
-                const hours = nowHours.toString().padStart(2, '0');
-                const minutes = nowMinutes.toString().padStart(2, '0');
-                await channel.send({ content: `<${hours}:${minutes}> BOT reboot!` });
+                // const hours = nowHours.toString().padStart(2, '0');
+                // const minutes = nowMinutes.toString().padStart(2, '0');
+                // await channel.send({ content: `<${hours}:${minutes}> BOT reboot!` });
+
+                const nowDate = parseInt(Date.now() / 1000);
+                await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 🔁!` })
             }
             require('../index.js').terminate();
 

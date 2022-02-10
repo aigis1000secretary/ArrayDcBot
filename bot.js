@@ -58,11 +58,19 @@ module.exports = {
             // dc bot online
             console.log(`=====${botName} is online!=====`);
             if (!fs.existsSync("./.env")) {
-                const nowDate = new Date(Date.now());
+
+                // const nowDate = new Date(Date.now());
+                // const hours = nowDate.getHours().toString().padStart(2, '0');
+                // const minutes = nowDate.getMinutes().toString().padStart(2, '0');
+                // await channel.send({ content: `<${hours}:${minutes}> ${botName} is online!` })
+
                 const channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
-                const hours = nowDate.getHours().toString().padStart(2, '0');
-                const minutes = nowDate.getMinutes().toString().padStart(2, '0');
-                await channel.send({ content: `<${hours}:${minutes}> ${botName} is online!` })
+
+                const nowHours = new Date(Date.now()).getHours();
+                const nowMinutes = new Date(Date.now()).getMinutes();
+                const type = (![1, 9, 17].includes(nowHours) || nowMinutes < 55) ? '🛠️' : '⏰';
+                const nowDate = parseInt(Date.now() / 1000);
+                await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 📳! ${type}` })
             }
 
             // setup
