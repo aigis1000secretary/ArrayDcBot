@@ -43,7 +43,7 @@ class memberCheckerCore {
     apiKey;
 
     constructor(_client, config, guild, role) {
-        console.log(`    memberCheckerCore.init ${guild} @${role.name}`)
+        console.log(`····memberCheckerCore.init ${guild} @${role.name}`)
         this.client = _client;
 
         // set database var

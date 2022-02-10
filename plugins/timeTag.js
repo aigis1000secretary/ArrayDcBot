@@ -289,7 +289,7 @@ class timeTagCore {
         this.config = config;
         this.guild = guild;
         this.workingVideo = null;
-        console.log(`    timeTagCore.init ${guild} ${client.user.tag}`)
+        console.log(`····timeTagCore.init ${guild} ${client.user.tag}`)
     }
 
     async timeTagCore(cmd, args = [], line = '') {

@@ -77,7 +77,7 @@ module.exports = {
             console.log(`setup plugins(${client.commands.size}):`);
             for (let [key, value] of client.commands) {
                 if (!!value.setup && typeof (value.setup) == "function") {
-                    console.log(`  ${value.name.padEnd(20, ' ')} <${value.description}>`);
+                    console.log(`··${value.name.padEnd(20, ' ')} <${value.description}>`);
                     value.setup(client);
                 }
             }
