@@ -92,7 +92,7 @@ module.exports = {
         }
 
         if (!botPerms.has(Permissions.FLAGS.MANAGE_MESSAGES)) { return console.log("[twitterBot] MANAGE_MESSAGES"); }
-        setTimeout(() => message.delete(), 250); // Attempt at preventing client glitch where messages don't dissapear
+        setTimeout(() => message.delete().catch(() => { }), 250); // Attempt at preventing client glitch where messages don't dissapear
         return true;
     },
 
@@ -131,7 +131,7 @@ module.exports = {
             // }
             // if (!reactionMe) { return; }
 
-            setTimeout(() => message.delete(), 250);
+            setTimeout(() => message.delete().catch(() => { }), 250);
         });
     }
 }

@@ -659,7 +659,7 @@ module.exports = {
         // skip fail command form bot self
         if (resultSuccess === false && author.id == client.user.id) {
             console.log(`[TT] ${content}`);
-            message.delete().catch(console.log);    // delete bug cmd
+            message.delete().catch(() => { });    // delete bug cmd
             return true;    // skip reply
         }
 
@@ -667,7 +667,7 @@ module.exports = {
         if (resultMessage.length > 0) {
             let r = await message.channel.send({ embeds: resultMessage });
             if (resultTimeout != -1) {
-                setTimeout(() => r.delete(), resultTimeout);
+                setTimeout(() => r.delete().catch(() => { }), resultTimeout);
             }
             executed = true;
         }
@@ -695,7 +695,7 @@ module.exports = {
         }
 
         if (resultDelete) {
-            message.delete().catch(console.log);
+            message.delete().catch(() => { });
         }
 
         return executed;

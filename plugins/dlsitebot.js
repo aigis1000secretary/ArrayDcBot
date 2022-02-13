@@ -254,7 +254,7 @@ module.exports = {
         if (!result) {
             embed = new MessageEmbed().setColor('#FF0000').setDescription('Data Error!');
             await replyMsg.edit({ embeds: [embed] });
-            setTimeout(() => replyMsg.delete(), 5000);
+            setTimeout(() => replyMsg.delete().catch(() => { }), 5000);
             return false;
         }
 

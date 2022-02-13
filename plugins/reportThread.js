@@ -67,6 +67,6 @@ module.exports = {
         });
         await message.reply({ content: '投訴專用討論串已為您建立，請放心的在該討論串進行投訴', ephemeral: true });
 
-        message.delete();
+        message.delete().catch(() => { });
     }
 }

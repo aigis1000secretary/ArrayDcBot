@@ -26,7 +26,7 @@ module.exports.terminate = () => {
     let client = clients[0];
 
     for (let cID of [DEBUG_CHANNEL_ID]) {
-    // for (let cID of [DEBUG_CHANNEL_ID, '713623232070156309']) {
+        // for (let cID of [DEBUG_CHANNEL_ID, '713623232070156309']) {
         // await client.channels.fetch();
         const logChannel = client.channels.cache.get(cID);
         let delcount = 0;
@@ -37,7 +37,7 @@ module.exports.terminate = () => {
             // check time 
             if (cID == DEBUG_CHANNEL_ID && Date.now() - msg.createdTimestamp < 90000000) { continue; };
 
-            await msg.delete().then(msg => console.log(`${msg.content}`)).catch(console.error);
+            await msg.delete().then(msg => console.log(`Del msg: ${msg.content}`)).catch(() => { });
             ++delcount;
         }
         console.log(`Bulk deleted ${delcount} messages in ${logChannel.name}`)

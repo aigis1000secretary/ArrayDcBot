@@ -147,7 +147,7 @@ module.exports = {
                 !message.embeds[0].author.name ||                                       // no author name
                 !message.embeds[0].author.name.includes(`${user.toString()}`)) { return; }    // user is not author
 
-            setTimeout(() => message.delete(), 250);
+            setTimeout(() => message.delete().catch(() => { }), 250);
 
         });
     }

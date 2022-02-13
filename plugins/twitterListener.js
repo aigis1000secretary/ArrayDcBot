@@ -155,7 +155,7 @@ module.exports = {
             // }
             // if (!reactionMe) { return; }
 
-            setTimeout(() => message.delete(), 250);
+            setTimeout(() => message.delete().catch(() => { }), 250);
         });
     }
 }
