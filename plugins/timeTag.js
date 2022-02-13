@@ -607,7 +607,7 @@ module.exports = {
         // if (message.author.bot) { return false; }
 
         // get config
-        const { client, content } = message;
+        const { client, content, author } = message;
         let config = client.config[message.guild.id];
         if (!config) { return false; }
 
@@ -617,13 +617,16 @@ module.exports = {
         let executed = false;
 
         // get args
-        let resultEmoji = [], resultMessage = [], resultOutput = [], resultTimeout = -1, resultDelete = false;
+        let resultSuccess = null, resultEmoji = [], resultMessage = [], resultOutput = [], resultTimeout = -1, resultDelete = false;
         for (let line of content.split('\n')) {
             const { command, args } = config.fixMessage(line);
             if (!command) continue;
 
             let result = await core.timeTagCore(command, args);
             // collect result data
+            // success?
+            resultSuccess = resultSuccess || result.success;
+
             // emoji
             if (result.emoji) {
                 if (!resultEmoji.includes(result.emoji)) {
@@ -653,6 +656,13 @@ module.exports = {
         }
 
         // reply all data
+        // skip fail command form bot self
+        if (resultSuccess === false && author.id == client.user.id) {
+            console.log(`[TT] ${content}`);
+            message.delete().catch(console.log);    // delete bug cmd
+            return true;    // skip reply
+        }
+
         // embed array
         if (resultMessage.length > 0) {
             let r = await message.channel.send({ embeds: resultMessage });
