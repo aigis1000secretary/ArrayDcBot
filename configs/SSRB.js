@@ -11,7 +11,7 @@ module.exports = {
         'spambotkicker.js',
         'delmsgLogger.js',
         'reportThread.js',
-        'twitter.js',
+        'fxtwitter.js',
         'twitterListener.js',
         // 'reactionRole.js',
         // 'reactionVote.js', 
