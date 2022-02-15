@@ -140,7 +140,7 @@ class memberCheckerCore {
 
     // youtube api
     async getVideoSearch({ channelId = this.holoChannelID, eventType, order, publishedAfter }) {
-        console.log(`youtube.getVideoSearch`, channelId, eventType);
+        mclog(`youtube.getVideoSearch`, channelId, eventType);
         try {
             const url = 'https://www.googleapis.com/youtube/v3/search';
             const params = {
@@ -173,7 +173,7 @@ class memberCheckerCore {
         }
     }
     async getVideoStatus(vID) {
-        console.log(`youtube.getVideoStatus ${vID}`);
+        mclog(`youtube.getVideoStatus ${vID}`);
         try {
             const url = 'https://www.googleapis.com/youtube/v3/videos';
             const params = {
@@ -299,7 +299,7 @@ class memberCheckerCore {
             // next request
             pageToken = data.nextPageToken;
             let nextTime = data.pollingIntervalMillis;
-            console.log(` -- ${data.items.length.toString().padStart(3, ' ')} messages returned -- ${nextTime} ${pageToken}`)
+            mclog(` -- ${data.items.length.toString().padStart(3, ' ')} messages returned -- ${nextTime} ${pageToken}`)
             await sleep(nextTime);
 
             // get chat
@@ -798,10 +798,12 @@ app.all('/callback', async (req, res) => {
         let tag = identify.body.discriminator;
 
         // get connections data
-        for (let connect of connections.body) {
-            if (connect.type != 'youtube') { continue; }
-            cID = connect.id;
-            break;
+        if (connections.body && Array.isArray(connections.body)) {
+            for (let connect of connections.body) {
+                if (connect.type != 'youtube') { continue; }
+                cID = connect.id;
+                break;
+            }
         }
 
         // didn't found youtube cID
