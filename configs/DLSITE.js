@@ -7,7 +7,7 @@ module.exports = {
     RESONANCE: 'ぬる',
     PLUGINS: [
         'spambotkicker.js',
-        'reportThread.js',
+        // 'reportThread.js',
         'dlsitebot.js',
     ],
     CONFIG: {

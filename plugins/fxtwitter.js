@@ -5,8 +5,8 @@ const EMOJI_RECYCLE = '♻️';
 let regUrl = /https?:\/\/(www\.|mobile\.)?twitter\.com\/(\S+)\/status\/(\d+)/;
 
 module.exports = {
-    name: 'reactionVote',
-    description: "Sets up some reaction for vote!",
+    name: 'fxtwitter',
+    description: "emoji it to fxtwittr!",
     // execute(message) { },
     setup(client) {
         client.on('messageReactionAdd', async (reaction, user) => {

@@ -887,8 +887,10 @@ const getVideoStatus = async (vID) => {
             if (keyValid) { return await getVideoStatus(vID); }
         }
 
-        console.log(error.errors[0]);
-        console.log(error);
+        else {
+            console.log(error.errors[0]);
+            console.log(error);
+        }
         return null;
     }
 }

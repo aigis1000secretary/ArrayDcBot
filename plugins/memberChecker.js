@@ -168,7 +168,9 @@ class memberCheckerCore {
                 // }
             }
 
-            console.log(error);
+            else {
+                console.log(error);
+            }
             return [];
         }
     }
@@ -200,8 +202,10 @@ class memberCheckerCore {
                 // }
             }
 
-            console.log(error.errors[0]);
-            console.log(error);
+            else {
+                console.log(error.errors[0]);
+                console.log(error);
+            }
             return null;
         }
     }
@@ -236,29 +240,27 @@ class memberCheckerCore {
             }
 
             // liveChatEnded
-            if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'liveChatEnded') {
+            else if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'liveChatEnded') {
                 console.log(`liveChatEnded!`);
                 // clear cache
                 // this.cacheStreamList = {};
                 this.cacheMemberList = [];
-                this.cacheStreamID = null;
-                return null;
             }
 
             // forbidden
-            if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'forbidden' &&
-                error.message == 'You do not have the necessary permissions to retrieve messages for the specified chat.'
+            else if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'forbidden'
+                // && error.message == 'You do not have the necessary permissions to retrieve messages for the specified chat.'
             ) {
-                console.log(`forbidden!`);
+                console.log(`forbidden!`, error.message);
                 // clear cache
                 this.cacheStreamList = {};
                 this.cacheMemberList = [];
-                this.cacheStreamID = null;
-                return null;
             }
 
-            console.log('Oops!');
-            console.log(error);
+            else {
+                console.log('Oops!');
+                console.log(error);
+            }
             this.cacheStreamID = null;
             return null;
         }

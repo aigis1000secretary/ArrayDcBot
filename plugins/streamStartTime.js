@@ -39,7 +39,9 @@ const getVideoStatus = async (vID) => {
             if (keyValid) { return await getVideoStatus(vID); }
         }
 
-        console.log(error);
+        else {
+            console.log(error);
+        }
         return null;
     }
 }
