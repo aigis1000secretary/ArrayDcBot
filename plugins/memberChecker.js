@@ -82,9 +82,11 @@ class memberCheckerCore {
         // check expires user
         await this.checkExpiresUser();
 
-        // debug
-        // this.cacheStreamLists();
-        // await this.traceStreamChat();
+        // if (fs.existsSync("./.env")) {
+        //     // debug
+        //     this.cacheStreamLists();
+        //     await this.traceStreamChat();
+        // }
 
         // clock
         let interval = setInterval(async () => {
@@ -428,9 +430,9 @@ class memberCheckerCore {
                 this.pgUpdateExpires(dID, 0);
                 user.roles.remove(this.memberRole).catch(console.log);
             }
-            if (!isChatSponsor && !isSpecalUser && dbItem[this.expiresKey] > 0) {
+            if (!isChatSponsor && !isSpecalUser) {
                 mclog(`found dc user, Delete apply! : ${chatMessage.authorDetails.displayName}`);
-                this.dcPushEmbed(new MessageEmbed().setColor('ORANGE').setDescription(`申請無效, 清除申請: ${user.user.tag} ${user.toString()}`));
+                this.dcPushEmbed(new MessageEmbed().setColor('ORANGE').setDescription(`${dbItem[this.expiresKey] > 0 ? '申請無效, 清除申請' : '申請無效'}: ${user.user.tag} ${user.toString()}`));
                 this.pgUpdateExpires(dID, 0);
             }
         }
@@ -676,7 +678,7 @@ module.exports = {
                     if (expires == 0) { continue; }
 
                     let t = (expires - Date.now()) / (1000 * 60 * 60);
-                    let timeLeft = `${parseInt(t / 24).toString().padStart(2, ' ')}days ${parseInt(t % 24).toString().padStart(2, ' ')}hours`;
+                    let timeLeft = `${parseInt(t / 24).toString().padStart(3, ' ')}days ${parseInt(t % 24).toString().padStart(2, ' ')}hours`;
                     let dateLimit = new Date(expires).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }).padStart(23, ' ');
 
                     mclog(dID, yID, timeLeft, dateLimit, expires);
@@ -696,18 +698,31 @@ module.exports = {
                 continue;
             }
             if (command == 'freechat') {
+
+                if (args[0]) {
+                    // force update stream list cache
+                    let vID = args[0].trim();
+                    core.cacheStreamList[vID] = await core.getVideoStatus(vID);
+                } else if (isLogChannel) {
+                    // force update all stream list cache by admin
+                    await core.cacheStreamLists();
+                    core.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`更新直播表`));
+                }
+
                 core.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`手動認證: ${message.author.tag} ${message.author.toString()}`));
 
-                // await core.cacheStreamLists();
+                mclog(`[MC] freechat keys: ${Object.keys(core.cacheStreamList).length}`);
 
                 let vIDs = Object.keys(core.cacheStreamList);
                 for (let vID of vIDs) {
                     // get cache
                     let video = core.cacheStreamList[vID];
+                    mclog(`[MC] ${vID} ${video ? 'Object' : video}`);
                     if (!video) { continue; }
 
                     // check stream start time
                     let status = video.snippet.liveBroadcastContent;
+                    mclog(`${status.padStart(12, ' ')} <${video.snippet.title}>`);
                     if (status != 'upcoming') { continue; }
 
                     // start trace

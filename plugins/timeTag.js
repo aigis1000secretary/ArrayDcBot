@@ -395,7 +395,7 @@ class timeTagCore {
             // reply
             return { success: true, emoji: EMOJI_OCTAGONAL_SIGN, output: array };
 
-        } else if (cmd == 't' || /t[\+\-]?\d+/i.test(cmd)) {
+        } else if (cmd == 't' || /^t[\+\-]?\d+/i.test(cmd)) {
             // check working video
             if (this.workingVideo == null) {
                 // message.channel.send({ content: 'There is no live on work' });
