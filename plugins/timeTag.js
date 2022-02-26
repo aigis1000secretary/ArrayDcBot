@@ -753,6 +753,7 @@ module.exports = {
                 const nowDate = parseInt(Date.now() / 1000);
                 await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 🔁!` })
             }
+            console.log(`=====BOT reboot!=====`);
             require('../index.js').terminate();
 
         }, 3 * 60 * 1000);  // check every 3min

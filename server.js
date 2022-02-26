@@ -12,13 +12,33 @@ app.all('/uptimerobot/', (req, res) => {
    res.write('uptimerobot');
    res.end();
 })
+app.all('/uptimeinterval/', (req, res) => {
+   res.write('uptimeinterval');
+   res.end();
+})
+
+// keep online
+let interval = null;
+const request = require('request');
+const get = require('util').promisify(request.get);
 
 module.exports = {
    app,
    init() {
       server = app.listen(process.env.PORT || 3000, () => { console.log("HTTP Server is online!") });
+
+      // const res = get({ url: 'https://arraydcbot.herokuapp.com/uptimeinterval/', json: true }).then(console.log)
+      setInterval(() => {
+         const res = get({ url: 'https://arraydcbot.herokuapp.com/uptimeinterval/', json: true })
+            .catch(() => { });
+      }, 5 * 60 * 1000);  // check every 5min
    },
    terminate() {
+
+      if (interval != null) {
+         clearInterval(interval);
+      }
+
       server.close();
    }
 };
