@@ -367,6 +367,7 @@ class memberCheckerCore {
     }
     async readStreamChatData(data = { items: [] }, clear = false) {
         if (clear) { clear = []; }
+        if (!data) { data = { items: [] } }
         // get all message
         for (let chatMessage of data.items) {
             // check user is Chat Sponsor or not
