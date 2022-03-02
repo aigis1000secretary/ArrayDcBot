@@ -726,10 +726,11 @@ module.exports = {
             let reboot = true;
             let log = [];
             for (let core of coreArray) {
-                if (core.workingVideo != null) { reboot = false; }
-
-                let userName = core.client ? core.client.user.username : "unknown client";
-                log.push(`${userName} workingVideo not null`);
+                if (core.workingVideo == null) { continue; }
+                
+                reboot = false;
+                let userName = core.client ? core.client.user.username : "UNKNOWN";
+                log.push(`${userName} workingVideo not null <http://youtu.be/${core.workingVideo.vID}>`);
             }
 
             let channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
