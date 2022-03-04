@@ -9,6 +9,7 @@ module.exports = {
         'spambotkicker.js',
         // 'reportThread.js',
         'dlsitebot.js',
+        'reboot.js',
     ],
     CONFIG: {
         '713622845682614302': {

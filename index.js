@@ -10,6 +10,8 @@ module.exports.terminate = () => {
         client.emit('close');
     }
     server.terminate();
+    
+    process.exit(1);
 };
 
 (async () => {
