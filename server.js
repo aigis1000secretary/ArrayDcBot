@@ -28,7 +28,7 @@ module.exports = {
       server = app.listen(process.env.PORT || 3000, () => { console.log("HTTP Server is online!") });
 
       // const res = get({ url: 'https://arraydcbot.herokuapp.com/uptimeinterval/', json: true }).then(console.log)
-      setInterval(() => {
+      interval = setInterval(() => {
          const res = get({ url: 'https://arraydcbot.herokuapp.com/uptimeinterval/', json: true })
             .catch(() => { });
       }, 5 * 60 * 1000);  // check every 5min
@@ -39,6 +39,6 @@ module.exports = {
          clearInterval(interval);
       }
 
-      server.close();
+      server.close(() => { console.log("HTTP Server is offline!") });
    }
 };

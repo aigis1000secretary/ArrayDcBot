@@ -721,7 +721,10 @@ module.exports = {
             // check time
             let nowHours = new Date(Date.now()).getHours();
             let nowMinutes = new Date(Date.now()).getMinutes();
-            if (![1, 9, 17].includes(nowHours) || nowMinutes < 55 || 58 <= nowMinutes) { return; }
+            // reboot at 01:55, 09:55, 17:55
+            if ([1, 9, 17].includes(nowHours) && nowMinutes >= 55) {
+                // reboot = true;
+            } else { return; }
 
             let reboot = true;
             let log = [];

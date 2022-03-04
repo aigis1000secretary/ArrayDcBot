@@ -68,7 +68,10 @@ module.exports = {
 
                 const nowHours = new Date(Date.now()).getHours();
                 const nowMinutes = new Date(Date.now()).getMinutes();
-                const type = (![1, 9, 17].includes(nowHours) || nowMinutes < 55) ? '🛠️' : '⏰';
+                const rebooted =
+                    ([1, 9, 17].includes(nowHours) && nowMinutes >= 55) ||  // in reboot time
+                    ([2, 10, 18].includes(nowHours) && nowMinutes < 5);     // really reboot time
+                const type = rebooted ? '⏰' : '🛠️';
                 const nowDate = parseInt(Date.now() / 1000);
                 await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 📳! ${type}` })
             }
