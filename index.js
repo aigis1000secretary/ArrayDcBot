@@ -1,16 +1,38 @@
 
 require('dotenv').config();
-const { DEBUG_CHANNEL_ID } = require('./config.js');
+const { DEBUG_CHANNEL_ID, HEROKU_TOKEN } = require('./config.js');
 const server = require('./server.js');
 function sleep(ms) { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
 
 let clients = [];
-module.exports.terminate = () => {
+module.exports.terminate = async () => {
     for (let client of clients) {
         client.emit('close');
     }
     server.terminate();
-    
+
+    if (!require('fs').existsSync("./.env")) {
+        // heroku API
+        const apiUrl = 'https://api.heroku.com';
+        const app_id_or_name = 'arraydcbot';
+        const dyno_id_or_name = 'web.1';
+        // util promisify
+        const requestGet = require('util').promisify(require('request').get);
+        const requestDelete = require('util').promisify(require('request').delete);
+
+        // restart by heroku API
+        await requestDelete({
+            url: `${apiUrl}/apps/${app_id_or_name}/dynos/${dyno_id_or_name}`,
+            headers: {
+                Accept: 'application/vnd.heroku+json; version=3',
+                Authorization: `Bearer ${HEROKU_TOKEN}`
+            },
+            json: true
+        });
+
+        await sleep(5000);
+    }
+
     process.exit(1);
 };
 

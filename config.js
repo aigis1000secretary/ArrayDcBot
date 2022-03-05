@@ -17,6 +17,8 @@ module.exports = {
 
     DEBUG_CHANNEL_ID: '826992877925171250',
 
+    HEROKU_TOKEN: process.env.HEROKU_TOKEN,
+
     TWITTER: {
         CONSUMER_KEY: process.env.TWITTER_CONSUMER_KEY,
         CONSUMER_SECRET: process.env.TWITTER_CONSUMER_SECRET,
