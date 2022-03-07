@@ -722,7 +722,7 @@ module.exports = {
             let nowHours = new Date(Date.now()).getHours();
             let nowMinutes = new Date(Date.now()).getMinutes();
             // reboot at 01:55, 09:55, 17:55
-            if ([1, 9, 17].includes(nowHours) && nowMinutes >= 55) {
+            if ([1, 9, 17].includes(nowHours) && nowMinutes >= 55 && nowMinutes < 58) {
                 // reboot = true;
             } else { return; }
 
@@ -730,7 +730,7 @@ module.exports = {
             let log = [];
             for (let core of coreArray) {
                 if (core.workingVideo == null) { continue; }
-                
+
                 reboot = false;
                 let userName = core.client ? core.client.user.username : "UNKNOWN";
                 log.push(`${userName} workingVideo not null <http://youtu.be/${core.workingVideo.vID}>`);
