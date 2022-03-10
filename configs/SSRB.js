@@ -31,7 +31,7 @@ module.exports = {
                 return { args, command }
             },
 
-            delmsgLogger: { LOG_CHANNEL_ID: '713623232070156309', },
+            // delmsgLogger: { LOG_CHANNEL_ID: '713623232070156309', },
 
             twitterListener: [{
                 RETWEET_CHANNEL_ID: '928838586957197345',

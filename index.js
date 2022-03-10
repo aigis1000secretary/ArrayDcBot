@@ -43,7 +43,7 @@ module.exports.terminate = async () => {
     let bot = require('./bot.js')
     for (let config of require('./config.js').DISCORD.BOT) {
         clients.push(await bot.init(config));
-        await sleep(100);
+        await sleep(500);
     }
 
     await sleep(1000);
