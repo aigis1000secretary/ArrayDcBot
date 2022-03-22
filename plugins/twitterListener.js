@@ -118,7 +118,7 @@ module.exports = {
 
         client.on("messageReactionAdd", async (reaction, user) => {
             if (reaction.message.partial) await reaction.message.fetch();
-            if (reaction.partial) await reaction.fetch();
+            if (reaction.partial) await reaction.fetch().catch(() => { });
             if (reaction.users.partial) await reaction.users.fetch();
 
             // skip other emoji
