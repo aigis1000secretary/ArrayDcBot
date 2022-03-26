@@ -657,13 +657,13 @@ module.exports = {
         if (resultOutput.length > 0) {
             let channel = core.client.channels.cache.get(core.config.TIME_TAG_CHANNEL_ID)
             if (channel) {
-                while (resultOutput.length >= 3) {
+                while (resultOutput.length > 3) {
                     let r = await channel.send({ embeds: [resultOutput.shift(), resultOutput.shift(), resultOutput.shift()] });
                     if (resultTimeout != -1) {
                         setTimeout(() => r.delete().catch(() => { }), resultTimeout);
                     }
                 }
-                await channel.send({ embeds: resultOutput });
+                await channel.send({ embeds: resultOutput }).catch(e => { console.log(e.name || e) });
             } else {
                 console.log(`ERR! cant output message to <#${core.config.TIME_TAG_CHANNEL_ID}>`)
             }
