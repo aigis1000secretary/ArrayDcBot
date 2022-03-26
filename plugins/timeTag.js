@@ -120,40 +120,16 @@ class youtubeVideo {
     }
 
     // only call by core
-    delTag(text, time = null) {
-        let targets = this.tagList.filter(tag => tag.text == text);
+    delTag(time) {
+        let targets = this.tagList.filter(tag => tag.time == time);
         if (targets.length < 1) { return false; }
-        else if (targets.length == 1) {
+        else if (targets.length >= 1) {
+            let text = targets[0].text;
+            // log
+            let del = `${time} ${text}`;
             // del tag
-            let del = `${parseInt(targets[0].time / 1000)} ${targets[0].text}`;
-            this.tagList = this.tagList.filter(tag => !(tag.text == text));
+            this.tagList = this.tagList.filter(tag => !(tag.text == text && tag.time == time));
             return del;
-
-        } else if (time == null) {  // targets.length > 1
-            // find the last tag
-            let nTime = 0;
-            for (let tar of targets) {
-                nTime = Math.max(nTime, tar.time);
-            }
-
-            // del tag
-            let del = `${parseInt(nTime / 1000)} ${targets[0].text}`;
-            this.tagList = this.tagList.filter(tag => !(tag.text == text && tag.time == nTime));
-            return del;
-            // } else if (time != null) {  // targets.length > 1
-            //     // find the most close tag
-            //     let nTime = time, dTime = Infinity;
-            //     for (let tar of targets) {
-            //         if (Math.abs(tar.time - time) < dTime) {
-            //             dTime = Math.min(Math.abs(tar.time - time), dTime);
-            //             nTime = tar.time;
-            //         }
-            //     }
-
-            //     // del tag
-            //     let del = `${parseInt(nTime / 1000)} ${targets[0].text}`;
-            //     this.tagList = this.tagList.filter(tag => !(tag.text == text && tag.time == nTime));
-            //     return del;
         }
         return false;
     }
@@ -366,7 +342,7 @@ class timeTagCore {
                 "確認當前TAG紀錄",
                 "```!tags```",
                 "刪除TAG",
-                "```!deltag <TAG>```",
+                "```!deltag <TIME>```",
                 "結束標記",
                 "```!yt_end```"
             ].join('\n');
@@ -548,26 +524,20 @@ class timeTagCore {
             if (args.length <= 0) {
                 let embed = new MessageEmbed()
                     .setColor('YELLOW')
-                    .setDescription(`!deltag <TAG>`);
+                    .setDescription(`!deltag <TIME>`);
 
                 return { success: false, message: [embed] };
             }
 
             let r = false;
-            if (args.length == 1) {
-                r = await this.workingVideo.delTag(line);
-            } else {
-                // get args time
-                let timeStr, newTag;
-                let match = [, timeStr, newTag] = line.match(/^(\d+:\d+:\d+|\d+:\d+|\d+)\s+([\s\S]+)$/i);
-
+            if (args[0].match(/(\d+:\d+:\d+|\d+:\d+|\d+)/)) {
                 // get time in sec
-                let th = 0, tm = 0, ts = 0;
-                if (match = timeStr.match(/(\d+):(\d+):(\d+)/)) {
+                let match, th = 0, tm = 0, ts = 0;
+                if (match = args[0].match(/(\d+):(\d+):(\d+)/)) {
                     [, th, tm, ts] = match;
-                } else if (match = timeStr.match(/(\d+):(\d+)/)) {
+                } else if (match = args[0].match(/(\d+):(\d+)/)) {
                     [, tm, ts] = match;
-                } else if (match = timeStr.match(/(\d+)/)) {
+                } else if (match = args[0].match(/(\d+)/)) {
                     [, ts] = match;
                 }
                 th = parseInt(th || 0);
@@ -576,7 +546,7 @@ class timeTagCore {
                 // console.log(th, tm, ts, newTag);
 
                 let timeInSec = th * 60 * 60 + tm * 60 + ts;
-                r = await this.workingVideo.delTag(newTag, parseInt(timeInSec * 1000));
+                r = await this.workingVideo.delTag(parseInt(timeInSec * 1000));
             }
 
             if (r) {
@@ -792,7 +762,7 @@ module.exports = {
             if (!config) { return false; }
 
             const core = coreArray.find((core) => { return (core.client.user.id == client.user.id && core.guild.id == message.guild.id); });
-            if (!core) { return false; }
+            if (!core || !core.workingVideo) { return false; }
 
             // get message time
             let resultEmoji = [];
