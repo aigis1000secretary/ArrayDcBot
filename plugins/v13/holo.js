@@ -124,9 +124,8 @@ const getVideoStatus = async (vID) => {
         if (data.pageInfo.totalResults == 0) { throw 'video not found.'; }
 
         return data.items[0];
-    } catch (e) {
-        console.log(e.errors[0]);
-        console.log(e);
+    } catch (error) {
+        console.log(error.errors || error);
         return null;
     }
 }

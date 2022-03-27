@@ -875,8 +875,7 @@ const getVideoStatus = async (vID) => {
         }
 
         else {
-            console.log(error.errors[0]);
-            console.log(error);
+            console.log(error.errors || error);
         }
         return null;
     }

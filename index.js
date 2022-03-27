@@ -49,9 +49,10 @@ module.exports.terminate = async () => {
     await sleep(1000);
     let client = clients[0];
 
-    // let channelList = [DEBUG_CHANNEL_ID, '713623232070156309'];
-    let channelList = [DEBUG_CHANNEL_ID];
-    
+    let channelList = false
+        || [DEBUG_CHANNEL_ID]
+        || [DEBUG_CHANNEL_ID, '713623232070156309'];
+
     // for (let cID of channelList) {
     //     const logChannel = client.channels.cache.get(cID);
     //     logChannel.bulkDelete(100)
