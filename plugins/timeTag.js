@@ -121,14 +121,14 @@ class youtubeVideo {
 
     // only call by core
     delTag(time) {
-        let targets = this.tagList.filter(tag => tag.time == time);
+        let targets = this.tagList.filter(tag => parseInt(tag.time / 1000) == parseInt(time / 1000));
         if (targets.length < 1) { return false; }
         else if (targets.length >= 1) {
             let text = targets[0].text;
             // log
             let del = `${time} ${text}`;
             // del tag
-            this.tagList = this.tagList.filter(tag => !(tag.text == text && tag.time == time));
+            this.tagList = this.tagList.filter(tag => !(tag.text == text && parseInt(tag.time / 1000) == parseInt(time / 1000)));
             return del;
         }
         return false;
@@ -468,12 +468,12 @@ class timeTagCore {
             }
 
             // check arg
-            let timeStr, newTag;
-            let match = [, timeStr, newTag] = line.match(/^(\d+:\d+:\d+|\d+:\d+|\d+)\s+([\s\S]+)$/i);
+            let match = line.match(/^(\d+:\d+:\d+|\d+:\d+|\d+)\s+([\s\S]+)$/i);
+            let [, timeStr, newTag] = match || [, null, null];
             if (args.length < 2 || !match || !timeStr || !newTag) {
                 let embed = new MessageEmbed()
                     .setColor('YELLOW')
-                    .setDescription(`!set hh:mm:ss <TAG>`);
+                    .setDescription(`!${cmd} ${line}\n!set hh:mm:ss <TAG>`);
 
                 return { success: false, message: [embed] };
             }
