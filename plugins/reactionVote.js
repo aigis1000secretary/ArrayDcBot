@@ -15,7 +15,7 @@ module.exports = {
         // get message
         const lines = content.split('\n');
         for (const line of lines) {
-            if (!line.includes('=')) { return false; }
+            if (!line.includes('=')) { continue; }
 
             const split = line.split('=');
             const emoji = split[0].trim();

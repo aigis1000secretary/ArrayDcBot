@@ -5,7 +5,8 @@ module.exports = {
     DISCORD_TOKEN: process.env.DISCORD_713624995372466179_BOTTOKEN,
     CLIENT_SECRET: process.env.DISCORD_713624995372466179_SECRET,
     RESONANCE: 'ぼた',
-    PLUGINS: ['timeTag.js',
+    PLUGINS: [
+        'timeTag.js',
         'memberChecker.js',
         'streamStartTime.js',
         'spambotkicker.js',
@@ -13,8 +14,9 @@ module.exports = {
         'reportThread.js',
         'fxtwitter.js',
         'twitterListener.js',
+        'memberCounter.js',
         // 'reactionRole.js',
-        // 'reactionVote.js', 
+        'reactionVote.js',
         // 'reboot.js', 
         // 'botResonance.js',
     ],
@@ -83,7 +85,7 @@ module.exports = {
             },
 
             // reactionRole: { RULE_CHANNEL_ID: '767724012934791168' },
-            // reactionVote: { VOTE_CHANNELS: ['827129069178978324'] },
+            reactionVote: { VOTE_CHANNELS: ['827129069178978324'] },
 
             timeTag: {
                 TIME_TAG_CHANNEL_ID: '828259412257800222',
@@ -94,6 +96,8 @@ module.exports = {
                 REPORT_CHANNEL_ID: '850912764967780372',
                 ADMIN_ROLE_ID: '766316861427023882',
             },
+
+            memberCounter: { COUNTER_CHANNEL_ID: '860528144367878154', },
         },
     }
 }
