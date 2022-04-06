@@ -13,13 +13,12 @@ module.exports = {
         if (!config.reactionVote.VOTE_CHANNELS.includes(channel.id)) { return false; }
 
         // get message
-        const lines = content.split('\n');
-        for (const line of lines) {
+        for (const line of content.split('\n')) {
             if (!line.includes('=')) { continue; }
 
             const split = line.split('=');
             const emoji = split[0].trim();
-            message.react(emoji);
+            message.react(emoji).catch(console.log);
         }
     }
 }
