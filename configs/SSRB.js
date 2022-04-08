@@ -19,6 +19,7 @@ module.exports = {
         'reactionVote.js',
         // 'reboot.js', 
         // 'botResonance.js',
+        'welcomeMsg.js',
     ],
     CONFIG: {
         '713622845682614302': {
@@ -98,6 +99,11 @@ module.exports = {
             },
 
             memberCounter: { COUNTER_CHANNEL_ID: '860528144367878154', },
+
+            welcomeMsg: {
+                WELCOME_CHANNEL_ID: '781156278252208169',
+                WELCOME_MSG: '`歡迎${memberName}加入，請先去<#767724012934791168>看一下規則然後拿取你的身份組，<#781159554159345724>這邊有群組內的導覽。`'
+            }
         },
     }
 }
