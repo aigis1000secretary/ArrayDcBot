@@ -265,7 +265,9 @@ class timeTagCore {
         this.config = config;
         this.guild = guild;
         this.workingVideo = null;
-        console.log(`····timeTagCore.init ${guild} ${client.user.tag}`)
+        if (require('fs').existsSync("./.env")) {
+            console.log(`····timeTagCore.init ${guild} ${client.user.tag}`)
+        }
     }
 
     async timeTagCore(cmd, args = [], line = '') {
@@ -700,15 +702,25 @@ module.exports = {
 
         // auto reboot by time
         let interval = setInterval(async () => {
+            // reboot flag
+            let reboot = false;
+
             // check time
             let nowHours = new Date(Date.now()).getHours();
             let nowMinutes = new Date(Date.now()).getMinutes();
-            // reboot at 01:55, 09:55, 17:55
+            // reboot at 01:55, 09:55, 17:55 (every 8hr)
             if ([1, 9, 17].includes(nowHours) && nowMinutes >= 55 && nowMinutes < 58) {
-                // reboot = true;
-            } else { return; }
+                reboot = true;
+            }
 
-            let reboot = true;
+            // check up time
+            let uptimeInSec = parseInt(client.uptime / 1000);
+            // uptime < 5hr skip this reboot
+            if (uptimeInSec < 18000) {
+                reboot = false;
+            }
+
+            // check tag core working Video
             let log = [];
             for (let core of coreArray) {
                 if (core.workingVideo == null) { continue; }
@@ -718,29 +730,31 @@ module.exports = {
                 log.push(`${userName} workingVideo not null <http://youtu.be/${core.workingVideo.vID}>`);
             }
 
+            // get log channel            
             let channel = client.channels.cache.get(DEBUG_CHANNEL_ID);
 
-            if (reboot === false) {
-                // keep reboot fail log
+            if (reboot) {
+                // log reboot time
                 if (channel) {
-                    await channel.send({
-                        content: `BOT can't reboot!\n${log.join('\n')}`
-                    })
+                    // const hours = nowHours.toString().padStart(2, '0');
+                    // const minutes = nowMinutes.toString().padStart(2, '0');
+                    // await channel.send({ content: `<${hours}:${minutes}> BOT reboot!` });
+
+                    const nowDate = parseInt(Date.now() / 1000);
+                    await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 🔁!` })
                 }
+                // reboot
+                console.log(`=====BOT reboot!=====`);
+                require('../index.js').terminate();
 
-                return;
+            } else if (log.length > 0 && channel) {
+                // keep reboot fail log
+                await channel.send({
+                    content: `BOT can't reboot!\n${log.join('\n')}`
+                });
             }
 
-            if (channel) {
-                // const hours = nowHours.toString().padStart(2, '0');
-                // const minutes = nowMinutes.toString().padStart(2, '0');
-                // await channel.send({ content: `<${hours}:${minutes}> BOT reboot!` });
-
-                const nowDate = parseInt(Date.now() / 1000);
-                await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 🔁!` })
-            }
-            console.log(`=====BOT reboot!=====`);
-            require('../index.js').terminate();
+            return;
 
         }, 3 * 60 * 1000);  // check every 3min
         client.once('close', () => {

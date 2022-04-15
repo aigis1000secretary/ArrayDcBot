@@ -74,7 +74,9 @@ module.exports.terminate = async () => {
             await msg.delete().catch(() => { });
             ++delcount;
         }
-        console.log(`Bulk deleted ${delcount} messages in ${logChannel.name}`)
+        if (require('fs').existsSync("./.env")) {
+            console.log(`Bulk deleted ${delcount} messages in ${logChannel.name}`)
+        }
     }
 
 })();//*/
