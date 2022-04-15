@@ -55,6 +55,10 @@ const searchNewTweet = async (keyword, rtChannel) => {
         if (response.statuses && Array.isArray(response.statuses) && response.statuses.length > 0) {
             results = results.concat(response.statuses);
         }
+        if (results.length <= 0 || !results[results.length - 1]) {
+            console.log(JSON.stringify(results, null, 2));
+            break;
+        }
         // check time range
         let ct = new Date(Date.parse(results[results.length - 1].created_at));
         if (lastHour < ct) {
