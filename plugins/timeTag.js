@@ -720,6 +720,8 @@ module.exports = {
                 reboot = false;
             }
 
+            if (!reboot) { return; }
+
             // check tag core working Video
             let log = [];
             for (let core of coreArray) {
