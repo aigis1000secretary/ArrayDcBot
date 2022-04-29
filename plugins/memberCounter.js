@@ -16,7 +16,7 @@ module.exports = {
                 const channel = guild.channels.cache.get(cID);
                 const channelName = channel.name;
 
-                await channel.setName(`群組人數: ${memberCount.toLocaleString()}`);
+                await channel.setName(`群組人數: ${memberCount.toLocaleString()}`).catch(console.log);
 
                 if (channelName != channel.name) {
                     console.log('Updating Member Count');
