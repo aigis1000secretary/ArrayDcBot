@@ -169,43 +169,32 @@ const createDLsitePageMessage = (result) => {
         embed.setImage(`${result.thumb[0]}`);
 
         // image switch button
-        if (result.thumb.length > 1) {
-            // get last img tag
-            let [, imgTag] = result.thumb[1].match(/_img_([^\.\d]+)/);
+        // get last img tag
+        let disabled = !result.thumb[1];
+        let [, imgTag] = !disabled ? result.thumb[1].match(/_img_([^\.\d]+)/) : [, 'null'];
 
-            components = [new MessageActionRow()
-                .addComponents(
-                    new MessageButton()
-                        .setStyle("PRIMARY")
-                        .setLabel("|<")
-                        .setCustomId("dlThumbMain")
-                )
-                .addComponents(
-                    new MessageButton()
-                        .setStyle("PRIMARY")
-                        .setLabel("<<")
-                        .setCustomId("dlThumbPrve")
-                )
-                .addComponents(
-                    new MessageButton()
-                        .setStyle("PRIMARY")
-                        .setLabel(`1/${result.thumb.length}`)
-                        .setCustomId("dlThumbNum")
-                )
-                .addComponents(
-                    new MessageButton()
-                        .setStyle("PRIMARY")
-                        .setLabel(">>")
-                        .setCustomId("dlThumbNext")
-                )
-                .addComponents(
-                    new MessageButton()
-                        .setStyle("PRIMARY")
-                        .setLabel(">|")
-                        .setCustomId(`dlThumbEnd ${imgTag} ${result.thumb.length}`)
-                )
-            ];
-        }
+        components = [new MessageActionRow()
+            .addComponents(new MessageButton().setStyle("PRIMARY").setDisabled(disabled)
+                .setLabel("|<")
+                .setCustomId("dlThumbMain")
+            )
+            .addComponents(new MessageButton().setStyle("PRIMARY").setDisabled(disabled)
+                .setLabel("<<")
+                .setCustomId("dlThumbPrve")
+            )
+            .addComponents(new MessageButton().setStyle("PRIMARY")
+                .setLabel(`1/${result.thumb.length}`)
+                .setCustomId("dlThumbNum")
+            )
+            .addComponents(new MessageButton().setStyle("PRIMARY").setDisabled(disabled)
+                .setLabel(">>")
+                .setCustomId("dlThumbNext")
+            )
+            .addComponents(new MessageButton().setStyle("PRIMARY").setDisabled(disabled)
+                .setLabel(">|")
+                .setCustomId(`dlThumbEnd ${imgTag} ${result.thumb.length}`)
+            )
+        ];
     }
 
     return { embeds: [embed], components };
@@ -254,7 +243,7 @@ module.exports = {
         if (!result) {
             embed = new MessageEmbed().setColor('#FF0000').setDescription('Data Error!');
             await replyMsg.edit({ embeds: [embed] });
-            setTimeout(() => replyMsg.delete().catch(() => { }), 5000);
+            setTimeout(() => replyMsg.delete().catch(() => { }), 30000);
             return false;
         }
 
