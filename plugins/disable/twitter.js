@@ -98,8 +98,8 @@ module.exports = {
 
     setup(client) {
         client.on("messageReactionAdd", async (reaction, user) => {
-            if (reaction.message.partial) await reaction.message.fetch();
-            if (reaction.partial) await reaction.fetch();
+            if (reaction.message.partial) await reaction.message.fetch().catch(() => { });
+            if (reaction.partial) await reaction.fetch().catch(() => { });
 
             // get msg data
             const message = reaction.message;
@@ -126,7 +126,7 @@ module.exports = {
             // // if (!reaction.me) { return console.log(`[twitterBot] reaction.me = ${reaction.me}`); }   // reaction.me only work once?
             // let reactionMe = reaction.users.cache.has(guild.me.id);
             // if (!reactionMe) {
-            //     await reaction.users.fetch();   // re-check cache
+            //     await reaction.users.fetch().catch(() => { });   // re-check cache
             //     reactionMe = reaction.users.cache.has(guild.me.id);
             // }
             // if (!reactionMe) { return; }

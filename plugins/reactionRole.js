@@ -7,8 +7,8 @@ const reactionRole = async (reaction, user, add) => {
     // skip DM
     if (!reaction.message.guild) return;
     // get full message
-    if (reaction.message.partial) await reaction.message.fetch();
-    if (reaction.partial) await reaction.fetch();
+    if (reaction.message.partial) await reaction.message.fetch().catch(() => { });
+    if (reaction.partial) await reaction.fetch().catch(() => { });
 
     const message = reaction.message;
 

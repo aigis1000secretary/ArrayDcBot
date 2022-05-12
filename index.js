@@ -60,7 +60,7 @@ module.exports.terminate = async () => {
     //         .catch(console.error);
     // }
     for (let cID of channelList) {
-        // await client.channels.fetch();
+        // await client.channels.fetch().catch(() => { });
         const logChannel = client.channels.cache.get(cID);
         let delcount = 0;
         let msgs = await logChannel.messages.fetch(true);

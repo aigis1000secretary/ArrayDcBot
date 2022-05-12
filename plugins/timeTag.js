@@ -766,7 +766,7 @@ module.exports = {
 
         const reactionRole = async (reaction, user, add) => {
             if (reaction.emoji.name != EMOJI_LABEL) { return false; }
-            if (reaction.message.partial) await reaction.message.fetch();
+            if (reaction.message.partial) await reaction.message.fetch().catch(() => { });
 
             const { message } = reaction;
             if (!message.guild) { return false; }

@@ -12,7 +12,7 @@ module.exports = {
         client.on('messageReactionAdd', async (reaction, user) => {
             if (reaction.emoji.name != CLOCK_Colon) { return false; }
             if (user.bot) { return false; }
-            if (reaction.message.partial) await reaction.message.fetch();
+            if (reaction.message.partial) await reaction.message.fetch().catch(() => { });
 
             const { message } = reaction;
             const { content, channel } = message;
@@ -30,8 +30,8 @@ module.exports = {
 
 
         client.on("messageReactionAdd", async (reaction, user) => {
-            if (reaction.message.partial) await reaction.message.fetch();
-            if (reaction.partial) await reaction.fetch();
+            if (reaction.message.partial) await reaction.message.fetch().catch(() => { });
+            if (reaction.partial) await reaction.fetch().catch(() => { });
 
             // skip other emoji
             if (reaction.emoji.toString() != EMOJI_RECYCLE) { return; }
