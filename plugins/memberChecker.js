@@ -466,7 +466,7 @@ class memberCheckerCore {
             // set user role
             if (isSpecalUser) {
                 mclog(`found dc user, Disable role! : ${dID}`);
-                this.dcPushEmbed(new MessageEmbed().setColor('RED').setDescription(`非會員, 刪除身分組(${this.memberRole}): ${user.user.tag} ${user.toString()}`));
+                this.dcPushEmbed(new MessageEmbed().setColor('RED').setDescription(`認證過期, 刪除身分組(${this.memberRole}): ${user.user.tag} ${user.toString()}`));
                 this.pgUpdateExpires(dID, 0);
                 user.roles.remove(this.memberRole).catch(console.log);
             } else {
@@ -699,6 +699,37 @@ module.exports = {
                 message.channel.send({ content: core.get301Url() });
                 continue;
             }
+            if (command == 'stream') {
+                let streamList = [];
+
+                let vIDs = Object.keys(core.cacheStreamList);
+                for (let vID of vIDs) {
+                    // get cache
+                    let video = core.cacheStreamList[vID];
+                    mclog(`[MC] ${vID} ${video ? 'Object' : video}`);
+                    if (!video) { continue; }
+
+                    // check stream start time
+                    let status = video.snippet.liveBroadcastContent;
+                    mclog(`${status.padStart(12, ' ')} <${video.snippet.title}>`);
+                    if (status != 'upcoming') { continue; }
+
+                    // get video data
+                    let description = video ? video.snippet.title : vID;
+                    let item = `[${description}](http://youtu.be/${vID})`;
+                    streamList.push(item);
+                }
+
+                let embed = new MessageEmbed().setColor('DARK_GOLD');
+                if (streamList.length <= 0) {
+                    embed.setDescription(`目前沒有直播台/待機台`);
+                } else {
+                    embed.setDescription(`直播清單:\n${streamList.join('\n')}`);
+                }
+                message.channel.send({ embeds: [embed] });
+
+                continue;
+            }
             if (command == 'freechat') {
 
                 if (args[0]) {
@@ -708,7 +739,7 @@ module.exports = {
                 } else if (isLogChannel) {
                     // force update all stream list cache by admin
                     await core.cacheStreamLists();
-                    core.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`更新直播表`));
+                    core.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`更新直播清單`));
                 }
 
                 core.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`手動認證: ${message.author.tag} ${message.author.toString()}`));
