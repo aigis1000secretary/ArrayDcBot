@@ -231,6 +231,7 @@ class memberCheckerCore {
             return data;
 
         } catch (error) {
+            let deleteVideo = false;
             // quotaExceeded
             if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'quotaExceeded') {
                 console.log(`ERR! quotaExceeded key: <${this.apiKey[1]}>`);
@@ -246,8 +247,9 @@ class memberCheckerCore {
             else if (Array.isArray(error.errors) && error.errors[0] && error.errors[0].reason == 'liveChatEnded') {
                 console.log(`liveChatEnded!`);
                 // clear cache
-                // this.cacheStreamList = {};
                 this.cacheMemberList = [];
+
+                deleteVideo = true;
             }
 
             // forbidden
@@ -256,14 +258,31 @@ class memberCheckerCore {
             ) {
                 console.log(`forbidden!`, error.message);
                 // clear cache
-                this.cacheStreamList = {};
                 this.cacheMemberList = [];
+
+                deleteVideo = true;
             }
 
             else {
                 console.log('Oops!');
                 console.log(error);
+
+                deleteVideo = true;
             }
+
+            if (deleteVideo) {
+                for (let vID of Object.keys(this.cacheStreamList)) {
+                    // get cache
+                    let video = this.cacheStreamList[vID];
+                    if (!video) { continue; }
+
+                    // delete error stream
+                    if (video.liveStreamingDetails.activeLiveChatId == liveChatId) {
+                        this.cacheStreamList[vID] = null;
+                    }
+                }
+            }
+
             this.cacheStreamID = null;
             return null;
         }
