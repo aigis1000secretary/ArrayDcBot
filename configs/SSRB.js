@@ -36,6 +36,23 @@ module.exports = {
 
             // delmsgLogger: { LOG_CHANNEL_ID: '713623232070156309', },
 
+            // memberChecker: [{
+            //     holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB,
+            //     expiresKey: 'ssrb_expires',
+            //     memberRoleID: '927501058484371487',
+            //     logChannelID: '713623232070156309',
+            //     startTagChannelID: null,
+            //     apiKey: [process.env.YOUTUBE_APIKEY_0, process.env.YOUTUBE_APIKEY_7]
+            // }, {
+            //     holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
+            //     botID: '928492714482343997',
+            //     expiresKey: 'kzmi_expires',
+            //     memberRoleID: '928092487044710441',
+            //     logChannelID: '713623232070156309',
+            //     startTagChannelID: null,
+            //     apiKey: [process.env.YOUTUBE_APIKEY_8, process.env.YOUTUBE_APIKEY_9]
+            // }],
+
             twitterListener: [{
                 RETWEET_CHANNEL_ID: '928838586957197345',
                 RETWEET_KEYWORD: '(#ししらーと)'

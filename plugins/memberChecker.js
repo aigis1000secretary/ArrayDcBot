@@ -433,7 +433,7 @@ class memberCheckerCore {
             let isChatSponsor = (auDetails.isChatOwner || auDetails.isChatSponsor || auDetails.isChatModerator);
 
             // set user role
-            if (isChatSponsor && isSpecalUser) {
+            if (isChatSponsor && isSpecalUser && !clear) {
                 mclog(`found dc user, Update Expires! : ${chatMessage.authorDetails.displayName}`);
                 this.dcPushEmbed(new MessageEmbed().setColor('AQUA').setDescription(`認證成功, 延展期限: ${user.user.tag} ${user.toString()}`));
                 this.pgUpdateExpires(dID, (Date.now() + memberTime));
@@ -469,6 +469,7 @@ class memberCheckerCore {
         mclog(`pgListExpiresUserID`);
 
         // get users
+        await this.guild.members.fetch(true).catch(console.log);
         for (let _user of data) {
             let dID = _user.discord_id;
 
@@ -525,6 +526,80 @@ class memberCheckerCore {
                 user.roles.add(this.memberRole).catch(console.log);
             }
         }
+    }
+
+
+
+    // command
+    async cmdExpiredUser() {
+        // get expires data
+        let data = await this.pgListUserData();
+        let expiresKey = this.expiresKey;
+        let response = [];
+
+        // sort
+        data.sort((a, b) => a[expiresKey] == b[expiresKey] ? 0 : (a[expiresKey] > b[expiresKey] ? 1 : -1));
+        // set log
+        for (let { discord_id, youtube_id, expiresKey } of data) {
+            let expires = parseInt(expiresKey);
+            if (expires == 0) { continue; }
+
+            let t = (expires - Date.now()) / (1000 * 60 * 60);
+            let timeLeft = `${parseInt(t / 24).toString().padStart(3, ' ')}days ${parseInt(t % 24).toString().padStart(2, ' ')}hours`;
+            let dateLimit = new Date(expires).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }).padStart(23, ' ');
+
+            mclog(discord_id, youtube_id, timeLeft, dateLimit, expires);
+            if (t < (memberTemp / (1000 * 60 * 60))) {
+                response.push(`<@${discord_id}> ${youtube_id}\n${timeLeft} ${dateLimit}`);
+            }
+        }
+
+        return response;
+    }
+    cmdStreamList() {
+        let streamList = [];
+
+        let vIDs = Object.keys(this.cacheStreamList);
+        for (let vID of vIDs) {
+            // get cache
+            let video = this.cacheStreamList[vID];
+            mclog(`[MC] ${vID} ${video ? 'Object' : video}`);
+            if (!video) { continue; }
+
+            // check stream start time
+            let status = video.snippet.liveBroadcastContent;
+            mclog(`${status.padStart(12, ' ')} <${video.snippet.title}>`);
+            if (status != 'upcoming') { continue; }
+
+            // get video data
+            let description = video ? video.snippet.title : vID;
+            streamList.push(`[${description}](http://youtu.be/${vID})`);
+        }
+
+        return streamList;
+    }
+    async cmdCheckStreamChat() {
+        mclog(`[MC] freechat vIDs: ${Object.keys(this.cacheStreamList).length}`);
+
+        let vIDs = Object.keys(this.cacheStreamList);
+        for (let vID of vIDs) {
+            // get cache
+            let video = this.cacheStreamList[vID];
+            mclog(`[MC] ${vID} ${video ? 'Object' : video}`);
+            if (!video) { continue; }
+
+            // check stream start time
+            let status = video.snippet.liveBroadcastContent;
+            mclog(`${status.padStart(12, ' ')} <${video.snippet.title}>`);
+            if (status != 'upcoming') { continue; }
+
+            // start trace
+            mclog(`trace <${video.snippet.title}>`);
+            let data = await this.getStreamChat(video.liveStreamingDetails.activeLiveChatId);
+            await this.readStreamChatData(data, true);
+        }
+
+        return;
     }
 
 
@@ -657,7 +732,7 @@ module.exports = {
         if (!message.guild) { return false; }
 
         // get config
-        const { client, content } = message;
+        const { client, author, content } = message;
         let config = client.config[message.guild.id];
         if (!config) { return false; }
 
@@ -685,28 +760,8 @@ module.exports = {
             }
 
             if (isLogChannel && command == 'database') {
-                // get expires data
-                let data = await core.pgListUserData();
-                let expiresKey = core.expiresKey;
-                let response = [];
-
-                // sort
-                data.sort((a, b) => a[expiresKey] == b[expiresKey] ? 0 : (a[expiresKey] > b[expiresKey] ? 1 : -1));
-                // set log
-                for (let user of data) {
-                    let { discord_id: dID, youtube_id: yID } = user;
-                    let expires = parseInt(user[expiresKey]);
-                    if (expires == 0) { continue; }
-
-                    let t = (expires - Date.now()) / (1000 * 60 * 60);
-                    let timeLeft = `${parseInt(t / 24).toString().padStart(3, ' ')}days ${parseInt(t % 24).toString().padStart(2, ' ')}hours`;
-                    let dateLimit = new Date(expires).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }).padStart(23, ' ');
-
-                    mclog(dID, yID, timeLeft, dateLimit, expires);
-                    if (t < (memberTemp / (1000 * 60 * 60))) {
-                        response.push(`<@${dID}> ${yID}\n${timeLeft} ${dateLimit}`);
-                    }
-                }
+                // get response
+                let response = await core.cmdExpiredUser();
 
                 if (response.length > 0) {
                     let embeds = [new MessageEmbed().setDescription(response.join('\n'))];
@@ -719,70 +774,62 @@ module.exports = {
                 continue;
             }
             if (command == 'stream') {
-                let streamList = [];
-
-                let vIDs = Object.keys(core.cacheStreamList);
-                for (let vID of vIDs) {
-                    // get cache
-                    let video = core.cacheStreamList[vID];
-                    mclog(`[MC] ${vID} ${video ? 'Object' : video}`);
-                    if (!video) { continue; }
-
-                    // check stream start time
-                    let status = video.snippet.liveBroadcastContent;
-                    mclog(`${status.padStart(12, ' ')} <${video.snippet.title}>`);
-                    if (status != 'upcoming') { continue; }
-
-                    // get video data
-                    let description = video ? video.snippet.title : vID;
-                    let item = `[${description}](http://youtu.be/${vID})`;
-                    streamList.push(item);
+                // force update all stream list cache by admin
+                if (isLogChannel) {
+                    await core.cacheStreamLists();
+                    core.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`更新直播清單`));
                 }
+
+                // get response
+                let streamList = core.cmdStreamList();
 
                 let embed = new MessageEmbed().setColor('DARK_GOLD');
-                if (streamList.length <= 0) {
-                    embed.setDescription(`目前沒有直播台/待機台`);
-                } else {
-                    embed.setDescription(`直播清單:\n${streamList.join('\n')}`);
-                }
+                if (streamList.length <= 0) { embed.setDescription(`目前沒有直播台/待機台`); }
+                else { embed.setDescription(`直播清單:\n${streamList.join('\n')}`); }
                 message.channel.send({ embeds: [embed] });
 
                 continue;
             }
             if (command == 'freechat') {
-
-                if (args[0]) {
-                    // force update stream list cache
-                    let vID = args[0].trim();
-                    core.cacheStreamList[vID] = await core.getVideoStatus(vID);
-                } else if (isLogChannel) {
-                    // force update all stream list cache by admin
-                    await core.cacheStreamLists();
-                    core.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`更新直播清單`));
-                }
-
+                // log
                 core.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`手動認證: ${message.author.tag} ${message.author.toString()}`));
 
-                mclog(`[MC] freechat keys: ${Object.keys(core.cacheStreamList).length}`);
+                // 
+                let user = core.guild.members.cache.get(author.id);
+                if (!user) { continue; /* Impossible */ }
+                let isSpecalUserBefore = user.roles.cache.has(core.memberRole.id);
 
-                let vIDs = Object.keys(core.cacheStreamList);
-                for (let vID of vIDs) {
-                    // get cache
-                    let video = core.cacheStreamList[vID];
-                    mclog(`[MC] ${vID} ${video ? 'Object' : video}`);
-                    if (!video) { continue; }
+                // check freechat
+                await core.cmdCheckStreamChat();
+                let embed = new MessageEmbed().setColor('DARK_GOLD').setDescription(`處理中...`);
+                let replyMsg = await message.channel.send({ embeds: [embed] });
+                await sleep(500);
 
-                    // check stream start time
-                    let status = video.snippet.liveBroadcastContent;
-                    mclog(`${status.padStart(12, ' ')} <${video.snippet.title}>`);
-                    if (status != 'upcoming') { continue; }
+                // done, check result
+                let isSpecalUser = user.roles.cache.has(core.memberRole.id);
+                if (!isSpecalUserBefore) {
+                    if (isSpecalUser) {
+                        embed = new MessageEmbed().setColor('BLUE').setDescription(`認證成功!`);
+                        replyMsg.edit({ embeds: [embed] });
+                        continue;
+                    } else {
+                        let response = ['認證失敗! 請確認已於以下聊天室中留言:'];
 
-                    // start trace
-                    mclog(`trace <${video.snippet.title}>`);
-                    let data = await core.getStreamChat(video.liveStreamingDetails.activeLiveChatId);
-                    core.readStreamChatData(data, true);
+                        // get stream list
+                        let streamList = core.cmdStreamList();
+                        if (streamList.length <= 0) { response.push(`目前沒有直播台/待機台`); }
+                        else { response.push(`\n${streamList.join('\n')}`); }
+
+                        let embed = new MessageEmbed().setColor('RED')
+                            .setDescription(response.join('\n'));
+                        replyMsg.edit({ embeds: [embed] });
+
+                        continue;
+                    }
+                } else {
+                    embed = new MessageEmbed().setColor('DARK_GOLD').setDescription(`處理完成!`);
+                    replyMsg.edit({ embeds: [embed] });
                 }
-
                 continue;
             }
         }
