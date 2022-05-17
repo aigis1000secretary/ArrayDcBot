@@ -6,7 +6,7 @@ let regUrl = /https?:\/\/(www\.|mobile\.)?twitter\.com\/(\S+)\/status\/(\d+)/;
 
 module.exports = {
     name: 'fxtwitter',
-    description: "emoji it to fxtwittr!",
+    description: "emoji it to fxtwitter!",
     // execute(message) { },
     setup(client) {
         client.on('messageReactionAdd', async (reaction, user) => {
@@ -19,7 +19,7 @@ module.exports = {
             if (!regUrl.test(content)) { return; }
 
             const [, , userID, tweetID] = content.match(regUrl);
-            const fxUrl = `https://fxtwitter.com/${userID}/status/${tweetID}`;
+            const fxUrl = `https://vxtwitter.com/${userID}/status/${tweetID}`;
 
             // reply new embed
             (await message.reply({ content: fxUrl, allowedMentions: { repliedUser: false } }))
