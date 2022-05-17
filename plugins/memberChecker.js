@@ -752,17 +752,26 @@ module.exports = {
                 return true;
             }
             if (isLogChannel && command == 'user') {
-                let data = await core.pgGetDataByDiscordID(args[0].trim());
-                message.channel.send({ content: args[0] });
-                message.channel.send({ content: JSON.stringify(data, null, 2) });
+                let dID = args[0];
+                if (!dID) { continue; }
+
+                let data = await core.pgGetDataByDiscordID(dID.trim());
                 console.log(data)
-                return true;
+                if (!data) { continue; }
+
+                message.channel.send({ content: dID });
+                message.channel.send({ content: JSON.stringify(data, null, 2) });
+                continue;
             }
 
             if (isLogChannel && command == 'database') {
                 // get response
                 let response = await core.cmdExpiredUser();
 
+                // log to console
+                for (let res of response) { console.log(res); }
+
+                // log to channel
                 if (response.length > 0) {
                     let embeds = [new MessageEmbed().setDescription(response.join('\n'))];
                     message.channel.send({ embeds });
