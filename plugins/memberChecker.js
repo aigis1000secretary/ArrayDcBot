@@ -540,8 +540,9 @@ class memberCheckerCore {
         // sort
         data.sort((a, b) => a[expiresKey] == b[expiresKey] ? 0 : (a[expiresKey] > b[expiresKey] ? 1 : -1));
         // set log
-        for (let { discord_id, youtube_id, expiresKey } of data) {
-            let expires = parseInt(expiresKey);
+        for (let user of data) {
+            let { discord_id, youtube_id } = user;
+            let expires = parseInt(user[expiresKey]);
             if (expires == 0) { continue; }
 
             let t = (expires - Date.now()) / (1000 * 60 * 60);
