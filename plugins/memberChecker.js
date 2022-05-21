@@ -804,7 +804,16 @@ module.exports = {
                 // log
                 core.dcPushEmbed(new MessageEmbed().setColor('DARK_GOLD').setDescription(`手動認證: ${message.author.tag} ${message.author.toString()}`));
 
-                // 
+                // get user data from database
+                let data = await core.pgGetDataByDiscordID(args[0] || author.id);
+                if (!data) {
+                    let embed = new MessageEmbed().setColor('RED')
+                        .setDescription(`認證失敗! 請確認 Discord 帳號已完成 Yourube帳號連接\n並由此授權bot存取您的帳號: [<授權>](${core.get301Url()})`);
+                    message.channel.send({ embeds: [embed] });
+                    continue;
+                }
+
+                // get user role in guild
                 let user = core.guild.members.cache.get(author.id);
                 if (!user) { continue; /* Impossible */ }
                 let isSpecalUserBefore = user.roles.cache.has(core.memberRole.id);
