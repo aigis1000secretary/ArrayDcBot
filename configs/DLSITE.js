@@ -8,6 +8,7 @@ module.exports = {
     PLUGINS: [
         'spambotkicker.js',
         // 'reportThread.js',
+        'twitterListener.js',
         'dlsitebot.js',
         'reboot.js',
     ],
@@ -23,6 +24,11 @@ module.exports = {
                 }
                 return { args, command }
             },
+
+            twitterListener: [{
+                RETWEET_CHANNEL_ID: '977860525830586379',
+                RETWEET_KEYWORD: '(#アイギスお絵かき)'
+            }],
 
             spambotKicker: {
                 LOG_CHANNEL_ID: '938143077166612512',

@@ -808,7 +808,7 @@ module.exports = {
                 let data = await core.pgGetDataByDiscordID(args[0] || author.id);
                 if (!data) {
                     let embed = new MessageEmbed().setColor('RED')
-                        .setDescription(`認證失敗! 請確認 Discord 帳號已完成 Yourube帳號連接\n並由此授權bot存取您的帳號: [<授權>](${core.get301Url()})`);
+                        .setDescription(`認證失敗!\n請確認 Discord 帳號已完成 Yourube帳號連接\n並由此授權 ${client.user.username} 存取您的帳號: [<授權>](${core.get301Url()})`);
                     message.channel.send({ embeds: [embed] });
                     continue;
                 }
