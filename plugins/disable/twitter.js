@@ -43,7 +43,7 @@ module.exports = {
 
         // get config
         const { client, content } = message;
-        let config = client.config[message.guild.id];
+        const config = client.config[message.guild.id];
         if (!config) { return false; }
 
         const { command, args } = config.fixMessage(content);
@@ -55,7 +55,7 @@ module.exports = {
         const tweetId = /\d{18,19}/.exec(args[0]).toString();
 
         // get bot permission
-        const guild = message.guild;
+        const { guild } = message;
         if (!guild) { return console.log("[twitterBot] !guild"); }  // skip PM
 
         const botPerms = message.channel.memberPermissions(guild.me);
@@ -102,8 +102,8 @@ module.exports = {
             if (reaction.partial) await reaction.fetch().catch(() => { });
 
             // get msg data
-            const message = reaction.message;
-            const guild = message.guild;
+            const { message } = reaction;
+            const { guild } = message;
 
             if (!guild) { return; }  // skip PM
             if (user.bot) { return; }   // skip bot reaction

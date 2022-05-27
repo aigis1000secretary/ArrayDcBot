@@ -8,7 +8,7 @@ module.exports = {
 
         // get config
         const { client, channel, content } = message;
-        let config = client.config[message.guild.id];
+        const config = client.config[message.guild.id];
         if (!config || !config.reactionVote) { return false; }
         if (!config.reactionVote.VOTE_CHANNELS.includes(channel.id)) { return false; }
 

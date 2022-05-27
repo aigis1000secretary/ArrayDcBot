@@ -14,7 +14,7 @@ module.exports = {
 
             // get config
             const { client } = message;
-            let config = client.config[message.guild.id];
+            const config = client.config[message.guild.id];
             if (!config || !config.delmsgLogger) { return false; }
             const { LOG_CHANNEL_ID } = config.delmsgLogger;
 

@@ -14,7 +14,7 @@ module.exports = {
 
         // get config
         const { client, guild, channel, author, content } = message;
-        let config = client.config[message.guild.id];
+        const config = client.config[message.guild.id];
         if (!config || !config.spambotKicker) { return false; }
         const { LOG_CHANNEL_ID, PERMISSION_ROLE_ID, BAN_CHANNEL } = config.spambotKicker;
 

@@ -9,7 +9,7 @@ module.exports = {
         if (!message.guild) { return false; }
         // get config
         const { client, channel, content } = message;
-        let config = client.config[message.guild.id];
+        const config = client.config[message.guild.id];
         if (!config || !config.reportThread) { return false; }
         const { REPORT_CHANNEL_ID, ADMIN_ROLE_ID } = config.reportThread;
 

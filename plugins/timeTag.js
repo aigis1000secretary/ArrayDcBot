@@ -580,7 +580,7 @@ module.exports = {
 
         // get config
         const { client, content, author } = message;
-        let config = client.config[message.guild.id];
+        const config = client.config[message.guild.id];
         if (!config) { return false; }
 
         const core = coreArray.find((core) => { return (core.client.user.id == client.user.id && core.guild.id == message.guild.id); });
@@ -774,7 +774,7 @@ module.exports = {
 
             // get config
             const { client, content, createdTimestamp } = message;
-            let config = client.config[message.guild.id];
+            const config = client.config[message.guild.id];
             if (!config) { return false; }
 
             const core = coreArray.find((core) => { return (core.client.user.id == client.user.id && core.guild.id == message.guild.id); });

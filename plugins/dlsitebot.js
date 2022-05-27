@@ -209,7 +209,7 @@ module.exports = {
 
         // get config
         const { client, content } = message;
-        let config = client.config[message.guild.id];
+        const config = client.config[message.guild.id];
         if (!config) { return false; }
 
         const { command, args } = config.fixMessage(content);

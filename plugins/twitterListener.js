@@ -129,8 +129,8 @@ module.exports = {
             if (reaction.emoji.toString() != EMOJI_RECYCLE) { return; }
 
             // get msg data
-            const message = reaction.message;
-            const guild = message.guild;
+            const { message } = reaction;
+            const { guild } = message;
 
             // skip not-deletable
             if (!message.deletable) { return; }
@@ -141,7 +141,7 @@ module.exports = {
 
             // get config
             const { client } = reaction;
-            let config = client.config[message.guild.id];
+            const config = client.config[message.guild.id];
             if (!config || !config.twitterListener) { return false; }
 
             // skip not target

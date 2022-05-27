@@ -10,11 +10,11 @@ const reactionRole = async (reaction, user, add) => {
     if (reaction.message.partial) await reaction.message.fetch().catch(() => { });
     if (reaction.partial) await reaction.fetch().catch(() => { });
 
-    const message = reaction.message;
+    const { message } = reaction;
 
     // get config
     const { client, channel, content } = message;
-    let config = client.config[message.guild.id];
+    const config = client.config[message.guild.id];
     if (!config || !config.reactionRole) { return false; }
     if (channel.id != config.reactionRole.RULE_CHANNEL_ID) { return false; }
 
@@ -54,7 +54,7 @@ module.exports = {
 
         // get config
         const { client, channel, content } = message;
-        let config = client.config[message.guild.id];
+        const config = client.config[message.guild.id];
         if (!config || !config.reactionRole) { return false; }
         if (channel.id != config.reactionRole.RULE_CHANNEL_ID) { return false; }
 
