@@ -40,10 +40,10 @@ module.exports = {
 
             // get msg data
             const { message } = reaction;
+            // skip not-deletable
+            if (!message.deletable) { return; }
             // not send by bot
-            if (message.author.id != client.user.id) { return; }
-            // // skip not-deletable
-            // if (!message.deletable) { return; }
+            if (!message.author || !client.user || message.author.id != client.user.id) { return; }
 
             setTimeout(() => message.delete().catch(() => { }), 250);
         });
