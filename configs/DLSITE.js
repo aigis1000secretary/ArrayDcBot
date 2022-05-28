@@ -11,6 +11,7 @@ module.exports = {
         'twitterListener.js',
         'dlsitebot.js',
         'reboot.js',
+        'rssbot.js',
     ],
     CONFIG: {
         '713622845682614302': {
@@ -41,6 +42,19 @@ module.exports = {
             //     REPORT_CHANNEL_ID: '938342278500593714',
             //     ADMIN_ROLE_ID: '881775866835763240',
             // },
+
+            rssbot: [
+                {
+                    RSS_CHANNEL_ID: `979765968727310336`,
+                    RSS_FEEDURL: `https://hentai-share.com/category/hentai-voice-%e9%9f%b3%e5%a3%b0/feed/`
+                }, {
+                    RSS_CHANNEL_ID: '979808194710880266',
+                    RSS_FEEDURL: `https://hentai-share.com/category/h-anime/feed/`
+                }, {
+                    RSS_CHANNEL_ID: '979815303749967932',
+                    RSS_FEEDURL: `https://hentai-share.com/category/h-game/feed/`
+                }
+            ],
         },
 
         '254526419953123330': {
