@@ -1,6 +1,6 @@
 
 require('dotenv').config();
-const { DEBUG_CHANNEL_ID, HEROKU_TOKEN } = require('./config.js');
+const { DISCORD, DEBUG_CHANNEL_ID, HEROKU_TOKEN } = require('./config.js');
 const server = require('./server.js');
 function sleep(ms) { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
 
@@ -68,7 +68,10 @@ module.exports.terminate = async () => {
             let msg = msgs.get(key);
 
             // check time 
-            if (cID == DEBUG_CHANNEL_ID && Date.now() - msg.createdTimestamp < 90000000) { continue; };
+            let delFlag = false;
+            if (cID == DEBUG_CHANNEL_ID && Date.now() - msg.createdTimestamp > 90000000) { delFlag = true; };
+            if (cID == DEBUG_CHANNEL_ID && !DISCORD.getBot(msg.author.id)) { delFlag = true; };
+            if (!delFlag) { continue; }
 
             // await msg.delete().then(msg => console.log(`Del msg: ${msg.content}`)).catch(() => { });
             await msg.delete().catch(() => { });
