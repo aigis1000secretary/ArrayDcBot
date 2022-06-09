@@ -54,6 +54,8 @@ const checkRss = async (client) => {
             let lastPostTimestamp = 0;
             for (let key of messages.keys()) {
                 let message = messages.get(key);
+                if (message.author.id != client.user.id) { continue; }
+                if (!message.embeds[0]) { continue; }
                 lastPostTimestamp = Math.max(lastPostTimestamp, message.embeds[0].timestamp);
             }
 
