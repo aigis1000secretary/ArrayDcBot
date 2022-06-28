@@ -98,7 +98,7 @@ class memberCheckerCore {
 
             // check stream task
             let nowTime = new Date(Date.now());
-            if (![2, 3, 4, 5, 9, 10].includes(nowTime.getHours()) && nowTime.getMinutes() == 3 && nowTime.getSeconds() < 15) {
+            if (![3, 4, 5, 7, 9, 11].includes(nowTime.getHours()) && nowTime.getMinutes() == 3 && nowTime.getSeconds() < 15) {
                 await this.cacheStreamLists();
             }
             for (let vID of Object.keys(this.cacheStreamList)) {
