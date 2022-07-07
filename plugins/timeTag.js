@@ -594,6 +594,17 @@ module.exports = {
             const { command, args } = config.fixMessage(line);
             if (!command) continue;
 
+            // skip fail command form bot self
+            if (author.id == client.user.id                 // bot self cmd
+                && command == 'yt_start'                    // fail start cmd
+                && core.workingVideo                        // now working
+                && args[0].includes(core.workingVideo.vID)  // same vID
+            ) {
+                console.log(`[TT] ${content}`);
+                message.delete().catch(() => { });          // delete bug cmd
+                continue;                                   // skip reply
+            }
+
             let result = await core.timeTagCore(command, args);
             // collect result data
             // success?
@@ -628,13 +639,6 @@ module.exports = {
         }
 
         // reply all data
-        // skip fail command form bot self
-        if (resultSuccess === false && author.id == client.user.id) {
-            console.log(`[TT] ${content}`);
-            message.delete().catch(() => { });    // delete bug cmd
-            return true;    // skip reply
-        }
-
         // embed array
         if (resultMessage.length > 0) {
             while (resultMessage.length >= 3) {
