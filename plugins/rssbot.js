@@ -12,25 +12,7 @@ const requestGet = util.promisify(request.get);
 
 const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms)); };
 
-const decodeEntities = (encodedString) => {
-    let translate_re = /&(nbsp|amp|quot|lt|gt);/g;
-    let translate = {
-        "nbsp": " ",
-        "amp": "&",
-        "quot": "\"",
-        "lt": "<",
-        "gt": ">"
-    };
-    return encodedString.replace(translate_re, function (match, entity) {
-        return translate[entity];
-    }).replace(/&#(\d+);/gi, function (match, numStr) {
-        let num = parseInt(numStr, 10);
-        return String.fromCharCode(num);
-    });
-}
-
-
-
+// check rss and send embeds
 const checkRss = async (client) => {
 
     // get each guild config
@@ -72,17 +54,37 @@ const checkRss = async (client) => {
                 return (tA == tB) ? 0 : (tA > tB) ? 1 : -1;
             })
             // send embeds
+            let newRss = false;
             for (let embed of embeds) {
                 // check last post time
                 if (embed.timestamp > lastPostTimestamp) {
                     channel.send({ embeds: [embed] }).then(msg => { msg.react(EMOJI_RECYCLE) });
+                    newRss = true;
                 }
             }
+            // check old rss
+            if (newRss) { checkLastRss(client, RSS_CHANNEL_ID); }
         }
     }
 }
-
-
+// http decode
+const decodeEntities = (encodedString) => {
+    let translate_re = /&(nbsp|amp|quot|lt|gt);/g;
+    let translate = {
+        "nbsp": " ",
+        "amp": "&",
+        "quot": "\"",
+        "lt": "<",
+        "gt": ">"
+    };
+    return encodedString.replace(translate_re, function (match, entity) {
+        return translate[entity];
+    }).replace(/&#(\d+);/gi, function (match, numStr) {
+        let num = parseInt(numStr, 10);
+        return String.fromCharCode(num);
+    });
+}
+// rss feed item to discord embeds
 const itemsToEmbeds = async (items) => {
     let result = [];
     // get feed items
@@ -138,7 +140,7 @@ const itemsToEmbeds = async (items) => {
     }
     return result;
 }
-
+// get xml http request
 const randomChoice = (array) => {
     const index = Math.floor(Math.random() * array.length);
     return array[index];
@@ -181,6 +183,7 @@ const getXML = async (url) => {
         return null;
     }
 };
+// read rss xml feed
 const xmlTojson = async (xml) => {
 
     return await new Promise((resolve, reject) => {
@@ -199,25 +202,53 @@ const xmlTojson = async (xml) => {
     });
 }
 
+
+// get last rss message
+const checkLastRss = async (client, RSS_CHANNEL_ID) => {
+
+    // check discord channel
+    const channel = client.channels.cache.get(RSS_CHANNEL_ID);
+    if (!channel) { return; }
+    // get message log
+    let messages = await channel.messages.fetch().catch(() => { });
+    for (let key of messages.keys()) {
+        let message = messages.get(key);
+        // only check bot message
+        if (message.author.id != client.user.id) { continue; }
+
+        // get react count
+        message = await message.channel.messages.fetch(message.id);
+        let reacts = message.reactions.cache.get(EMOJI_RECYCLE);
+        let reactsCount = reacts ? reacts.count : 0;
+
+        if (reactsCount <= 1) { continue; }
+        // delete
+        if (!message.deletable) { continue; }
+        setTimeout(() => message.delete().catch(() => { }), 250);
+    }
+}
+
+
 module.exports = {
     name: 'rssbot',
     description: "check rss every hour",
     async setup(client) {
 
+        // wait time 00sec
         while (1) {
             if (Date.now() % 1000 == 0) { break; }
             await sleep(1);
         }
         // auto search every 10min
         let interval = setInterval(async () => {
-
+            // check time
             const nowSeconds = new Date(Date.now()).getSeconds();
             if (nowSeconds != 0) { return; }
-
             const nowMinutes = new Date(Date.now()).getMinutes();
             if (nowMinutes % 10 != 0) { return; }
 
             checkRss(client);
+
         }, 1000);  // check every 1sec
         client.once('close', () => {
             clearInterval(interval);
@@ -236,7 +267,7 @@ module.exports = {
 
             // get msg data
             const { message } = reaction;
-            const { guild } = message;
+            const { guild, channel } = message;
 
             // skip not-deletable
             if (!message.deletable) { return; }
@@ -263,6 +294,24 @@ module.exports = {
             //     reactionMe = reaction.users.cache.has(guild.me.id);
             // }
             // if (!reactionMe) { return; }
+
+            // delete last feed later
+            // get message log
+            let notLastMessage = false;
+            if (!message.embeds[0]) { return; }
+            let oldMessages = await channel.messages.fetch().catch(() => { });
+            for (let key of oldMessages.keys()) {
+                let oldMessage = oldMessages.get(key);
+                // only check bot message
+                if (oldMessage.author.id != client.user.id) { continue; }
+                // only check message with embed;
+                if (!oldMessage.embeds[0]) { continue; }
+                // check embed timestamp
+                if (oldMessage.embeds[0].timestamp > message.embeds[0].timestamp) {
+                    notLastMessage = true;
+                }
+            }
+            if (!notLastMessage) { return; }
 
             setTimeout(() => message.delete().catch(() => { }), 250);
         });

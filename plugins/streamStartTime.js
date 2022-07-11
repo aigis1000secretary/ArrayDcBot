@@ -59,7 +59,7 @@ const getStreamStatus = async (vID) => {
 
 module.exports = {
     name: 'Stream Start Time',
-    description: "rection stream start time",
+    description: "reaction stream start time",
     async execute(message) {
         const { content } = message;
         if (!regUrl.test(content)) { return; }
