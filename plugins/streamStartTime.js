@@ -1,5 +1,5 @@
 const { YOUTUBE } = require('../config.js');
-const { MessageEmbed } = require('discord.js');
+const { Permissions, MessageEmbed } = require('discord.js');
 
 const CLOCK_A = ['<:clocka_0:895230067104440350>', '<:clocka_1:895230174382129162>', '<:clocka_2:895230190169509919>'];
 const CLOCK_B = ['<:clockb_0:895230403164655627>', '<:clockb_1:895230447334866944>', '<:clockb_2:895230469992505355>', '<:clockb_3:895230483783368705>', '<:clockb_4:895230502397677628>', '<:clockb_5:895230515752357888>', '<:clockb_6:895230534169530390>', '<:clockb_7:895230548958654474>', '<:clockb_8:895230563835863072>', '<:clockb_9:895230578725638154>'];
@@ -84,7 +84,9 @@ module.exports = {
             if (reaction.message.partial) await reaction.message.fetch().catch(() => { });
 
             const { message: rawMessage } = reaction;
-            const { content, channel } = rawMessage;
+            const { guild, channel, content } = rawMessage;
+            const guildAuthor = guild.members.cache.get(user.id);
+            if (!channel.permissionsFor(guildAuthor).has(Permissions.FLAGS.SEND_MESSAGES)) { return; };
             if (!regUrl.test(content)) { return; }
 
             // get vID
@@ -110,7 +112,7 @@ module.exports = {
             if (thumbnails != '') { embed.setImage(thumbnails); }
 
             // reply new embed
-            let message = await channel.send({ embeds: [embed] });
+            let message = await channel.send({ embeds: [embed] }).catch(() => { });
 
             let status = data.snippet.liveBroadcastContent;
             if (status == "upcoming") {
