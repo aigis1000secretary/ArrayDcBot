@@ -92,6 +92,7 @@ module.exports = {
             // get vID
             const [, , , , , vID] = content.match(regUrl);
             let data = await getVideoStatus(vID);
+            if (!data) { return false; }
 
             // get image
             let thumbnails = '';
