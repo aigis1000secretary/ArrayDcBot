@@ -56,6 +56,9 @@ module.exports = {
             twitterListener: [{
                 RETWEET_CHANNEL_ID: '928838586957197345',
                 RETWEET_KEYWORD: '(#ししらーと)'
+            }, {
+                RETWEET_CHANNEL_ID: '998634189257719828',
+                RETWEET_KEYWORD: '(#ししデコ) '
             }],
 
             // spambotKicker: {
