@@ -315,5 +315,26 @@ module.exports = {
 
             setTimeout(() => message.delete().catch(() => { }), 250);
         });
-    }
+    },
+    
+    async execute(message) {
+        if (!message.guild) { return false; }
+
+        // get config
+        const { client, content } = message;
+        const config = client.config[message.guild.id];
+        if (!config) { return false; }
+
+        const { command, args } = config.fixMessage(content);
+        if (!command) { return false; }
+
+        if ('rss' != command) { return; }
+        if (message.author.id != '353625493876113440') { return; }
+        
+        await message.delete().catch(() => { });
+
+        checkRss(client);
+
+        return true;
+    },
 }
