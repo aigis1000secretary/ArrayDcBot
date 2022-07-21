@@ -141,13 +141,14 @@ module.exports = {
 
             // get config
             const { client } = reaction;
-            const config = client.config[message.guild.id];
-            if (!config || !config.twitterListener) { return false; }
+            const configs = client.config[message.guild.id];
+            if (!configs || !configs.twitterListener) { return false; }
+            const config = configs.twitterListener.find((cfg) => { return message.channel.id == cfg.RETWEET_CHANNEL_ID });
 
             // skip not target
-            if (!config.twitterListener.find((cfg) => { return message.channel.id == cfg.RETWEET_CHANNEL_ID })) { return; }
+            if (!config) { return; }
 
-            if (reaction.count <= 5) { return; }
+            if (reaction.count <= (config.RETWEET_DELCOUNT || 5)) { return; }
 
             // // dont need to check this?
             // // // skip msg which didnt react recycle reaction(not this command's reply)

@@ -28,7 +28,8 @@ module.exports = {
 
             twitterListener: [{
                 RETWEET_CHANNEL_ID: '977860525830586379',
-                RETWEET_KEYWORD: '(#アイギスお絵かき)'
+                RETWEET_KEYWORD: '(#アイギスお絵かき)',
+                RETWEET_DELCOUNT: 1
             }],
 
             spambotKicker: {
