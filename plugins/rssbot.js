@@ -87,6 +87,11 @@ const decodeEntities = (encodedString) => {
 // rss feed item to discord embeds
 const itemsToEmbeds = async (items) => {
     let result = [];
+    let reg1 = new RegExp('Title:\<\/span ?\>([^\<]+)\<');
+    let reg2 = new RegExp('Circle ?\/ ?Brand:\<\/span ?\>([^\<]+)\<');
+    let reg3 = new RegExp('\<img src=\"([^\"]+)\" ?\/\>');
+    let reg4 = new RegExp('http.+product_id\/([^\.]+)');
+
     // get feed items
     for (const item of items) {
         let { title, link, pubDate, category, guid, description } = item;
@@ -120,23 +125,23 @@ const itemsToEmbeds = async (items) => {
 
         let match = null;
         // get title
-        let reg1 = new RegExp('Title:\<\/span ?\>([^\<]+)\<');
         match = contentEncoded.match(reg1);
         if (match) { embed.setTitle(match[1]); }
         else { embed.setTitle(title); }
 
         // get Circle
-        let reg2 = new RegExp('Circle ?\/ ?Brand:\<\/span ?\>([^\<]+)\<');
         match = contentEncoded.match(reg2);
         if (match) { embed.setAuthor({ name: decodeEntities(match[1]) }); }
 
         // get image
-        let reg3 = new RegExp('\<img src=\"([^\"]+)\" ?\/\>');
         match = contentEncoded.match(reg3);
         if (match) { embed.setImage(match[1]); }
 
-        result.push(embed);
+        // get url
+        match = contentEncoded.match(reg4);
+        if (match) { embed.addField('Product id', match[1]); }
 
+        result.push(embed);
     }
     return result;
 }
@@ -316,7 +321,7 @@ module.exports = {
             setTimeout(() => message.delete().catch(() => { }), 250);
         });
     },
-    
+
     async execute(message) {
         if (!message.guild) { return false; }
 
@@ -330,7 +335,7 @@ module.exports = {
 
         if ('rss' != command) { return; }
         if (message.author.id != '353625493876113440') { return; }
-        
+
         await message.delete().catch(() => { });
 
         checkRss(client);

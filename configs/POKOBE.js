@@ -5,7 +5,8 @@ module.exports = {
     DISCORD_TOKEN: process.env.DISCORD_928492714482343997_BOTTOKEN,
     CLIENT_SECRET: process.env.DISCORD_928492714482343997_SECRET,
     RESONANCE: 'ジャキン',
-    PLUGINS: ['timeTag.js',
+    PLUGINS: [
+        'timeTag.js',
         'memberChecker.js',
         'streamStartTime.js',
         'spambotkicker.js',
