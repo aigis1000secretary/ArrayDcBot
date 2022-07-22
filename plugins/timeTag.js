@@ -594,6 +594,15 @@ module.exports = {
             const { command, args } = config.fixMessage(line);
             if (!command) continue;
 
+            if (author.bot) {
+                console.log('execute')
+                console.log(author.id, client.user.id)
+                console.log(command, args)
+                console.log(core.workingVideo ?
+                    `${core.workingVideo.vID}, ${args[0].includes(core.workingVideo.vID)}` :
+                    `core.workingVideo = ${core.workingVideo}`)
+            }
+
             // skip fail command form bot self
             if (author.id == client.user.id                 // bot self cmd
                 && command == 'yt_start'                    // fail start cmd
@@ -602,7 +611,7 @@ module.exports = {
             ) {
                 console.log(`[TT] ${content}`);
                 message.delete().catch(() => { });          // delete bug cmd
-                continue;                                   // skip reply
+                break;                                   // skip reply
             }
 
             let result = await core.timeTagCore(command, args);
