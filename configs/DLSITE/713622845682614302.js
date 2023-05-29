@@ -85,7 +85,7 @@ module.exports = {      // KTG
     },
 
 
-
+    delall: {},
     dlsitebot: {},
     reboot: {},
     twitterAntiFilter: {},

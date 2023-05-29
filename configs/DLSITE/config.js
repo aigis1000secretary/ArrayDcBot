@@ -6,7 +6,10 @@ module.exports = {
     discordToken: process.env.DISCORD_920485085935984641_BOTTOKEN,
     clientSecret: null,
     resonance: 'ぬる',
-    debugPlugins: [
+    debugPlugins: (process.env.HOST_TYPE == 'debug') ? [
+        // 'twitterAntiFilter',
+        'delall',
+    ] : [
         // 'delall',
         'dlsitebot',
         // 'fxtwitter',
