@@ -75,10 +75,7 @@ class AntiFilterCore {
 
     client = null;
     channel = null;
-    constructor() {
-
-
-    };
+    constructor() { };
 
     async setClient(client) {
         this.client = client;
@@ -96,7 +93,7 @@ class AntiFilterCore {
         // check tweet url
         if (!regUrl.test(message.content)) { return false; }
 
-        let [, username, , tID] = content.match(regUrl);
+        let [, username, , tID] = message.content.match(regUrl);
         if (tID) {
 
             // check process status
@@ -191,6 +188,8 @@ class AntiFilterCore {
         // get cache data
         let detailData = { guro: [], other: [], fakeuser: {} };
         for (let { username, tID, image } of mainAFCore.tweetStatus) {
+            if (!image) { continue; }
+
             let url = `https://twitter.com/${username}/status/${tID}`;
 
             if (image.includes('guro')) { detailData.guro.push(url); }
@@ -254,13 +253,13 @@ class AntiFilterCore {
     }
 
     async downloadBlacklist() {
-        if (!client) { return; }
+        if (!this.client) { return; }
         if (fs.existsSync(dataPath)) {
             fs.rmSync(dataPath, { recursive: true, force: true });
         }
 
         // get channel/message by id
-        const channel = await client.channels.fetch(`872122458545725451`).catch(() => { return null; });
+        const channel = await this.client.channels.fetch(`872122458545725451`).catch(() => { return null; });
         if (!channel) { return; }
         const msg = await channel.messages.fetch({ message: `1111207166871871538`, force: true }).catch(() => { return null; });
         if (!msg) { return; }
@@ -332,9 +331,12 @@ module.exports = {
         if (client.user.id == `920485085935984641`) {
             mainAFCore.setClient(client);
 
-            await mainAFCore.uploadBlacklist();
-            // await mainAFCore.downloadBlacklist();
-            // mainAFCore.readBlacklist();
+            if (fs.existsSync(dataPath)) {
+                await mainAFCore.uploadBlacklist();
+            } else {
+                await mainAFCore.downloadBlacklist();
+                mainAFCore.readBlacklist();
+            }
             return;
         }
     },
