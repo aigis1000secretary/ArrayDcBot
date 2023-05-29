@@ -8,13 +8,13 @@ module.exports = {
             (member) => {
                 let guild = member.guild;
 
-                let config = client.config[guild.id];
-                if (!config || !config.welcomeMsg) { return false; }
+                const pluginConfig = client.getPluginConfig(gID, 'welcomeMsg');
+                if (!pluginConfig) { return false; }
 
                 let memberName = member.toString();
-                let welcomeMsg = eval(config.welcomeMsg.WELCOME_MSG);
+                let welcomeMsg = eval(pluginConfig.WELCOME_MSG);
 
-                let channel = guild.channels.cache.get(config.welcomeMsg.WELCOME_CHANNEL_ID);
+                let channel = guild.channels.cache.get(pluginConfig.WELCOME_CHANNEL_ID);
 
                 // welcome message
                 channel.send(welcomeMsg);
