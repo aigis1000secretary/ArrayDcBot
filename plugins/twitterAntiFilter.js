@@ -26,7 +26,7 @@ const toCompressData = (image, imgWidth = 8) => {
     return ctx.getImageData(0, 0, imgWidth, imgWidth);;
 };
 
-const downloadImage = async (url) => {
+const downloadImage = async (url, subUrl) => {
     // get filename
     const [, filename, ext] = url.match(/\/([^\/]*)\.([^\/\.]*)$/) || [, null, null];
     if (!filename || !ext) { return false; }
@@ -38,8 +38,19 @@ const downloadImage = async (url) => {
     if (!fs.existsSync(file)) { return false; }
 
     // read image
-    let image = await canvas.loadImage(file).catch((e) => { console.log(url); console.log(file, e.message); return null; });
-    if (!image) { return false; }
+    let image = await canvas.loadImage(file).catch((e) => {
+        console.log(`download image error: ${url}`);
+        console.log(file, e.message);
+        return null;
+    });
+    if (!image) {
+        fs.unlinkSync(file);
+        if (subUrl != null) {
+            console.log(`try sub url: ${subUrl}`);
+            return await downloadImage(subUrl, null);
+        }
+        return false;
+    }
     image = toCompressData(image, 8);
     image.channels = 4;
 
@@ -115,16 +126,17 @@ class AntiFilterCore {
             }
 
             // if process done, check result
-            if (this.tweetStatus.get(tID) == 1) {
+            let tweetStatu = this.tweetStatus.get(tID);
+            if (tweetStatu == 1) {
                 // process still running, mamby error
                 console.log(`getImageComparison timeout, mID: ${message.id}, tID: ${tID}`);
                 return false;
 
-            } else if (this.tweetStatus.get(tID) == 2) {
+            } else if (tweetStatu == 2) {
                 // image not in blacklist
                 return false;
 
-            } else if (imagesList.includes(this.tweetStatus.get(tID))) {
+            } else if (imagesList.includes(tweetStatu.image)) {
                 // image in blacklist
                 return { username, tID };
 
@@ -144,7 +156,7 @@ class AntiFilterCore {
 
             // download image
             let embedImage = message.embeds[0].image;
-            let image = await downloadImage(embedImage.url) || await downloadImage(embedImage.proxyURL);
+            let image = await downloadImage(embedImage.url, embedImage.proxyURL);
 
             // download image fail
             if (!image) {
@@ -171,7 +183,7 @@ class AntiFilterCore {
     }
 
     logToDiscord(content) {
-        this.channel.send({ content });
+        this.channel.send({ content }).catch((e) => console.log(e.message));
     }
 
 
@@ -331,12 +343,13 @@ module.exports = {
         if (client.user.id == `920485085935984641`) {
             mainAFCore.setClient(client);
 
-            if (fs.existsSync(dataPath)) {
-                await mainAFCore.uploadBlacklist();
-            } else {
-                await mainAFCore.downloadBlacklist();
-                mainAFCore.readBlacklist();
-            }
+            // if (fs.existsSync(dataPath)) {
+            //     mainAFCore.readBlacklist();
+            //     await mainAFCore.uploadBlacklist();
+            // }
+
+            await mainAFCore.downloadBlacklist();
+            mainAFCore.readBlacklist();
             return;
         }
     },
@@ -366,10 +379,11 @@ module.exports = {
             let { username, tID, ssim, image } = result;
 
             // found tID but tweet image not in blacklist
-            if (!result) { return false; }
+            if (!result || !ssim) { return false; }
 
             // image in blacklist
-            console.log(username, tID, ssim, image);
+            console.log(`[TAF] ${username} ${tID} ${ssim}`);
+            console.log(` ${image}`);
 
             // todo, dont delete message when testrun 
             // // delete message
@@ -491,7 +505,7 @@ module.exports = {
         // get twitter image
         if (embedImage) {
 
-            let image = await downloadImage(embedImage.url) || await downloadImage(embedImage.proxyURL);
+            let image = await downloadImage(embedImage.url, embedImage.proxyURL);
             if (image) {
 
                 // check image in blacklist or not
