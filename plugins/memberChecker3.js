@@ -4,6 +4,8 @@ const fs = require('fs');
 const debug = fs.existsSync("./.env");
 
 const { default: YTDlpWrap } = require("yt-dlp-wrap");
+const ytdlpPath = (require("os").platform() == 'linux' ? './yt-dlp' : '.\\yt-dlp.exe');
+
 
 let mclog = debug ? console.log : () => { };
 const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms)); };
@@ -719,7 +721,7 @@ class McChannelCore {
 
         // Init an instance with a given binary path.
         // If none is provided "youtube-dl" will be used as command.
-        const ytDlpWrap = new YTDlpWrap();
+        const ytDlpWrap = new YTDlpWrap(ytdlpPath);
 
         // start stream
         let command = [
@@ -1239,10 +1241,11 @@ class MainMemberCheckerCore {
         }
         this.initialization = 1;
 
+        if (fs.existsSync(ytdlpPath)) { fs.unlinkSync(ytdlpPath); }
         // Download the youtube-dl binary for the given version and platform to the provided path.
         // By default the latest version will be downloaded to "./youtube-dl" and platform = os.platform().
         // await YoutubeDlWrap.downloadFromGithub('youtube-dl', '2023.03.04.1', '');
-        await YTDlpWrap.downloadFromGithub(`yt-dlp.exe`).catch(() => { });
+        await YTDlpWrap.downloadFromGithub().catch(() => { });
 
         // cookie.txt
         if (fs.existsSync('./cookies.txt')) {
@@ -1441,6 +1444,7 @@ class MainMemberCheckerCore {
 
                     if (_video.snippet.liveBroadcastContent == 'live') {
                         ytCore.traceStreamChatByYtdlp({ vID });
+                        // ytCore.traceStreamChat({ vID });
                     }
                 }
             }
