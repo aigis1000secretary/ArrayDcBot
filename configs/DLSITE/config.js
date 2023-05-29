@@ -10,6 +10,7 @@ module.exports = {
         'delall',
         'twitterAntiFilter',
     ] : [
+        'eval',
         // 'delall',
         'dlsitebot',
         // 'fxtwitter',

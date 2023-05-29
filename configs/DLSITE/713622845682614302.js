@@ -85,6 +85,7 @@ module.exports = {      // KTG
     },
 
 
+    eval: {},
     delall: {},
     dlsitebot: {},
     reboot: {},
