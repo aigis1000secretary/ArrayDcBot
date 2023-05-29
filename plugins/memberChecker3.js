@@ -703,9 +703,9 @@ class McChannelCore {
     async traceStreamChatByYtdlp({ vID, memberOnly }) {
 
         // only trace 1 stream in same time
-        if (this.cacheStreamID != null && this.cacheStreamID != vID) { return; }
-        // // set working video id
-        // this.cacheStreamID = vID;
+        if (this.cacheStreamID != null) { return; }
+        // set working video id
+        this.cacheStreamID = vID;
 
         if (!this.streamList.has(vID)) {
             mclog(`[MC3] Can't found video data`);
