@@ -246,10 +246,11 @@ module.exports = {
 
         // collect configs
         let rules = [];
-        for (let gID of Object.keys(client.config)) {
-            if (!client.config[gID].twitterListener2) { continue; }
+        for (let gID of client.guildConfigs.keys()) {
+            const pluginConfig = client.getPluginConfig(gID, 'twitterListener2');
+            if (!pluginConfig) { continue; }
 
-            for (const { RETWEET_CHANNEL_ID, RETWEET_KEYWORD } of client.config[gID].twitterListener2) {
+            for (const { RETWEET_CHANNEL_ID, RETWEET_KEYWORD } of pluginConfig) {
                 const rtChannel = await client.channels.fetch(RETWEET_CHANNEL_ID);
                 if (!rtChannel) { continue; }
 
