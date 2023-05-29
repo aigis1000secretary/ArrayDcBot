@@ -8,6 +8,9 @@ primary_region = "hkg"
 kill_signal = "SIGINT"
 kill_timeout = "5s"
 
+[build]
+  builder = "heroku/buildpacks:20"
+  
 [env]
   PORT = "8080"
 
