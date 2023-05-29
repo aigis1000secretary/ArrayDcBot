@@ -7,8 +7,8 @@ module.exports = {
     clientSecret: null,
     resonance: 'ぬる',
     debugPlugins: (process.env.HOST_TYPE == 'debug') ? [
-        // 'twitterAntiFilter',
         'delall',
+        'twitterAntiFilter',
     ] : [
         // 'delall',
         'dlsitebot',

@@ -22,7 +22,7 @@ const deleteAllMessage = async (message) => {
     ].includes(cID)) { return; }
     if (author?.id != '353625493876113440') { return; }
 
-    console.log(`bulkDelete ${channel.name}`);
+    // console.log(`bulkDelete ${channel.name}`);
 
     let delcount = 0, before;
     while (1) {
@@ -53,7 +53,7 @@ const deleteAllMessage = async (message) => {
 
             ++delcount;
         }
-        console.log(`Bulk deleted ${msgs.size} messages in ${channel.name}`)
+        console.log(`     Checked ${msgs.size} messages in ${channel.name}`)
 
         await channel.bulkDelete(bulkDel).catch(console.error);
         if (msgs.size != 50) { break; }
