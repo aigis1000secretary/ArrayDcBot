@@ -1,18 +1,31 @@
 {
-  "name": "discordddbot",
+  "name": "arraydcbot",
   "version": "1.0.0",
-  "description": "discordDDBot",
+  "engines": {
+    "node": "16.x"
+  },
+  "description": "arraydcbot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm init -y && npm i --save-dev node@16 && npm config set prefix=$(pwd)/node_modules/node && export PATH=$(pwd)/node_modules/node/bin:$PATH && exit 0"
   },
   "author": "K.T.",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^12.5.3",
+    "canvas": "^2.11.2",
+    "cheerio": "^1.0.0-rc.10",
+    "compressing": "^1.9.0",
+    "discord.js": "^14.9.0",
+    "dotenv": "^10.0.0",
     "express": "^4.17.2",
-    "pg": "^8.7.1",
-    "request": "^2.88.2"
+    "image-ssim": "^0.2.0",
+    "pg": "^8.10.0",
+    "request": "^2.88.2",
+    "serve-index": "^1.9.1",
+    "twitter-api-v2": "^1.14.2",
+    "webdav-server": "^2.6.2",
+    "xml2js": "^0.4.23",
+    "yt-dlp-wrap": "^2.3.11"
   }
 }

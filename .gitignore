@@ -1,12 +1,18 @@
 
 .vscode
-node_modules
+node_modules/
+
+.env
 
 *.lnk
 *.csv
 *.bat
 Thumbs.db
 
-debug.js
-ngrok
+ngrok/
 ngrok.zip
+
+blacklist/
+
+cookies.txt
+yt-dlp.exe
