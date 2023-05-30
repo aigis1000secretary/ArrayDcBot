@@ -497,8 +497,8 @@ class McChannelCore {
             for (let video of _videos) {
                 let vID = video.id.videoId;
 
+                // update liveBroadcastContent
                 if (this.streamList.has(vID)) {
-                    // update liveBroadcastContent
                     video.memberOnly = this.streamList.get(vID)?.memberOnly;
                 }
 
@@ -558,8 +558,9 @@ class McChannelCore {
 
             // update liveBroadcastContent
             if (this.streamList.has(vID)) {
-                videoStatus.memberOnly = this.streamList.get(vID).memberOnly;
+                videoStatus.memberOnly = this.streamList.get(vID)?.memberOnly;
             }
+
             // cache video data
             this.streamList.set(vID, videoStatus);
         }
@@ -587,7 +588,7 @@ class McChannelCore {
             }
 
             let video = this.streamList.get(vID);
-            liveChatId = video.liveStreamingDetails?.activeLiveChatId;
+            liveChatId = video?.liveStreamingDetails?.activeLiveChatId;
             if (!liveChatId) {
                 mclog(`[MC3] Can't found video liveChatId`);
                 return;
@@ -657,7 +658,9 @@ class McChannelCore {
                 this.cacheStreamID = null;
 
                 // get video & set member only flag
-                this.streamList.get(vID).memberOnly = true;
+                if (this.streamList.has(vID)) {
+                    this.streamList.get(vID).memberOnly = true;
+                }
 
                 // finish catch loop, 
                 // memberOnly flag will block method startGetStreamChat()
@@ -777,7 +780,9 @@ class McChannelCore {
                         // retry with cookie
                         this.traceStreamChatByYtdlp({ vID, memberOnly: true });
                         // get video & set member only flag
-                        this.streamList.get(vID).memberOnly = true;
+                        if (this.streamList.has(vID)) {
+                            this.streamList.get(vID).memberOnly = true;
+                        }
                     }
                 } else {
                     console.error(error);
@@ -1234,10 +1239,17 @@ class MainMemberCheckerCore {
     initialization = 0;
 
     async init(client) {
+
+        if (client && client.user.id != `713624995372466179`) {
+            this.client = client;
+            this.guild = await client.guilds.fetch('713622845682614302');
+        }
+
         if (this.initialization != 0) {
             while (this.initialization != 2) {
                 await sleep(500);
             }
+            return;
         }
         this.initialization = 1;
 
@@ -1268,11 +1280,6 @@ class MainMemberCheckerCore {
         const livechatFiles = fs.readdirSync('.').filter(file => file.includes('.live_chat.'));
         for (const file of livechatFiles) {
             fs.unlinkSync(file);
-        }
-
-        if (client && client.user.id != `713624995372466179`) {
-            this.client = client;
-            this.guild = await client.guilds.fetch('713622845682614302');
         }
 
         this.initialization = 2;
@@ -1448,7 +1455,6 @@ class MainMemberCheckerCore {
                     }
                 }
             }
-
 
             for (let gCore of this.guildCores) {
                 gCore.changeChannelName();
