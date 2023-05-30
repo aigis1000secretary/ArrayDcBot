@@ -14,9 +14,9 @@ function sleep(ms) { return new Promise((resolve) => { setTimeout(resolve, ms); 
 // const { twitter } = require('./twitterListener2.js');
 let blacklist = [];
 let imagesList = [];
+let detailData = { guro: [], other: [], new: [], fakeuser: {} };
 
 const dataPath = `./blacklist`;
-const listPath = `./blacklist/blacklist.txt`;
 
 // resize image to 8x8
 const toCompressData = (image, imgWidth = 8) => {
@@ -193,61 +193,27 @@ class AntiFilterCore {
         if (!this.client || !fs.existsSync(dataPath)) { return; }
 
         // update blacklist
-        if (fs.existsSync(listPath)) { fs.unlinkSync(listPath); }
-        fs.writeFileSync(listPath, blacklist.join('\r\n'), 'utf8');
+        const names = ['blacklist', 'guro', 'other', 'new'].concat(Object.keys(detailData.fakeuser));
+        for (let name of names) {
 
-        // update blacklist detail
-        // get cache data
-        let detailData = { guro: [], other: [], fakeuser: {} };
-        for (let [tID, tweetStatu] of mainAFCore.tweetStatus) {
-            let { username, tID, image } = tweetStatu;
-            if (!image) { continue; }
-
-            let url = `https://twitter.com/${username}/status/${tID}`;
-
-            if (image.includes('guro')) { detailData.guro.push(url); }
-            else if (image.includes('other')) { detailData.other.push(url); }
-
-            else if (image.includes('fakeuser')) {
-                let [, victim] = image.match(/\.\/blacklist\/fakeuser\/([^\/]+)\//) || [, 'null'];
-                if (!detailData.fakeuser[victim]) { detailData.fakeuser[victim] = []; }
-                detailData.fakeuser[victim].push(url);
-            }
-        }
-        // get text files data
-        const filenames = fs.readdirSync(dataPath).filter(file => file.endsWith('.txt'));
-        for (let filename of filenames) {
-            if (filename == 'blacklist.txt') { continue; }
-
-            const filepath = `${dataPath}/${filename}`;
-            let { name } = path.parse(filepath);
-
-            let lines = fs.readFileSync(filepath, 'utf8').split(/\r?\n/);
-            if (['guro', 'other'].includes(name)) {
-                for (let url of lines) {
-                    // detail for line
-                    detailData[name].push(url);
-                }
-            } else {
-                for (let url of lines) {
-                    if (!detailData.fakeuser[name]) { detailData.fakeuser[name] = []; }
-                    // detail for line
-                    detailData.fakeuser[name].push(url);
-                }
-            }
+            const filepath = `${dataPath}/${name}.txt`;
 
             if (fs.existsSync(filepath)) { fs.unlinkSync(filepath); }
-        }
-        // todo, check anti user dead or not, clear list
-        // save to file
-        fs.writeFileSync(`${dataPath}/guro.txt`, detailData.guro.join('\r\n'), 'utf8');
-        fs.writeFileSync(`${dataPath}/other.txt`, detailData.other.join('\r\n'), 'utf8');
-        for (let victim of Object.keys(detailData.fakeuser)) {
-            detailData.fakeuser[victim] = [...new Set(detailData.fakeuser[victim])]
-            fs.writeFileSync(`${dataPath}/${victim}.txt`, detailData.fakeuser[victim].join('\r\n'), 'utf8');
-        }
 
+            if (name == 'blacklist') {
+                // blacklist
+                fs.writeFileSync(filepath, blacklist.join('\r\n'), 'utf8');
 
+            } else if (['guro', 'other', 'new'].includes(name)) {
+                // other type
+                fs.writeFileSync(filepath, detailData[name].join('\r\n'), 'utf8');
+
+            } else {
+                // fakeuser
+                fs.writeFileSync(filepath, detailData.fakeuser[name].join('\r\n'), 'utf8');
+
+            }
+        }
 
         // get channel/message by id
         const channel = await this.client.channels.fetch(`872122458545725451`).catch(() => { return null; });
@@ -313,21 +279,45 @@ class AntiFilterCore {
 
     readBlacklist() {
         // get username blacklist
-        if (fs.existsSync(listPath)) {
-            blacklist = [];
-            const text = fs.readFileSync(listPath, 'utf8');
-            for (let _line of text.split(/\r?\n/)) {
-                let line = _line.trim();
-                if (!!line && !blacklist.includes(line)) {
-                    blacklist.push(line);
+        // get tweet detailData
+        const filenames = fs.readdirSync(dataPath).filter(file => file.endsWith('.txt'));
+        for (let filename of filenames) {
+
+            const filepath = `${dataPath}/${filename}`;
+            const { name } = path.parse(filepath);
+
+            // detail for line
+            let lines = fs.readFileSync(filepath, 'utf8').split(/\r?\n/);
+
+
+            if (name == 'blacklist') {
+                // blacklist username
+                blacklist = [];
+                for (let line of lines) {
+                    blacklist.push(line.trim());
                 }
+
+
+            } else if (['guro', 'other', 'new'].includes(name)) {
+                // other type
+                for (let url of lines) {
+                    detailData[name].push(url.trim());
+                }
+
+            } else {
+                // fake user
+                for (let url of lines) {
+                    if (!detailData.fakeuser[name]) { detailData.fakeuser[name] = []; }
+                    detailData.fakeuser[name].push(url.trim());
+                }
+
             }
         }
 
         // get image blacklist
         if (fs.existsSync(dataPath)) {
             imagesList = this.readdirSync(dataPath)
-                .filter(file => file.endsWith('.jpg') || file.endsWith('.png'));
+                .filter(file => /\.jpg\_?$|\.png\_?$/.test(file));
         }
     }
 
@@ -365,13 +355,13 @@ module.exports = {
         if (regUrl.test(content)) {
 
             // 30sec timeout
-            for (let i = 0; i < 30; ++i) {
+            for (let i = 0; i < 60; ++i) {
                 if (message.embeds.length > 0) {
                     // found discord embed, break
                     break;
                 }
                 // wait 2sec & update message
-                await sleep(1000);
+                await sleep(500);
                 message = await message.channel.messages.fetch({ message: message.id, force: true }).catch(() => { return null; });
                 // can't found message, maybe deleted
                 if (!message) { return false; }
@@ -390,8 +380,8 @@ module.exports = {
 
             // todo, dont delete message when testrun 
             // // delete message
-            // message.delete().catch(() => { });
-            mainAFCore.logToDiscord(`delete msg: ${message.url}`);
+            message.delete().catch(() => { });
+            // mainAFCore.logToDiscord(`delete msg: ${message.url}`);
 
             // keep blacklist
             // image in blacklist but username not, add to blacklist
@@ -456,19 +446,33 @@ module.exports = {
 
         if (command == 'move') {
 
-            if (!/\d+/.test(args[0])) { return; }
-            if (!/^\..+\/$/.test(args[1])) { return; }
+            if (!/\d+/.test(args[0]) ||         // by tID
+                !/^\..+\/$/.test(args[1])) {    // target file path
+
+                channel.send({
+                    content: [
+                        '```Format: ', `<tID> <file path>`, `Ex:`,
+                        `1639250471847333889 ./blacklist/fakeuser/2K4S4_K4H4R4/Aid643-1639250471847333889-img1.jpg`,
+                        '```'
+                    ].join('\n')
+                });
+                return;
+            }
 
             // find target image
             let src = imagesList.find((img => img.includes(args[0])));
             if (!src) { return; }
 
-            let { name, ext } = path.parse(src);
-            let dest = `${args[1]}${name}${ext}`;
+            let { dir } = path.parse(src);
+            let dest = args[1];
 
-            fs.mkdirSync(args[1], { recursive: true });
+            fs.mkdirSync(dir, { recursive: true });
             fs.copyFileSync(src, dest);
-            if (fs.existsSync(src) && fs.existsSync(dest)) { fs.unlinkSync(src); }
+            if (fs.existsSync(src) && fs.existsSync(dest)) {
+                fs.unlinkSync(src);
+                imagesList = imagesList.filter((ele) => (ele !== src));
+                imagesList.push(dest);
+            }
 
             mainAFCore.uploadBlacklist();
         }
@@ -528,6 +532,7 @@ module.exports = {
                     if (!imagesList.includes(filepath)) {
                         imagesList.push(filepath);
                         resultLog.push(`[+] ${filename}`);
+                        if (!fs.existsSync('./blacklist/new')) { fs.mkdirSync('./blacklist/new', { recursive: true }); }
                         await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); });
                     }
                 }
