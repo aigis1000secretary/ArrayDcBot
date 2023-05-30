@@ -220,6 +220,30 @@ class AntiFilterCore {
     async uploadBlacklist() {
         if (!this.client || !fs.existsSync(dataPath)) { return; }
 
+        for (let [tID, status] of this.tweetStatus) {
+            let { username, ssim, image } = status;
+
+            const url = `https://twitter.com/${username}/status/${tID}`
+
+            if (/\/fakeuser\/([^\/]+)\//.test(image)) {
+                let [, username] = image.match(/\/fakeuser\/([^\/]+)\//);
+                if (detailData.fakeuser[username].includes(url)) { continue; }
+                detailData.fakeuser[username].push(url);
+
+            } else if (image.includes(`/guro/`)) {
+                if (detailData.guro.includes(url)) { continue; }
+                detailData.guro.push(url);
+
+            } else if (image.includes(`/new/`)) {
+                if (detailData.new.includes(url)) { continue; }
+                detailData.new.push(url);
+
+            } else {
+                if (detailData.other.includes(url)) { continue; }
+                detailData.other.push(url);
+            }
+        }
+
         // update blacklist
         const names = ['blacklist', 'guro', 'other', 'new'].concat(Object.keys(detailData.fakeuser));
         for (let name of names) {
@@ -309,6 +333,9 @@ class AntiFilterCore {
         // get username blacklist
         // get tweet detailData
         const filenames = fs.readdirSync(dataPath).filter(file => file.endsWith('.txt'));
+        blacklist = [];
+        detailData = { guro: [], other: [], new: [], fakeuser: {} };
+
         for (let filename of filenames) {
 
             const filepath = `${dataPath}/${filename}`;
@@ -317,28 +344,29 @@ class AntiFilterCore {
             // detail for line
             let lines = fs.readFileSync(filepath, 'utf8').split(/\r?\n/);
 
-
             if (name == 'blacklist') {
                 // blacklist username
-                blacklist = [];
                 for (let line of lines) {
+                    line = line.trim();
+                    if (!line) { continue; }
                     blacklist.push(line.trim());
                 }
-
 
             } else if (['guro', 'other', 'new'].includes(name)) {
                 // other type
                 for (let url of lines) {
-                    if (detailData[name].includes(url.trim())) { continue; }
-                    detailData[name].push(url.trim());
+                    url = url.trim();
+                    if (!url || detailData[name].includes(url)) { continue; }
+                    detailData[name].push(url);
                 }
 
             } else {
                 if (!detailData.fakeuser[name]) { detailData.fakeuser[name] = []; }
                 // fake user
                 for (let url of lines) {
-                    if (detailData.fakeuser[name].includes(url.trim())) { continue; }
-                    detailData.fakeuser[name].push(url.trim());
+                    url = url.trim();
+                    if (!url || detailData.fakeuser[name].includes(url)) { continue; }
+                    detailData.fakeuser[name].push(url);
                 }
 
             }
@@ -431,9 +459,9 @@ module.exports = {
                 if (!blacklist.includes(username)) {
                     blacklist.push(username);
                     mainAFCore.logToDiscord(`[+] ${username}`);
-                    mainAFCore.uploadBlacklist();
-                    return;
                 }
+                mainAFCore.uploadBlacklist();
+                return;
             }
         }
 
