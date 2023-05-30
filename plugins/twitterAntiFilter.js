@@ -199,7 +199,8 @@ class AntiFilterCore {
         // update blacklist detail
         // get cache data
         let detailData = { guro: [], other: [], fakeuser: {} };
-        for (let { username, tID, image } of mainAFCore.tweetStatus) {
+        for (let [tID, tweetStatu] of mainAFCore.tweetStatus) {
+            let { username, tID, image } = tweetStatu;
             if (!image) { continue; }
 
             let url = `https://twitter.com/${username}/status/${tID}`;
@@ -208,7 +209,7 @@ class AntiFilterCore {
             else if (image.includes('other')) { detailData.other.push(url); }
 
             else if (image.includes('fakeuser')) {
-                let [, victim] = image.match(/\.\/blacklist\/fakeuser\/[^\/]+\//) || [, 'null'];
+                let [, victim] = image.match(/\.\/blacklist\/fakeuser\/([^\/]+)\//) || [, 'null'];
                 if (!detailData.fakeuser[victim]) { detailData.fakeuser[victim] = []; }
                 detailData.fakeuser[victim].push(url);
             }
@@ -229,6 +230,7 @@ class AntiFilterCore {
                 }
             } else {
                 for (let url of lines) {
+                    if (!detailData.fakeuser[name]) { detailData.fakeuser[name] = []; }
                     // detail for line
                     detailData.fakeuser[name].push(url);
                 }
@@ -241,6 +243,7 @@ class AntiFilterCore {
         fs.writeFileSync(`${dataPath}/guro.txt`, detailData.guro.join('\r\n'), 'utf8');
         fs.writeFileSync(`${dataPath}/other.txt`, detailData.other.join('\r\n'), 'utf8');
         for (let victim of Object.keys(detailData.fakeuser)) {
+            detailData.fakeuser[victim] = [...new Set(detailData.fakeuser[victim])]
             fs.writeFileSync(`${dataPath}/${victim}.txt`, detailData.fakeuser[victim].join('\r\n'), 'utf8');
         }
 
@@ -398,6 +401,8 @@ module.exports = {
                 mainAFCore.uploadBlacklist();
                 return;
             }
+            // log tweet id
+            mainAFCore.uploadBlacklist();
         }
 
         if (message.author?.id != `353625493876113440`) { return; }
