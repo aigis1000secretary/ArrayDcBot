@@ -1260,17 +1260,17 @@ class MainMemberCheckerCore {
         await YTDlpWrap.downloadFromGithub().catch(() => { });
 
         // cookie.txt
-        if (fs.existsSync('./cookies.txt')) {
+        if (fs.existsSync('./cookies.txt') && !fs.existsSync('./cookies.enc')) {
             const key = process.env.JSONKEY;
             let rawData = fs.readFileSync('./cookies.txt', 'utf8');
             let encData = crypto.encrypt(rawData, key);
             fs.writeFileSync('./cookies.enc', encData);
 
-        } else if (fs.existsSync('./cookies.enc')) {
+        } else if (!fs.existsSync('./cookies.txt') && fs.existsSync('./cookies.enc')) {
             const key = process.env.JSONKEY;
             let encData = fs.readFileSync('./cookies.enc', 'utf8');
-            let rawData = crypto.decrypt(encData, key);
-            fs.writeFileSync('./cookies.txt', rawData);
+            let decData = crypto.decrypt(encData, key);
+            fs.writeFileSync('./cookies.txt', decData);
         }
 
         await Pg.init();
