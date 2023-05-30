@@ -489,7 +489,7 @@ class McChannelCore {
 
             // check result
             if (!Array.isArray(_videos)) {
-                console.log(`getVideoLists error:`, holoChannelID);
+                console.log(`getVideoLists error:`, this.holoChannelID);
                 console.log(_videos)
                 _videos = [];
             }   // something is wrong
