@@ -57,7 +57,7 @@ const downloadImage = async (url, subUrl) => {
     // del twitter image
     if (fs.existsSync(file)) { fs.unlinkSync(file); }
 
-    return image;
+    return { canvas: image, url };
 }
 
 const imageComparison = async (image1) => {
@@ -99,86 +99,114 @@ class AntiFilterCore {
 
     tweetStatus = new Map();
 
-    async getImageComparison(message) {
+    async getImageComparison(username, tID, embedImage) {
 
-        // check tweet url
-        if (!regUrl.test(message.content)) { return false; }
+        // check process status
+        if (!this.tweetStatus.has(tID)) {
+            // waiting process
+            this.tweetStatus.set(tID, 0);
+        }
 
-        let [, username, , tID] = message.content.match(regUrl);
-        if (tID) {
-
-            // check process status
-            if (!this.tweetStatus.has(tID)) {
-                // waiting process
-                this.tweetStatus.set(tID, 0);
-            }
-
-            // process already started
-            if (this.tweetStatus.get(tID) == 1) {
-                // 30sec timeout
-                for (let i = 0; i < 30; ++i) {
-                    if (this.tweetStatus.get(tID) != 1) {
-                        // process done, break
-                        break;
-                    }
-                    await sleep(1000);
+        // process already started
+        if (this.tweetStatus.get(tID) == 1) {
+            // 30sec timeout
+            for (let i = 0; i < 30; ++i) {
+                if (this.tweetStatus.get(tID) != 1) {
+                    // process done, break
+                    break;
                 }
+                await sleep(1000);
             }
+        }
 
-            // if process done, check result
-            let tweetStatu = this.tweetStatus.get(tID);
-            if (tweetStatu == 1) {
-                // process still running, mamby error
-                console.log(`getImageComparison timeout, mID: ${message.id}, tID: ${tID}`);
-                return false;
+        // if process done, check result
+        let tweetStatu = this.tweetStatus.get(tID);
+        if (tweetStatu == 1) {
+            // process still running, maybe error
+            console.log(`getImageComparison timeout, mID: ${message.id}, tID: ${tID}`);
+            return false;
 
-            } else if (tweetStatu == 2) {
-                // image not in blacklist
-                return false;
+        } else if (tweetStatu == 2) {
+            // image not in blacklist
+            return false;
 
-            } else if (imagesList.includes(tweetStatu.image)) {
-                // image in blacklist
-                return { username, tID };
+        } else if (imagesList.includes(tweetStatu.image)) {
+            // image in blacklist
+            return tweetStatu;
 
-            }
+        }
 
+        // tweetStatu == 0
+        // start process
+        this.tweetStatus.set(tID, 1);
 
-            // start process
-            this.tweetStatus.set(tID, 1);
+        // empty embed
+        if (!embedImage || (!embedImage.url && !embedImage.proxyURL)) {
+            this.tweetStatus.set(tID, 0);   // try again if some thread waiting
+            return false;
+        }
 
-            // empty embed
-            if (!message.embeds ||
-                !message.embeds[0] ||
-                !message.embeds[0].image) {
-                this.tweetStatus.set(tID, 0);
-                return false;
-            }
+        // download image
+        let image = await downloadImage(embedImage.url, embedImage.proxyURL);
 
-            // download image
-            let embedImage = message.embeds[0].image;
-            let image = await downloadImage(embedImage.url, embedImage.proxyURL);
+        // download image fail
+        if (!image) {
+            this.tweetStatus.set(tID, 0);   // try again if some thread waiting
+            return false;
+        }
 
-            // download image fail
-            if (!image) {
-                this.tweetStatus.set(tID, 0);
-                return false;
-            }
+        let imageInBlackList = await imageComparison(image.canvas).catch((e) => { return e });
+        if (imageInBlackList) {
+            // image in blacklist
+            // process done, set result
+            let result = { username, tID, ssim: imageInBlackList.ssim, image: imageInBlackList.image }
+            this.tweetStatus.set(tID, result);
+            return result;
 
-            let imageInBlackList = await imageComparison(image).catch((e) => { return e });
-            if (imageInBlackList) {
-                // image in blacklist
-                // process done, set result
-                this.tweetStatus.set(tID, { username, tID, image: imageInBlackList.image });
-                return { username, tID, ssim: imageInBlackList.ssim, image: imageInBlackList.image };
+        } else {    // imageInBlackList == false
+            // image not in blacklist
+            // check username
+
+            if (blacklist.includes(username)) {
+                // username in blacklist, kuro, new spam image
+
+                // set folder
+                if (!fs.existsSync('./blacklist/new')) { fs.mkdirSync('./blacklist/new', { recursive: true }); }
+
+                // get image data
+                const url = image.url;
+                const [, ext] = url.match(/([^\.]+)$/) || [, null];
+                let filename = `${username}-${tweetID}-img1.${ext}`;
+                let filepath = `./blacklist/new/${filename}`;
+                for (let i = 1; true; ++i) {
+                    if (fs.existsSync(filepath)) {
+                        filename = filename.replace(`-img${i}.`, `-img${i + 1}.`);
+                        filepath = filepath.replace(`-img${i}.`, `-img${i + 1}.`);
+                    } else { break; }
+                }
+
+                // set image to blacklist
+                imagesList.push(filepath);
+                this.logToDiscord(`[+] ${filename}`);
+
+                // download image to blacklist
+                await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); });
+                // or use image.canvas ?
+
+                let result = { username, tID, ssim: 1.0, image: filepath }
+
+                // set status
+                mainAFCore.tweetStatus.set(tweetID, result);
+                return result;
 
             } else {
-                // image not in blacklist
+                // username not in blacklist, siro
                 // process done
                 this.tweetStatus.set(tID, 2);
                 return false;
+
             }
-        } else {
-            return { username };
+            return false;
         }
     }
 
@@ -301,13 +329,15 @@ class AntiFilterCore {
             } else if (['guro', 'other', 'new'].includes(name)) {
                 // other type
                 for (let url of lines) {
+                    if (detailData[name].includes(url.trim())) { continue; }
                     detailData[name].push(url.trim());
                 }
 
             } else {
+                if (!detailData.fakeuser[name]) { detailData.fakeuser[name] = []; }
                 // fake user
                 for (let url of lines) {
-                    if (!detailData.fakeuser[name]) { detailData.fakeuser[name] = []; }
+                    if (detailData.fakeuser[name].includes(url.trim())) { continue; }
                     detailData.fakeuser[name].push(url.trim());
                 }
 
@@ -349,7 +379,7 @@ module.exports = {
 
     async execute(message, pluginConfig, command, args, lines) {
 
-        const { client, content, channel } = message;
+        const { client, content, channel, embeds } = message;
 
         // twitter url
         if (regUrl.test(content)) {
@@ -367,32 +397,44 @@ module.exports = {
                 if (!message) { return false; }
             }
 
-            // ckeck image, get result
-            let result = await mainAFCore.getImageComparison(message);
-            let { username, tID, ssim, image } = result;
+            const [, username, , tID] = content.match(regUrl);
+            const _embedImage = (((embeds || [])[0]) || {}).image || null;
+            // embedImage.url, embedImage.proxyURL
 
-            // found tID but tweet image not in blacklist
-            if (!result || !ssim) { return false; }
+            let deleted = false;
 
-            // image in blacklist
-            console.log(`[TAF] ${username} ${tID} ${ssim}`);
-            console.log(` ${image}`);
-
-            // todo, dont delete message when testrun 
-            // // delete message
-            message.delete().catch(() => { });
-            // mainAFCore.logToDiscord(`delete msg: ${message.url}`);
-
-            // keep blacklist
-            // image in blacklist but username not, add to blacklist
-            if (username && !blacklist.includes(username)) {
-                blacklist.push(username);
-                mainAFCore.logToDiscord(`[+] ${username}`);
-                mainAFCore.uploadBlacklist();
-                return;
+            // username in blacklist
+            if (blacklist.includes(username)) {
+                // delete message
+                message.delete().catch(() => { });
+                deleted = true;
+                // message.suppressEmbeds(true).catch(() => { });
             }
-            // log tweet id
-            mainAFCore.uploadBlacklist();
+
+            // found tID & image
+            if (tID && _embedImage) {
+                let embedImage = { url: _embedImage.url, proxyURL: _embedImage.proxyURL };
+                let result = await mainAFCore.getImageComparison(username, tID, embedImage);
+
+                // found tID & image but tweet image not in blacklist
+                if (!result) { return false; }
+                let { ssim, image } = result;
+
+                // image in blacklist
+                console.log(`[TAF] image in blacklist. ${username} ${tID} ${ssim}`);
+                console.log(` ${image}`);
+
+                if (!deleted) { message.delete().catch(() => { }); }
+                // mainAFCore.logToDiscord(`delete msg: ${message.url}`);
+
+                // image in blacklist but username not, add to blacklist
+                if (!blacklist.includes(username)) {
+                    blacklist.push(username);
+                    mainAFCore.logToDiscord(`[+] ${username}`);
+                    mainAFCore.uploadBlacklist();
+                    return;
+                }
+            }
         }
 
         if (message.author?.id != `353625493876113440`) { return; }
@@ -447,7 +489,7 @@ module.exports = {
         if (command == 'move') {
 
             if (!/\d+/.test(args[0]) ||         // by tID
-                !/^\..+\/$/.test(args[1])) {    // target file path
+                !/^\..+[^\/]$/.test(args[1])) {    // target file path
 
                 channel.send({
                     content: [
@@ -496,12 +538,12 @@ module.exports = {
         if (!regUrl.test(content)) { return; }
 
         // get tweet data
-        const [, username, , tweetID] = (content.match(regUrl) || [, null, , null]);
+        const [, username, , tID] = (content.match(regUrl) || [, null, , null]);
         // get image data
         const embedImage = (((embeds || [])[0]) || {}).image || null;
 
         // check tweet data
-        if (username == null || tweetID == null) { return; }
+        if (username == null || tID == null) { return; }
 
         let resultLog = [];
 
@@ -518,23 +560,37 @@ module.exports = {
             if (image) {
 
                 // check image in blacklist or not
-                let imageInBlackList = await imageComparison(image).catch((e) => { return null });
+                let imageInBlackList = await imageComparison(image.canvas).catch((e) => { return null });
                 if (!imageInBlackList) {
                     // image not in blacklist
-                    // set status
-                    mainAFCore.tweetStatus.set(tweetID, { username, tweetID, image: imageInBlackList.image });
+
+                    // set folder
+                    if (!fs.existsSync('./blacklist/new')) { fs.mkdirSync('./blacklist/new', { recursive: true }); }
 
                     // get image data
+                    const url = image.url;
                     const [, ext] = url.match(/([^\.]+)$/) || [, null];
-                    const filename = `${username}-${tweetID}-img1.${ext}`;
-                    const filepath = `./blacklist/new/${filename}`;
-                    // download image to blacklist
-                    if (!imagesList.includes(filepath)) {
-                        imagesList.push(filepath);
-                        resultLog.push(`[+] ${filename}`);
-                        if (!fs.existsSync('./blacklist/new')) { fs.mkdirSync('./blacklist/new', { recursive: true }); }
-                        await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); });
+                    let filename = `${username}-${tweetID}-img1.${ext}`;
+                    let filepath = `./blacklist/new/${filename}`;
+                    for (let i = 1; true; ++i) {
+                        if (fs.existsSync(filepath)) {
+                            filename = filename.replace(`-img${i}.`, `-img${i + 1}.`);
+                            filepath = filepath.replace(`-img${i}.`, `-img${i + 1}.`);
+                        } else { break; }
                     }
+
+                    // set image to blacklist
+                    imagesList.push(filepath);
+                    resultLog.push(`[+] ${filename}`);
+
+                    // download image to blacklist
+                    await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); });
+                    // or use image.canvas ?
+
+                    let result = { username, tID, ssim: 1.0, image: filepath }
+
+                    // set status
+                    mainAFCore.tweetStatus.set(tweetID, result);
                 }
             }
         }
