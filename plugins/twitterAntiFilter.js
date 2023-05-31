@@ -463,7 +463,10 @@ module.exports = {
 
                 const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
                     .setTitle(`推特過濾器:`)
-                    .addFields([{ name: `Content:`, value: content }]);
+                    .addFields([
+                        { name: `Content:`, value: content },
+                        { name: `Channel:`, value: `[${channel.toString()}](${message.url})` },
+                    ]);
                 mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
 
                 // delete message

@@ -4,54 +4,27 @@ module.exports = {      // KTG
     perfix: /(^[\/\-!~])[\S]/,
 
     twitterListener2: [
-        {
-            RETWEET_CHANNEL_ID: '977860525830586379',      // #_aigis_retweet
-            RETWEET_KEYWORD: '#アイギスお絵かき',
-        },
-        {
-            RETWEET_CHANNEL_ID: '977860525830586379',      // #_aigis_retweet
-            RETWEET_KEYWORD: '#アイギス10周年アートコン',
-        },
-        {
-            RETWEET_CHANNEL_ID: '1054284227375542333',      // #sao
-            RETWEET_KEYWORD: '#ししらーと',
-        },
-        {
-            RETWEET_CHANNEL_ID: '1054284227375542333',      // #sao
-            RETWEET_KEYWORD: '#ししデコ',
-        },
-        {
-            RETWEET_CHANNEL_ID: '1054284227375542333',      // #sao
-            RETWEET_KEYWORD: '#いろはにも絵を',
-        },
-        {
-            RETWEET_CHANNEL_ID: '1054284227375542333',      // #sao
-            RETWEET_KEYWORD: '#ほしまちぎゃらりー',
-        },
-        {
-            RETWEET_CHANNEL_ID: '1054284227375542333',      // #sao
-            RETWEET_KEYWORD: '#towart',
-        },
-        {
-            RETWEET_CHANNEL_ID: '1054284227375542333',      // #sao
-            RETWEET_KEYWORD: '#百鬼絵巻',
-        },
-        {
-            RETWEET_CHANNEL_ID: '1054284227375542333',      // #sao
-            RETWEET_KEYWORD: '#祭絵',
-        },
-        {
-            RETWEET_CHANNEL_ID: '1054284227375542333',      // #sao
-            RETWEET_KEYWORD: '#かな絵',
-        },
-        {
-            RETWEET_CHANNEL_ID: '1054284227375542333',      // #sao
-            RETWEET_KEYWORD: '#ルーナート',
-        },
-        {
-            RETWEET_CHANNEL_ID: '1054284227375542333',      // #sao
-            RETWEET_KEYWORD: '#いぬいらすと',
-        }
+        // #_aigis_retweet
+        { RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: '#アイギスお絵かき', },
+        { RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: '#アイギス10周年アートコン', },
+        // #sao
+        { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#ししらーと', },
+        { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#ししデコ', },
+        { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#いろはにも絵を', },
+        { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#ほしまちぎゃらりー', },
+        { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#towart', },
+        { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#百鬼絵巻', },
+        { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#祭絵', },
+        { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#かな絵', },
+        { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#ルーナート', },
+        { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#いぬいらすと', },
+        // #sao2
+        { RETWEET_CHANNEL_ID: '1113369067177381918', RETWEET_KEYWORD: '#レトロノーブル', },
+        { RETWEET_CHANNEL_ID: '1113369067177381918', RETWEET_KEYWORD: '#猫神奉納品', },
+        { RETWEET_CHANNEL_ID: '1113369067177381918', RETWEET_KEYWORD: '#KANGDANIELxSPAO', },
+        { RETWEET_CHANNEL_ID: '1113369067177381918', RETWEET_KEYWORD: '#見てよねぇ七瀬', },
+        { RETWEET_CHANNEL_ID: '1113369067177381918', RETWEET_KEYWORD: '#ヌォンタート', },
+        { RETWEET_CHANNEL_ID: '1113369067177381918', RETWEET_KEYWORD: '#Yuuriart', },
     ],
 
     rssbot: [
