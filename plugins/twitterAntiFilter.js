@@ -434,7 +434,7 @@ module.exports = {
                 for (let i = 0; i < 60; ++i) {
 
                     let embed = (message.embeds || [])[0];  // embed or undefined
-                    embedImage = embed?.image || {};        // image or {}
+                    embedImage = embed?.image || embed?.thumbnail || {};        // image or {}
 
                     // found discord embed image, break
                     if (embedImage.url || embedImage.proxyURL) { break; }
@@ -589,9 +589,9 @@ module.exports = {
                 const dir = `./blacklist/${type}`;
                 fs.mkdirSync(dir, { recursive: true });
 
-                const { _base } = path.parse(src);
-                let base = `${base}${type == 'guro' ? '_' : ''}`.replace(/_+$/, '_');
-                const dest = `${dir}/${base}`;
+                const { base } = path.parse(src);
+                let base_ = `${base}${type == 'guro' ? '_' : ''}`.replace(/_+$/, '_');
+                const dest = `${dir}/${base_}`;
                 if (src != dest) {
                     fs.copyFileSync(src, dest);
                     if (fs.existsSync(src) && fs.existsSync(dest)) {
