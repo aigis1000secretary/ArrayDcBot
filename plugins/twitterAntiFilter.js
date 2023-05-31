@@ -556,31 +556,67 @@ module.exports = {
         if (command == 'move') {
 
             if (!/\d+/.test(args[0]) ||         // by tID
-                !/^\..+[^\/]$/.test(args[1])) {    // target file path
+                !/^\S+$/.test(args[1])) {    // target file path
 
                 channel.send({
                     content: [
-                        '```Format: ', `<tID> <file path>`, `Ex:`,
-                        `1639250471847333889 ./blacklist/fakeuser/2K4S4_K4H4R4/Aid643-1639250471847333889-img1.jpg`,
+                        '```Format: ', `<tID> <type>`, `Ex:`,
+                        `1639250471847333889 fakeuser/2K4S4_K4H4R4`,
                         '```'
                     ].join('\n')
                 });
                 return;
             }
 
+            const tID = args[0];
+            const type = args[1];
+
+            if (!['guro', 'other'].includes(type) &&
+                !/^fakeuser\/[^\/]+$/.test(type)) {
+
+                channel.send({ content: `Unknown type` });
+                return;
+            }
+
             // find target image
-            let src = imagesList.find((img => img.includes(args[0])));
-            if (!src) { return; }
+            const src = imagesList.find((img => img.includes(args[0])));
+            if (src) {
+                // found target image
 
-            let { dir } = path.parse(src);
-            let dest = args[1];
+                const dir = `./blacklist/${type}`;
+                fs.mkdirSync(dir, { recursive: true });
 
-            fs.mkdirSync(dir, { recursive: true });
-            fs.copyFileSync(src, dest);
-            if (fs.existsSync(src) && fs.existsSync(dest)) {
-                fs.unlinkSync(src);
-                imagesList = imagesList.filter((ele) => (ele !== src));
-                imagesList.push(dest);
+                const { _base } = path.parse(src);
+                let base = `${base}${type == 'guro' ? '_' : ''}`.replace(/_+$/, '_');
+                const dest = `${dir}/${base}`;
+                if (src != dest) {
+                    fs.copyFileSync(src, dest);
+                    if (fs.existsSync(src) && fs.existsSync(dest)) {
+                        fs.unlinkSync(src);
+                        imagesList = imagesList.filter((ele) => (ele !== src));
+                        imagesList.push(dest);
+                    }
+                }
+            }
+
+            // move url type
+            {
+                let tweetUrl = null;
+                for (let url of detailData.new) {
+                    if (!url.includes(tID)) { continue; }
+                    tweetUrl = url;
+                    break;
+                }
+                if (tweetUrl) {
+                    detailData.new = detailData.new.filter((ele) => (ele !== tweetUrl));
+
+                    if (['guro', 'other'].includes(type)) {
+                        detailData[type].push(tweetUrl);
+                    } else if (/^fakeuser\/[^\/]+$/.test(type)) {
+                        let name = type.replace('fakeuser\/', '');
+                        detailData.fakeuser[name].push(tweetUrl);
+                    }
+                }
             }
 
             mainAFCore.uploadBlacklist();
