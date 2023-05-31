@@ -7,7 +7,8 @@ const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const regexToken = /([A-Za-z0-9_\-]{24,}\.[A-Za-z0-9_\-]{6,}\.[A-Za-z0-9_\-]{27,})/;
 const regexMentions = /(@here|@everyone)/i;
 const regexInviteUrl = /(https?:\/\/)?discord.gg\/\S+/;
-let regexAnti = null;
+const blacklist = ['GrastonBerry', '_CMRA_', 'sui1911'];
+const regexAnti = new RegExp(`twitter\.com/(${blacklist.join('|')})/?`, 'i');
 
 // spam bot Level 1 (only delete message)
 const spamChecker = [
@@ -146,7 +147,7 @@ const spamChecker = [
         // result
         return {
             content,
-            reason: `ANTI`,
+            reason: `SPAM`,
             delete: true, kick: false, forceDel: true, silent: true,
         }
     },
@@ -158,34 +159,12 @@ module.exports = {
     name: 'spambotKicker',
     description: "kick spam bot",
 
-    async updateRegexAnti() {
-        const filepath = `./blacklist/blacklist.txt`;
-        if (!fs.existsSync(filepath)) { console.log('waiting blacklist.txt ...'); return; }
-
-        let blacklist = [];
-        const text = fs.readFileSync(filepath, 'utf8');
-        for (let _line of text.split(/\r?\n/)) {
-            let line = _line.trim();
-            if (!!line && !blacklist.includes(line)) {
-                blacklist.push(line);
-            }
-        }
-        regexAnti = new RegExp(`twitter\.com/(${blacklist.join('|')})/?`, 'i');
-        console.log(`loading blacklist[${blacklist.length}]`);
-        // console.log(regexAnti);
-    },
-
     async execute(message, pluginConfig, command, args, lines) {
         // // skip server bot
         // if (message.author.bot) return;
 
         // skip DM
         if (!message.content) { return false; }
-
-        if ('regexanti' == command && message.client.user.id == `920485085935984641`) {
-            this.updateRegexAnti();
-            return;
-        }
 
         // get config
         const { client, guild, channel, author } = message;

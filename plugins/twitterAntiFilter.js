@@ -424,20 +424,26 @@ module.exports = {
         // twitter url
         if (regUrl.test(content)) {
 
-            // 30sec timeout
-            for (let i = 0; i < 60; ++i) {
-                if (message.embeds.length > 0) {
-                    // found discord embed, break
-                    break;
+            const [, username, , tID] = content.match(regUrl);
+
+            if (tID) {
+                // 30sec timeout for tweet detail
+                for (let i = 0; i < 60; ++i) {
+                    if (message.embeds.length > 0) {
+                        const embedImage = (((message.embeds || [])[0]) || {}).image || {};
+                        if (embedImage.url || embedImage.proxyURL) {
+                            // found discord embed, break
+                            break;
+                        }
+                    }
+                    // wait 2sec & update message
+                    await sleep(500);
+                    message = await message.channel.messages.fetch({ message: message.id, force: true }).catch(() => { return null; });
+                    // can't found message, maybe deleted
+                    if (!message) { return false; }
                 }
-                // wait 2sec & update message
-                await sleep(500);
-                message = await message.channel.messages.fetch({ message: message.id, force: true }).catch(() => { return null; });
-                // can't found message, maybe deleted
-                if (!message) { return false; }
             }
 
-            const [, username, , tID] = content.match(regUrl);
             const _embedImage = (((embeds || [])[0]) || {}).image || null;
             const embedImage = _embedImage ? { url: _embedImage.url, proxyURL: _embedImage.proxyURL } : null;
 
@@ -721,6 +727,7 @@ app.get(/^\/blacklist(\/[^\/]*)*$/, express.static('.'), serveIndex('.', {
     'icons': true, stylesheet: './style.css', view: 'details'
 }));
 
+/*
 // webdav
 const fullPath = path.resolve(`./blacklist`);
 const webdav = require('webdav-server').v2;
@@ -728,4 +735,123 @@ const server = new webdav.WebDAVServer();
 server.setFileSystem('/', new webdav.PhysicalFileSystem(fullPath));
 app.use(webdav.extensions.express('/blacklist/', server)); // GET 以外
 //*/
+
+const { TwitterApi } = require('twitter-api-v2');
+class Twitter {
+
+    client = new TwitterApi(process.env.TWITTER_BEARER_TOKEN);
+    constructor() { }
+
+    userID = new Map();
+    async getUserID(username) {
+        if (this.userID.has(username)) { return this.userID.get(username); }
+        this.userID.set(username, 'Loading...');
+
+        const user = await this.client.v2.userByUsername(username);
+        let result = user?.data?.id || ((user?.errors || [])[0] || {}).detail || null;
+        this.userID.set(username, result);
+        return result;
+    }
+}
+const twitter = new Twitter();
+
+// const generateTimeline = (username) => {
+//     return `<a class="twitter-timeline" data-width="460" data-height="200" data-w data-theme="dark" ` +
+//         `href="https://twitter.com/${username}?ref_src=twsrc%5Etfw">Tweets by ${username}</a>`
+// }
+
+app.get('/blacklist/blacklist.html', async (req, res) => {
+    // html head
+    let html = [];
+    html.push(
+        '<html><head>',
+        '<link href="https://fonts.googleapis.com/css?family=Roboto Condensed" rel="stylesheet">',
+        '<style> body {font-family: "Roboto Condensed";font-size: 16px;} </style>',
+        '<style> table,td {border: 1px solid #333;} </style>',
+        '<script src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>',
+        '<script src="https://www.kryogenix.org/code/browser/sorttable/sorttable.js" charset="utf-8"></script>',
+        '</head><body>',
+        `Now Time: ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Tokyo' })}<br>`,
+        `⚠️=不必要に<b>グロテスク</b>な画像/動画、露骨な暴力<br>`
+    );
+    // html.push(generateTimeline('kubihoto162794'));
+    // html.push(generateTimeline('rXlxi7akZjaHCUG'));
+
+    // get user datas
+    let userStatus = [];
+    for (let username of blacklist) {
+        let user = { username, fakeuser: {} };
+
+        for (let name of ['guro', 'new']) {
+            for (let url of detailData[name]) {
+                if (url.includes(username)) {
+                    user[name] = true;
+                }
+            }
+        }
+        for (let name of Object.keys(detailData.fakeuser)) {
+            for (let url of detailData.fakeuser[name]) {
+                if (url.includes(username)) {
+                    // if (!user.fakeuser) { user.fakeuser = {}; }
+                    user.fakeuser[name] = true;
+                }
+            }
+        }
+        if (!user.guro && !user.name && !user.fakeuser) {
+            user.other = true;
+        }
+
+        // get user id
+        let uID = await twitter.getUserID(username);
+        if (uID) { user.uID = uID; }
+
+        userStatus.push(user);
+    }
+
+    // // sort user data
+    // userStatus.sort((a, b) => (!!a.guro - !!b.guro));
+    // let names = Object.keys(detailData.fakeuser);
+    // names.sort((a, b) => {
+    //     let iA = detailData.fakeuser[a].length;
+    //     let ib = detailData.fakeuser[b].length;
+    //     return iA == ib ? 0 : (iA > ib ? -1 : 1);
+    // });
+    // for (let name of names) {
+    //     userStatus.sort((a, b) => (!!b.fakeuser[name] - !!a.fakeuser[name]));
+    // }
+
+    // html table
+    html.push('<table class="sortable">');
+    let table = [], title = ['Username', 'UserID', '⚠️'];
+
+    for (let user of userStatus) {
+        let userData = [
+            `<a href="https://twitter.com/${user.username}">@${user.username}</a>`,
+            `=> ${user.uID}`,
+            user.guro ? '⚠️' : ''
+        ];
+
+        for (let name of Object.keys(detailData.fakeuser)) {
+            // set title
+            if (!title.includes(`@${name}`)) { title.push(`@${name}`); }
+
+            if (!user.fakeuser[name]) {
+                userData.push(name.replace(/./g, '-'));
+            } else {
+                userData.push(`@${name}`);
+            }
+        }
+
+        table.push('<tr><td>', userData.join('</td><td>'), '</td></tr>');
+    }
+    html.push('<tr><th>', title.join('</th><th>'), '</th></tr>');
+    html.push(table.join(''));
+
+    // // html footer
+    html.push('</table></body></html>');
+
+    // console.log(html.join(''))
+    res.send(html.join(''));
+});
+
 
