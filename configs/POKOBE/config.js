@@ -6,7 +6,9 @@ module.exports = {
     discordToken: process.env.DISCORD_928492714482343997_BOTTOKEN,
     clientSecret: process.env.DISCORD_928492714482343997_SECRET,
     resonance: 'ジャキン',
-    debugPlugins: [
+    debugPlugins: (process.env.HOST_TYPE == 'debug') ? [
+        // 'memberChecker3',
+    ] : [
         // 'delall',
         'fxtwitter',
         // 'hook',

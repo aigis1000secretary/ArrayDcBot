@@ -68,7 +68,7 @@ class youtube {
             // get response data
             const data = res.body;
             if (data.pageInfo.totalResults == 0) {
-                console.log('[MC] video not found.');
+                console.log(`video not found. ${vID}`);
                 // return {
                 //     code: 200, message: 'video not found', reason: 'video not found',
                 //     variabale: { vID }
