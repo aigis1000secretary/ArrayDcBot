@@ -5,7 +5,7 @@ const canvas = require('canvas');
 const ssim = require('image-ssim');
 const compressing = require('compressing');
 const request = require('request');
-const { AttachmentBuilder } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 const [EMOJI_LABEL] = ['🏷️']
 
@@ -81,20 +81,26 @@ const imageComparison = async (image1) => {
 
 // [, username, , tID]
 const regUrl = /https?:\/\/twitter\.com\/([^\/]+)(\/status\/(\d*))?/i;
-
+const CODE_CHANNEL = '872122458545725451';
+const LOGS_CHANNEL = '713623232070156309';
 class AntiFilterCore {
 
     client = null;
-    channel = null;
+    channels = new Map();
     constructor() { };
 
     async setClient(client) {
         this.client = client;
 
         // get channel/message by id
-        this.channel = await client.channels.fetch(`872122458545725451`).catch(() => { return null; });
-        if (this.channel) { return; }
-        this.channel = null;
+        client.channels.fetch(CODE_CHANNEL)
+            .then((channel) => { if (channel) { this.channels.set(CODE_CHANNEL, channel); } })
+            .catch(() => { return null; });
+
+        client.channels.fetch(LOGS_CHANNEL)
+            .then((channel) => { if (channel) { this.channels.set(LOGS_CHANNEL, channel); } })
+            .catch(() => { return null; });
+
     }
 
     tweetStatus = new Map();
@@ -210,8 +216,13 @@ class AntiFilterCore {
         }
     }
 
-    logToDiscord(content) {
-        this.channel.send({ content }).catch((e) => console.log(e.message));
+    logToDiscord(message, channel = CODE_CHANNEL) {
+        if (this.channels.has(channel)) {
+            let payload = (typeof message == 'string') ? { content: message } : message;
+            this.channels.get(channel).send(payload).catch((e) => console.log(e.message));
+        } else {
+            console.log(message);
+        }
     }
 
 
@@ -222,6 +233,7 @@ class AntiFilterCore {
 
         for (let [tID, status] of this.tweetStatus) {
             let { username, ssim, image } = status;
+            if (!image) { continue; }
 
             const url = `https://twitter.com/${username}/status/${tID}`
 
@@ -427,12 +439,18 @@ module.exports = {
 
             const [, username, , tID] = content.match(regUrl);
             const _embedImage = (((embeds || [])[0]) || {}).image || null;
-            // embedImage.url, embedImage.proxyURL
+            const embedImage = _embedImage ? { url: _embedImage.url, proxyURL: _embedImage.proxyURL } : null;
 
             let deleted = false;
 
             // username in blacklist
             if (blacklist.includes(username)) {
+
+                const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
+                    .setTitle(`推特過濾器:`)
+                    .addFields([{ name: `Content:`, value: content }]);
+                mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
+
                 // delete message
                 message.delete().catch(() => { });
                 deleted = true;
@@ -440,8 +458,7 @@ module.exports = {
             }
 
             // found tID & image
-            if (tID && _embedImage) {
-                let embedImage = { url: _embedImage.url, proxyURL: _embedImage.proxyURL };
+            if (tID && embedImage) {
                 let result = await mainAFCore.getImageComparison(username, tID, embedImage);
 
                 // found tID & image but tweet image not in blacklist
@@ -452,7 +469,14 @@ module.exports = {
                 console.log(`[TAF] image in blacklist. ${username} ${tID} ${ssim}`);
                 console.log(` ${image}`);
 
-                if (!deleted) { message.delete().catch(() => { }); }
+                if (!deleted) {
+                    const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
+                        .setTitle(`推特過濾器:`)
+                        .addFields([{ name: `Content:`, value: content }]);
+                    mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
+
+                    message.delete().catch(() => { });
+                }
                 // mainAFCore.logToDiscord(`delete msg: ${message.url}`);
 
                 // image in blacklist but username not, add to blacklist
@@ -559,6 +583,20 @@ module.exports = {
 
         if (client.user.id != `920485085935984641`) { return; }
 
+        // debug emoji
+        if (reaction.emoji.toString() == '🔹') {
+
+            const guildConfig = client.guildConfigs.get(message.guildId);
+            let lines = content.split('\n');
+            for (let i = 0; i < lines.length; ++i) {
+                lines[i] = guildConfig.getCommandLineArgs(lines[i]);
+            }
+            const { command, args } = lines[0];
+
+            this.execute(message, pluginConfig, command, args, lines);
+            return;
+        }
+
         // skip other emoji
         if (reaction.emoji.toString() != EMOJI_LABEL) { return; }
 
@@ -627,7 +665,13 @@ module.exports = {
             mainAFCore.logToDiscord(resultLog.join('\n'));
             mainAFCore.uploadBlacklist();
         }
-        // message.delete().catch(() => { });
+
+        const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
+            .setTitle(`推特過濾器:`)
+            .addFields([{ name: `Content:`, value: content }]);
+        mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
+
+        message.delete().catch(() => { });
     },
 
 
