@@ -108,25 +108,26 @@ class AntiFilterCore {
     async getImageComparison(username, tID, embedImage) {
 
         // check process status
-        if (!this.tweetStatus.has(tID)) {
+        let tweetStatu = this.tweetStatus.get(tID);
+
+        if (tweetStatu === undefined) {
             // waiting process
             this.tweetStatus.set(tID, 0);
-        }
-
-        // process already started
-        if (this.tweetStatus.get(tID) == 1) {
+            tweetStatu = 0;
+        } else if (this.tweetStatus.get(tID) == 1) {
             // 30sec timeout
-            for (let i = 0; i < 30; ++i) {
-                if (this.tweetStatus.get(tID) != 1) {
+            for (let i = 0; i < 60; ++i) {
+                await sleep(500);
+
+                tweetStatu = this.tweetStatus.get(tID);
+                if (tweetStatu != 1) {
                     // process done, break
                     break;
                 }
-                await sleep(1000);
             }
         }
 
         // if process done, check result
-        let tweetStatu = this.tweetStatus.get(tID);
         if (tweetStatu == 1) {
             // process still running, maybe error
             console.log(`getImageComparison timeout, mID: ${message.id}, tID: ${tID}`);
@@ -136,7 +137,8 @@ class AntiFilterCore {
             // image not in blacklist
             return false;
 
-        } else if (imagesList.includes(tweetStatu.image)) {
+        } else if (tweetStatu != 0 && tweetStatu.image) {
+            imagesList.includes(tweetStatu.image)
             // image in blacklist
             return tweetStatu;
 
@@ -182,7 +184,7 @@ class AntiFilterCore {
                 // get image data
                 const url = image.url;
                 const [, ext] = url.match(/([^\.]+)$/) || [, null];
-                let filename = `${username}-${tweetID}-img1.${ext}`;
+                let filename = `${username}-${tID}-img1.${ext}`;
                 let filepath = `./blacklist/new/${filename}`;
                 for (let i = 1; true; ++i) {
                     if (fs.existsSync(filepath)) {
@@ -202,7 +204,7 @@ class AntiFilterCore {
                 let result = { username, tID, ssim: 1.0, image: filepath }
 
                 // set status
-                mainAFCore.tweetStatus.set(tweetID, result);
+                mainAFCore.tweetStatus.set(tID, result);
                 return result;
 
             } else {
@@ -419,33 +421,40 @@ module.exports = {
 
     async execute(message, pluginConfig, command, args, lines) {
 
-        const { client, content, channel, embeds } = message;
+        const { client, content, channel, id } = message;
 
         // twitter url
         if (regUrl.test(content)) {
 
             const [, username, , tID] = content.match(regUrl);
+            let embedImage = {};
 
             if (tID) {
                 // 30sec timeout for tweet detail
                 for (let i = 0; i < 60; ++i) {
-                    if (message.embeds.length > 0) {
-                        const embedImage = (((message.embeds || [])[0]) || {}).image || {};
-                        if (embedImage.url || embedImage.proxyURL) {
-                            // found discord embed, break
-                            break;
-                        }
-                    }
-                    // wait 2sec & update message
+
+                    let embed = (message.embeds || [])[0];  // embed or undefined
+                    embedImage = embed?.image || {};        // image or {}
+
+                    // found discord embed image, break
+                    if (embedImage.url || embedImage.proxyURL) { break; }
+                    // found embed without image, break
+                    if (embed && !embed.image) { break; }
+
+                    // wait 0.5sec
                     await sleep(500);
-                    message = await message.channel.messages.fetch({ message: message.id, force: true }).catch(() => { return null; });
+                    // console.log(`[TAF] await sleep(500)`);
+
+                    // update message
+                    message = await message.channel.messages.fetch({ message: id, force: true }).catch(() => { return null; });
+
                     // can't found message, maybe deleted
-                    if (!message) { return false; }
+                    if (!message) {
+                        // console.log(`[TAF] can't ferch message`);
+                        return false;
+                    }
                 }
             }
-
-            const _embedImage = (((embeds || [])[0]) || {}).image || null;
-            const embedImage = _embedImage ? { url: _embedImage.url, proxyURL: _embedImage.proxyURL } : null;
 
             let deleted = false;
 
@@ -642,7 +651,7 @@ module.exports = {
                     // get image data
                     const url = image.url;
                     const [, ext] = url.match(/([^\.]+)$/) || [, null];
-                    let filename = `${username}-${tweetID}-img1.${ext}`;
+                    let filename = `${username}-${tID}-img1.${ext}`;
                     let filepath = `./blacklist/new/${filename}`;
                     for (let i = 1; true; ++i) {
                         if (fs.existsSync(filepath)) {
@@ -662,7 +671,7 @@ module.exports = {
                     let result = { username, tID, ssim: 1.0, image: filepath }
 
                     // set status
-                    mainAFCore.tweetStatus.set(tweetID, result);
+                    mainAFCore.tweetStatus.set(tID, result);
                 }
             }
         }
