@@ -818,8 +818,12 @@ app.get('/blacklist/blacklist.html', async (req, res) => {
         '<style> table,td {border: 1px solid #333;} </style>',
         '<script src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>',
         '<script src="https://www.kryogenix.org/code/browser/sorttable/sorttable.js" charset="utf-8"></script>',
+        '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>',
         '</head><body>',
-        `Now Time: ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Tokyo' })}<br>`,
+        `Now Time: ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Tokyo' })}`,
+
+        `<input type="button" value="output" onclick="html2canvas(document.querySelector('body'), { onrendered: function (canvas) { var image = new Image(); image.src = canvas.toDataURL('image/png'); window.open().document.write('<img src=' + image.src + ' />'); } });"></input><br>`,
+
         `⚠️=不必要に<b>グロテスク</b>な画像/動画、露骨な暴力<br>`
     );
     // html.push(generateTimeline('kubihoto162794'));
