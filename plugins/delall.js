@@ -1,26 +1,28 @@
 
 const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); };
 
-const { EmbedBuilder } = require('discord.js');
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+
+const EMOJI_WASTEBASKET = '🗑️';
 
 const DEBUG_CHANNEL_ID = '826992877925171250';
+const workspaceChannelIDs = [
+    DEBUG_CHANNEL_ID,
+    '977860525830586379',   // #_aigis_retweet
+    '1009645372831977482',  // #_bot-test
+    '1054284227375542333',  // #sao
+    '1113369067177381918',  // #sao2
+    '713623232070156309',   // #_log
+    '1008565763260551188',  // #⚫_stream
+    '1010005672152281218'   // #⚫_member
+]
 
 const deleteAllMessage = async (message) => {
 
     let { channel, author } = message;
     const cID = channel.id;
 
-    if (![
-        DEBUG_CHANNEL_ID,
-        '977860525830586379',   // #_aigis_retweet
-        '1009645372831977482',  // #_bot-test
-        '1054284227375542333',  // #sao
-        '1113369067177381918',  // #sao2
-        '713623232070156309',   // #_log
-        '1008565763260551188',  // #⚫_stream
-        '1010005672152281218'   // #⚫_member
-    ].includes(cID)) { return; }
+    if (!workspaceChannelIDs.includes(cID)) { return; }
     if (author?.id != '353625493876113440') { return; }
 
     // console.log(`bulkDelete ${channel.name}`);
@@ -46,6 +48,9 @@ const deleteAllMessage = async (message) => {
             // del all log in other channel
             if (![DEBUG_CHANNEL_ID, '977860525830586379'].includes(cID)) { delFlag = true; };
 
+            // skip delall button
+            if (((msg.components || [])[0]?.components || [])[0]?.customId == 'delall') { delFlag = false; };
+
             if (!delFlag) { continue; }
 
             // await msg.delete().then(msg => console.log(`Del msg: ${msg.content}`)).catch(() => { });
@@ -54,7 +59,9 @@ const deleteAllMessage = async (message) => {
 
             ++delcount;
         }
-        console.log(`     Checked ${msgs.size} messages in ${channel.name}`)
+        if (require('fs').existsSync("./.env")) {
+            console.log(`     Checked ${msgs.size} messages in ${channel.name}`)
+        }
 
         await channel.bulkDelete(bulkDel).catch(console.error);
         if (msgs.size != 50) { break; }
@@ -71,13 +78,48 @@ module.exports = {
 
     execute(message, pluginConfig, command, args, lines) {
 
-        if (command != 'delall') { return; }
+        if (command == 'delall') {
 
-        deleteAllMessage(message);
+            deleteAllMessage(message);
+            return;
+        }
+
+        else if (command == 'delbtn') {
+
+            let { channel, author } = message;
+
+            if (!workspaceChannelIDs.includes(channel.id)) { return; }
+            if (author?.id != '353625493876113440') { return; }
+
+            let actionRow = new ActionRowBuilder()
+                .addComponents(new ButtonBuilder().setStyle(ButtonStyle.Primary).setDisabled(false)
+                    .setLabel(EMOJI_WASTEBASKET)
+                    .setCustomId("delall")
+                );
+
+            channel.send({ components: [actionRow] }).catch(() => { });
+
+            return;
+        }
+    },
+
+    async interactionCreate(interaction, pluginConfig) {
+        let { message, user } = interaction;
+        let { channel } = message;
+
+        if (!user || user.bot) { return; }
+
+        if (!interaction.isButton()) { return false; }
+        if (interaction.customId != 'delall') { return false; }
+
+        // mute reply
+        interaction.reply({ content: ' ' }).catch(() => { });
+
+        deleteAllMessage({ channel, author: user });
     },
 
     async setup(client) {
-        await deleteAllMessage({ channel: await client.channels.fetch(DEBUG_CHANNEL_ID), author: { id: '353625493876113440' } })
-        await deleteAllMessage({ channel: await client.channels.fetch('1009645372831977482'), author: { id: '353625493876113440' } })
+        await deleteAllMessage({ client, author: { id: '353625493876113440' }, channel: await client.channels.fetch(DEBUG_CHANNEL_ID) })
+        await deleteAllMessage({ client, author: { id: '353625493876113440' }, channel: await client.channels.fetch('1009645372831977482') })
     }
 }
