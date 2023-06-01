@@ -8,7 +8,7 @@ module.exports = {
             (member) => {
                 let guild = member.guild;
 
-                const pluginConfig = client.getPluginConfig(gID, 'welcomeMsg');
+                const pluginConfig = client.getPluginConfig(guild.id, 'welcomeMsg');
                 if (!pluginConfig) { return false; }
 
                 let memberName = member.toString();
