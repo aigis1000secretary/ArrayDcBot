@@ -7,7 +7,7 @@ const CLOCK_C = ['<:clockc_0:895230214026723358>', '<:clockc_1:89523024497648845
 const CLOCK_D = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
 const EMOJI_SMALL_BLUE_DIAMOND = '🔹';
 const EMOJI_RECYCLE = '♻️';
-const regUrl = /((?:https?:)?\/\/)?((?:www\.|m\.)?youtube\.com|youtu\.be|holodex\.net)(\/(?:embed|live|v|attribution_link)(?:\?(?:[\w\-]+=[\w\-]*&?)*)?)?(\/(?:watch(?:\?(?:[\w\-]+=[\w\-]*&)*v=|\/)|v[=\/])?)([\w\-]+)/;
+const regUrl = /(?:https?:\/\/)(?:(?:www\.|m\.)?youtube\.com|youtu\.be|holodex\.net)(?:\/?(?:watch|v|embed|shorts|live|attribution_link(?:[\?&][^\/]+=[^\/]*)*)?\/)(?:(?:watch)?(?:[\?&][^\?&\/]+=[^\?&\/]*)*[\?&]?v=)?(?:multiview\/\w{4})?([\w\-]+)/
 
 // youtube api
 const get = require('util').promisify(require('request').get);
@@ -140,7 +140,7 @@ module.exports = {
         if (!core) { return; }
 
         // get vID
-        const [, , , , , vID] = content.match(regUrl);
+        const [, vID] = content.match(regUrl);
         let time = await core.getStreamStatus(vID);
         // console.log(time)
 
@@ -199,7 +199,7 @@ module.exports = {
             if (!channel.permissionsFor(guildAuthor).has(PermissionFlagsBits.SendMessages)) { return; };
 
             // get vID
-            const [, , , , , vID] = content.match(regUrl);
+            const [, vID] = content.match(regUrl);
             let data = await core.getVideoStatus(vID);
             if (!data) { return false; }
 

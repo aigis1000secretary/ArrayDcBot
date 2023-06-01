@@ -26,7 +26,7 @@ const redirectUri = process.env.HOST_URL;
 const API_ENDPOINT = 'https://discord.com/api';
 
 // config
-const regUrl = /((?:https?:)?\/\/)?((?:www\.|m\.)?youtube\.com|youtu\.be|holodex\.net)(\/(?:embed|live|v|attribution_link)(?:\?(?:[\w\-]+=[\w\-]*&?)*)?)?(\/(?:watch(?:\?(?:[\w\-]+=[\w\-]*&)*v=|\/)|v[=\/])?)([\w\-]+)/;
+const regUrl = /(?:https?:\/\/)(?:(?:www\.|m\.)?youtube\.com|youtu\.be|holodex\.net)(?:\/?(?:watch|v|embed|shorts|live|attribution_link(?:[\?&][^\/]+=[^\/]*)*)?\/)(?:(?:watch)?(?:[\?&][^\?&\/]+=[^\?&\/]*)*[\?&]?v=)?(?:multiview\/\w{4})?([\w\-]+)/
 
 // database api
 const { Pool } = require('pg');
@@ -1549,7 +1549,7 @@ module.exports = {
                 let ytCore = mainMcCore.ytChannelCores.get(gCore.holoChannelID);
                 if (regUrl.test(args[0])) {
                     // get vID
-                    const [, , , , , vID] = args[0].match(regUrl);
+                    const [, vID] = args[0].match(regUrl);
 
                     // get video data from API
                     let video = await ytCore.youtube.getVideoStatus(vID)
