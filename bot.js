@@ -94,8 +94,7 @@ module.exports = {
 
                 if (!plugins.includes(name)) { continue; }
                 // in debug mode, only run plugin in list
-                if (process.env.HOST_TYPE == 'debug' &&
-                    !client.mainConfig.debugPlugins.includes(name)) { continue; }
+                if (!client.mainConfig.plugins.includes(name)) { continue; }
 
                 const plugin = require(`${filepath}${file}`);
                 client.commands.set(name, plugin);

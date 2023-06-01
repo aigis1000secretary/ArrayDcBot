@@ -6,7 +6,7 @@ module.exports = {
     discordToken: process.env.DISCORD_713624995372466179_BOTTOKEN,
     clientSecret: process.env.DISCORD_713624995372466179_SECRET,
     resonance: 'ぼた',
-    debugPlugins: (process.env.HOST_TYPE == 'debug') ? [
+    plugins: (process.env.HOST_TYPE == 'debug') ? [
         // 'memberChecker3',
     ] : [
         // 'delall',
@@ -25,7 +25,7 @@ module.exports = {
         'streamStartTime',
         'superChat',
         'twitterAntiFilter',
-        'twitterListener2',
+        // 'twitterListener2',
         // 'uptimer',
         'verifyThread',
         'welcomeMsg',

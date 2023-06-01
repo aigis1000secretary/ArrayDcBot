@@ -6,7 +6,7 @@ module.exports = {
     discordToken: process.env.DISCORD_427025310291197954_BOTTOKEN,
     clientSecret: process.env.null,
     resonance: 'ダイ',
-    debugPlugins: [
+    plugins: [
         // `ping`,
         // // 'uptimer',
         // 'rssbot', 'dlsitebot',
