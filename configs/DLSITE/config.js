@@ -7,12 +7,12 @@ module.exports = {
     clientSecret: null,
     resonance: 'ぬる',
     plugins: (process.env.HOST_TYPE == 'debug') ? [
-        // 'delall',
+        'delall',
         'twitterAntiFilter',
         // 'memberChecker3',
     ] : [
         'eval',
-        // 'delall',
+        'delall',
         'dlsitebot',
         'fxtwitter',
         // 'hook',

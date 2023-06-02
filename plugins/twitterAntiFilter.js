@@ -12,9 +12,7 @@ const [EMOJI_LABEL] = ['🏷️']
 function sleep(ms) { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
 
 // const { twitter } = require('./twitterListener2.js');
-let blacklist = [];
 let imagesList = [];
-let detailData = { guro: [], other: [], new: [], fakeuser: {} };
 
 const dataPath = `./blacklist`;
 
@@ -78,6 +76,15 @@ const imageComparison = async (image1) => {
     return false;
 }
 
+const replacer = (key, value) => {
+    if (value instanceof Map) {
+        let result = {};
+        for (let [k, v] of value) { result[k] = v; }
+        return result
+    }
+    else if (value instanceof Set) { return [...value]; }
+    else { return value; }
+}
 
 // [, username, , tID]
 const regUrl = /https?:\/\/twitter\.com\/([^\/]+)(\/status\/(\d*))?/i;
@@ -175,7 +182,7 @@ class AntiFilterCore {
             // image not in blacklist
             // check username
 
-            if (blacklist.includes(username)) {
+            if (spamUserList.userIDList.has(username)) {
                 // username in blacklist, kuro, new spam image
 
                 // set folder
@@ -233,53 +240,11 @@ class AntiFilterCore {
     async uploadBlacklist() {
         if (!this.client || !fs.existsSync(dataPath)) { return; }
 
-        for (let [tID, status] of this.tweetStatus) {
-            let { username, ssim, image } = status;
-            if (!image) { continue; }
+        // let jsonStr = JSON.stringify(spamUserList, replacer, 2).replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
+        let jsonStr = JSON.stringify(spamUserList, replacer);
+        fs.writeFileSync(`${dataPath}/blacklist.json`, jsonStr, 'utf8');
 
-            const url = `https://twitter.com/${username}/status/${tID}`
-
-            if (/\/fakeuser\/([^\/]+)\//.test(image)) {
-                let [, username] = image.match(/\/fakeuser\/([^\/]+)\//);
-                if (detailData.fakeuser[username].includes(url)) { continue; }
-                detailData.fakeuser[username].push(url);
-
-            } else if (image.includes(`/guro/`)) {
-                if (detailData.guro.includes(url)) { continue; }
-                detailData.guro.push(url);
-
-            } else if (image.includes(`/new/`)) {
-                if (detailData.new.includes(url)) { continue; }
-                detailData.new.push(url);
-
-            } else {
-                if (detailData.other.includes(url)) { continue; }
-                detailData.other.push(url);
-            }
-        }
-
-        // update blacklist
-        const names = ['blacklist', 'guro', 'other', 'new'].concat(Object.keys(detailData.fakeuser));
-        for (let name of names) {
-
-            const filepath = `${dataPath}/${name}.txt`;
-
-            if (fs.existsSync(filepath)) { fs.unlinkSync(filepath); }
-
-            if (name == 'blacklist') {
-                // blacklist
-                fs.writeFileSync(filepath, blacklist.join('\r\n'), 'utf8');
-
-            } else if (['guro', 'other', 'new'].includes(name)) {
-                // other type
-                fs.writeFileSync(filepath, detailData[name].join('\r\n'), 'utf8');
-
-            } else {
-                // fakeuser
-                fs.writeFileSync(filepath, detailData.fakeuser[name].join('\r\n'), 'utf8');
-
-            }
-        }
+        // if (fs.existsSync("./.env")) { return; }
 
         // get channel/message by id
         const channel = await this.client.channels.fetch(`872122458545725451`).catch(() => { return null; });
@@ -302,6 +267,7 @@ class AntiFilterCore {
     async downloadBlacklist() {
         if (!this.client) { return; }
         if (fs.existsSync(dataPath)) {
+            if (fs.existsSync("./.env")) { return; }
             fs.rmSync(dataPath, { recursive: true, force: true });
         }
 
@@ -343,46 +309,29 @@ class AntiFilterCore {
         return result;
     }
 
-    readBlacklist() {
-        // get username blacklist
-        // get tweet detailData
-        const filenames = fs.readdirSync(dataPath).filter(file => file.endsWith('.txt'));
-        blacklist = [];
-        detailData = { guro: [], other: [], new: [], fakeuser: {} };
+    async readBlacklist() {
+        spamUserList = new SpamUserList();
 
-        for (let filename of filenames) {
+        // get blacklist
+        let raw = fs.readFileSync(`${dataPath}/blacklist.json`, 'utf8');
+        let jsonRaw = JSON.parse(raw);
 
-            const filepath = `${dataPath}/${filename}`;
-            const { name } = path.parse(filepath);
+        for (let username of Object.keys(jsonRaw.userIDList)) {
+            let uID = jsonRaw.userIDList[username];
+            let user = jsonRaw.userList[uID];
 
-            // detail for line
-            let lines = fs.readFileSync(filepath, 'utf8').split(/\r?\n/);
+            let { addTime } = user;
+            await spamUserList.addUser(username, uID, addTime);
 
-            if (name == 'blacklist') {
-                // blacklist username
-                for (let line of lines) {
-                    line = line.trim();
-                    if (!line) { continue; }
-                    blacklist.push(line.trim());
+            for (let tID of Object.keys(user.tweetList)) {
+                let tweet = user.tweetList[tID];
+
+                let { image, ssim } = tweet
+                spamUserList.addUserTweet(username, { tID, image, ssim });
+
+                for (let tag of tweet.tags) {
+                    spamUserList.addUserTweetTag(username, tID, tag);
                 }
-
-            } else if (['guro', 'other', 'new'].includes(name)) {
-                // other type
-                for (let url of lines) {
-                    url = url.trim();
-                    if (!url || detailData[name].includes(url)) { continue; }
-                    detailData[name].push(url);
-                }
-
-            } else {
-                if (!detailData.fakeuser[name]) { detailData.fakeuser[name] = []; }
-                // fake user
-                for (let url of lines) {
-                    url = url.trim();
-                    if (!url || detailData.fakeuser[name].includes(url)) { continue; }
-                    detailData.fakeuser[name].push(url);
-                }
-
             }
         }
 
@@ -396,6 +345,146 @@ class AntiFilterCore {
 }
 let mainAFCore = new AntiFilterCore();
 
+
+
+
+
+class SpamTweet {
+    tID;
+    image = '';
+    ssim = '';
+    tags = new Set();
+
+    constructor({ tID, image, ssim }) {
+        this.tID = tID;
+        this.image = image;
+        this.ssim = ssim;
+    };
+}
+
+class SpamUser {
+    username;
+    uID;
+    addTime;
+
+    // <tID>, <SpamTweet>
+    tweetList = new Map();
+    tags = new Set();
+
+    constructor({ username, uID, addTime }) {
+        this.uID = uID;
+        this.username = username;
+        this.addTime = addTime || Date.now();
+    };
+
+    updateTags(oldTag, newTag) {
+        let keepTag = false;
+        for (let [tID, tweet] of this.tweetList) {
+            if (tweet.tags.has(oldTag)) { keepTag = true; break; }
+        }
+        if (!keepTag) { this.tags.delete(oldTag) }
+        this.tags.add(newTag);
+
+        return this.tags;
+    }
+}
+
+class SpamUserList {
+    // <uID>, <SpamUser>
+    userList = new Map();
+    // <username>, <uID>
+    userIDList = new Map();
+
+    constructor() { };
+
+    async addUser(username, uID, addTime) {
+        if (!uID) { uID = await twitter.getUserID(username) }
+
+        if (!/^\d+$/.test(uID)) {
+
+            // User has been suspended: [rXlxi7akZjaHCUG].
+            console.log(uID)
+
+            // check userIDList
+            uID = this.userIDList.get(username);
+
+            // still error, new user but already banned
+            if (!/^\d+$/.test(uID)) {
+                console.log(`[TAF] Get user ${username} TweetID fail! uID:`, uID);
+                return false;
+            }
+        }
+
+        if (this.userList.has(uID)) {
+            console.log(`[TAF] Add user ${username} fail, found exist uID!`);
+            console.log(this.userList.get(uID));
+            return false;
+        }
+
+        this.userList.set(uID, new SpamUser({ username, uID, addTime }));
+        this.userIDList.set(username, uID);
+        return true;
+    }
+    getUser(username) {
+        let uID = this.userIDList.get(username) // uID or undefined
+        return this.userList.get(uID);          // user or undefined
+    }
+    removeUser(username) {
+
+        let uID = this.userIDList.get(username) // uID or undefined
+        return this.userList.delete(uID);       // true or false
+    }
+
+    addUserTweet(username, { tID, image, ssim }) {
+
+        let uID = this.userIDList.get(username) // uID or undefined
+        let user = this.userList.get(uID);      // user or undefined
+        return user?.tweetList.set(tID, new SpamTweet({ tID, image, ssim }));    // tweetList or undefined
+    }
+    getUserTweets(username) {
+
+        let uID = this.userIDList.get(username) // uID or undefined
+        let user = this.userList.get(uID);      // user or undefined
+        return user?.tweetList;                 // tweetList or undefined
+    }
+    removeUserTweet(username, tID) {
+
+        let uID = this.userIDList.get(username) // uID or undefined
+        let user = this.userList.get(uID);      // user or undefined
+        return user?.tweetList.delete(tID);     // true or false or undefined
+    }
+
+    addUserTweetTag(username, tID, tag) {
+
+        let uID = this.userIDList.get(username) // uID or undefined
+        let user = this.userList.get(uID);      // user or undefined
+        user?.tags.add(tag);
+        let tweet = user?.tweetList.get(tID);   // tweet or undefined
+        return tweet?.tags.add(tag);            // tags or undefined
+    }
+    getUserTags(username) {
+
+        let uID = this.userIDList.get(username) // uID or undefined
+        let user = this.userList.get(uID);      // user or undefined
+        return user?.tags;                     // tags or undefined
+    }
+    getUserTweetTags(username, tID) {
+
+        let uID = this.userIDList.get(username) // uID or undefined
+        let user = this.userList.get(uID);      // user or undefined
+        let tweet = user?.tweetList.get(tID);   // tweet or undefined
+        return tweet?.tags;                     // tags or undefined
+    }
+    removeUserTweetTag(username, tID, tag) {
+
+        let uID = this.userIDList.get(username) // uID or undefined
+        let user = this.userList.get(uID);      // user or undefined
+        let tweet = user?.tweetList.get(tID);   // tweet or undefined
+        return tweet?.tags.delete(tag);         // true or false
+    }
+}
+
+let spamUserList = new SpamUserList();
 
 
 
@@ -414,7 +503,7 @@ module.exports = {
             // }
 
             await mainAFCore.downloadBlacklist();
-            mainAFCore.readBlacklist();
+            await mainAFCore.readBlacklist();
             return;
         }
     },
@@ -459,7 +548,7 @@ module.exports = {
             let deleted = false;
 
             // username in blacklist
-            if (blacklist.includes(username)) {
+            if (spamUserList.userIDList.has(username)) {
 
                 const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
                     .setTitle(`推特過濾器:`)
@@ -498,10 +587,16 @@ module.exports = {
                 // mainAFCore.logToDiscord(`delete msg: ${message.url}`);
 
                 // image in blacklist but username not, add to blacklist
-                if (!blacklist.includes(username)) {
-                    blacklist.push(username);
+                if (!spamUserList.userIDList.has(username)) {
+                    await spamUserList.addUser(username)
                     mainAFCore.logToDiscord(`[+] ${username}`);
                 }
+
+                // set data to db
+                spamUserList.addUserTweet(username, { tID, ssim, image })
+                let [, tag] = image.match(/^\.\/blacklist\/(.+)\/[^\/]+$/) || [, null];
+                if (tag) { spamUserList.addUserTweetTag(username, tID, tag); }
+
                 mainAFCore.uploadBlacklist();
                 return;
             }
@@ -514,8 +609,8 @@ module.exports = {
 
             let log = [];
             for (let target of args) {
-                if (blacklist.includes(target)) {
-                    blacklist.splice(blacklist.indexOf(target), 1);
+                if (spamUserList.userIDList.has(username)) {
+                    spamUserList.removeUser(username);
                     log.push(`[-] ${target}`);
                 }
             }
@@ -549,7 +644,7 @@ module.exports = {
         }
         if (command == 'reloadbl') {
             await mainAFCore.downloadBlacklist();
-            mainAFCore.readBlacklist();
+            await mainAFCore.readBlacklist();
         }
 
         if (command == 'blimg') {
@@ -592,18 +687,33 @@ module.exports = {
                 const { base } = path.parse(src);
                 let base_ = `${base}${type == 'guro' ? '_' : ''}`.replace(/_+$/, '_');
                 const dest = `${dir}/${base_}`;
-                if (src != dest) {
-                    fs.copyFileSync(src, dest);
-                    if (fs.existsSync(src) && fs.existsSync(dest)) {
-                        fs.unlinkSync(src);
-                        imagesList = imagesList.filter((ele) => (ele !== src));
-                        imagesList.push(dest);
-                    }
-                }
-            }
+                if (src == dest) { return; }
 
-            // move url type
-            {
+                fs.copyFileSync(src, dest);
+                if (fs.existsSync(src) && fs.existsSync(dest)) {
+                    fs.unlinkSync(src);
+                    imagesList = imagesList.filter((ele) => (ele !== src));
+                    imagesList.push(dest);
+                }
+
+                // move url type                
+                let [, oldTag] = src.match(/^\.\/blacklist\/(.+)\/[^\/]+$/) || [, null];
+                let [, newTag] = dest.match(/^\.\/blacklist\/(.+)\/[^\/]+$/) || [, null];
+
+                for (let [uID, spamUser] of spamUserList.userList) {
+                    let update = false;
+                    for (let [tID, SpamTweet] of spamUser.tweetList) {
+
+                        if (SpamTweet.image != src) { continue; }
+
+                        SpamTweet.image = src;
+                        SpamTweet.tags.delete(oldTag);
+                        SpamTweet.tags.add(newTag);
+                        update = true;
+                    }
+                    if (update) { spamUser.updateTags(oldTag, newTag); }
+                }
+
                 let tweetUrl = null;
                 for (let url of detailData.new) {
                     if (!url.includes(tID)) { continue; }
@@ -660,21 +770,21 @@ module.exports = {
         // get tweet data
         const [, username, , tID] = (content.match(regUrl) || [, null, , null]);
         // get image data
-        const embedImage = (((embeds || [])[0]) || {}).image || null;
+        const embedImage = (embeds || [])[0]?.image || null;
 
         // check tweet data
-        if (username == null || tID == null) { return; }
+        if (username == null) { return; }
 
         let resultLog = [];
 
         // set username to blacklist
-        if (!blacklist.includes(username)) {
-            blacklist.push(username);
+        if (!spamUserList.userIDList.has(username)) {
+            await spamUserList.addUser(username);
             resultLog.push(`[+] ${username}`);
         }
 
         // get twitter image
-        if (embedImage) {
+        if (tID && embedImage) {
 
             let image = await downloadImage(embedImage.url, embedImage.proxyURL);
             if (image) {
@@ -711,6 +821,11 @@ module.exports = {
 
                     // set status
                     mainAFCore.tweetStatus.set(tID, result);
+
+                    // set data to db
+                    spamUserList.addUserTweet(username, { tID, ssim: 1.0, image: filepath })
+                    spamUserList.addUserTweetTag(username, tID, 'new');
+
                 }
             }
         }
@@ -737,7 +852,7 @@ module.exports = {
     // if (!['1054284227375542333'].includes(channel.id)) { return false; }
 
     // // get tweet from discord embed
-    // let description = (((embeds || [])[0]) || {}).description || '';
+    // let description = (embeds || [])[0]?.description || '';
 
     // (() => {
     //     let isAnti = false;
@@ -796,7 +911,7 @@ class Twitter {
         this.userID.set(username, 'Loading...');
 
         const user = await this.client.v2.userByUsername(username);
-        let result = user?.data?.id || ((user?.errors || [])[0] || {}).detail || null;
+        let result = user?.data?.id || (user?.errors || [])[0]?.detail || null;
         this.userID.set(username, result);
         return result;
     }
@@ -829,48 +944,35 @@ app.get('/blacklist/blacklist.html', async (req, res) => {
     // html.push(generateTimeline('kubihoto162794'));
     // html.push(generateTimeline('rXlxi7akZjaHCUG'));
 
+    // @@@@@@@@@@@@@@@@@@@@@@@@@@
     // get user datas
-    let userStatus = [];
-    for (let username of blacklist) {
+    let userStatus = [], fakeuser = new Set();
+    for (let username of spamUserList.userIDList.keys()) {
         let user = { username, fakeuser: {} };
 
-        for (let name of ['guro', 'new']) {
-            for (let url of detailData[name]) {
-                if (url.includes(username)) {
-                    user[name] = true;
-                }
+        let uID = spamUserList.userIDList.get(username);
+        let spamUser = spamUserList.userList.get(uID);
+        let tags = [...spamUser.tags];
+
+        for (let tag of tags) {
+            if (['guro', 'new'].includes(tag)) {
+                user[tag] = true;
+            } else if (tag.startsWith('fakeuser/')) {
+                let name = tag.replace('fakeuser/', '');
+                user.fakeuser[name] = true;
+                fakeuser.add(name);
             }
         }
-        for (let name of Object.keys(detailData.fakeuser)) {
-            for (let url of detailData.fakeuser[name]) {
-                if (url.includes(username)) {
-                    // if (!user.fakeuser) { user.fakeuser = {}; }
-                    user.fakeuser[name] = true;
-                }
-            }
-        }
+
         if (!user.guro && !user.name && !user.fakeuser) {
             user.other = true;
         }
 
         // get user id
-        let uID = await twitter.getUserID(username);
-        if (uID) { user.uID = uID; }
+        user.uID = await twitter.getUserID(username);
 
         userStatus.push(user);
     }
-
-    // // sort user data
-    // userStatus.sort((a, b) => (!!a.guro - !!b.guro));
-    // let names = Object.keys(detailData.fakeuser);
-    // names.sort((a, b) => {
-    //     let iA = detailData.fakeuser[a].length;
-    //     let ib = detailData.fakeuser[b].length;
-    //     return iA == ib ? 0 : (iA > ib ? -1 : 1);
-    // });
-    // for (let name of names) {
-    //     userStatus.sort((a, b) => (!!b.fakeuser[name] - !!a.fakeuser[name]));
-    // }
 
     // html table
     html.push('<table class="sortable">');
@@ -883,7 +985,7 @@ app.get('/blacklist/blacklist.html', async (req, res) => {
             user.guro ? '⚠️' : ''
         ];
 
-        for (let name of Object.keys(detailData.fakeuser)) {
+        for (let name of [...fakeuser]) {
             // set title
             if (!title.includes(`@${name}`)) { title.push(`@${name}`); }
 
