@@ -62,7 +62,7 @@ const imageComparison = async (image1) => {
 
     // get all blacklist images
     for (let file2 of imagesList) {
-        let image2 = await canvas.loadImage(file2).catch((e) => { console.log(url); console.log(file2, e.message); return null; });
+        let image2 = await canvas.loadImage(file2).catch((e) => { console.log(file2, e.message); return null; });
         if (!image2) { continue; }
         image2 = toCompressData(image2, 8);
         image2.channels = 4;
@@ -170,7 +170,7 @@ class AntiFilterCore {
             return false;
         }
 
-        let imageInBlackList = await imageComparison(image.canvas).catch((e) => { return e });
+        let imageInBlackList = await imageComparison(image.canvas).catch((e) => { console.log(e); return false });
         if (imageInBlackList) {
             // image in blacklist
             // process done, set result
@@ -706,29 +706,12 @@ module.exports = {
 
                         if (SpamTweet.image != src) { continue; }
 
-                        SpamTweet.image = src;
+                        SpamTweet.image = dest;
                         SpamTweet.tags.delete(oldTag);
                         SpamTweet.tags.add(newTag);
                         update = true;
                     }
                     if (update) { spamUser.updateTags(oldTag, newTag); }
-                }
-
-                let tweetUrl = null;
-                for (let url of detailData.new) {
-                    if (!url.includes(tID)) { continue; }
-                    tweetUrl = url;
-                    break;
-                }
-                if (tweetUrl) {
-                    detailData.new = detailData.new.filter((ele) => (ele !== tweetUrl));
-
-                    if (['guro', 'other'].includes(type)) {
-                        detailData[type].push(tweetUrl);
-                    } else if (/^fakeuser\/[^\/]+$/.test(type)) {
-                        let name = type.replace('fakeuser\/', '');
-                        detailData.fakeuser[name].push(tweetUrl);
-                    }
                 }
             }
 
@@ -748,7 +731,7 @@ module.exports = {
         if (client.user.id != `920485085935984641`) { return; }
 
         // debug emoji
-        if (reaction.emoji.toString() == '🔹') {
+        if (reaction.emoji.toString() == '🔹' && content) {
 
             const guildConfig = client.guildConfigs.get(message.guildId);
             let lines = content.split('\n');
