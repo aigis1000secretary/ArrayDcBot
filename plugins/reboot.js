@@ -8,7 +8,7 @@ module.exports = {
 
     execute(message, pluginConfig, command, args, lines) {
 
-        if ('reboot' != command) { return; }
+        if (!(command == 'reboot' || (command == 'reboot2' && require('fs').existsSync("./.env")))) { return; }
         if (message.author.id != '353625493876113440') { return; }
 
         // let filepath = path.join(__dirname, `../index.js`);

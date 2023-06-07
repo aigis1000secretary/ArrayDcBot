@@ -17,16 +17,10 @@ module.exports = {      // SSRB的聚集地
     ],
 
     twitterListener2: [
-        {
-            RETWEET_CHANNEL_ID: '771351460097032193',      // #ssrb們站起來-art
-            RETWEET_KEYWORD: '#ししらーと',
-            RETWEET_DELCOUNT: 5
-        },
-        {
-            RETWEET_CHANNEL_ID: '998634189257719828',      // #ししデコ
-            RETWEET_KEYWORD: '#ししデコ',
-            RETWEET_DELCOUNT: 5
-        }
+        // #ssrb們站起來-art
+        { RETWEET_CHANNEL_ID: '771351460097032193', RETWEET_DELCOUNT: 5, RETWEET_KEYWORD: '#ししらーと' },
+        // #ししデコ
+        { RETWEET_CHANNEL_ID: '998634189257719828', RETWEET_DELCOUNT: 5, RETWEET_KEYWORD: '#ししデコ' }
     ],
 
 

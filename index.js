@@ -56,6 +56,8 @@ module.exports.terminate = async () => {
 
     if (process.env.HOST_TYPE == 'HEROKU') { await rebootByHerokuAPI(); }
 
+    await sleep(1500);
+
     process.exit(1);
 };
 

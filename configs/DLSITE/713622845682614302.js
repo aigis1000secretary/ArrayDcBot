@@ -6,7 +6,7 @@ module.exports = {      // KTG
     twitterListener2: [
         // #_aigis_retweet
         { RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: '#アイギスお絵かき', },
-        { RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: '#アイギス10周年アートコン', },
+        // { RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: '#アイギス10周年アートコン', },
         // #sao
         { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#ししらーと', },
         { RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: '#ししデコ', },
@@ -52,6 +52,7 @@ module.exports = {      // KTG
     fxtwitter: {},
     delall: {},
     dlsitebot: {},
+    ping: {},
     reboot: {},
     streamStartTime: {},
     twitterAntiFilter: {},

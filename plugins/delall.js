@@ -30,24 +30,40 @@ const deleteAllMessage = async (message) => {
     let delcount = 0, before;
     while (1) {
         let msgs = await channel.messages.fetch({ before, force: true });
+        let keys = Array.from(msgs.keys());
         let bulkDel = [];
-        for (let key of msgs.keys()) {
+        for (let i = 0; i < keys.length; ++i) {
+            let key = keys[i];
             let msg = msgs.get(key);
-            before = key;
 
-            // check time
+            // check delete flag
             let delFlag = false;
 
-            // only del old log in DEBUG_CHANNEL_ID
-            if ([DEBUG_CHANNEL_ID].includes(cID) && Date.now() - msg.createdTimestamp > 90000000) { delFlag = true; };
+            if (cID == DEBUG_CHANNEL_ID) {
+                // delete old log in DEBUG_CHANNEL_ID
+                if (Date.now() - msg.createdTimestamp > 90000000) { delFlag = true; }
+                // del not-arraydcbot log in DEBUG_CHANNEL_ID
+                if (!['713624995372466179', '928492714482343997', '920485085935984641'].includes(msg.author.id)) { delFlag = true; }
+            }
 
-            // del not-arraydcbot log in DEBUG_CHANNEL_ID /  #_aigis_retweet
-            if ([DEBUG_CHANNEL_ID, '977860525830586379'].includes(cID) &&
-                !['713624995372466179', '928492714482343997', '920485085935984641'].includes(msg.author.id)) { delFlag = true; };
+            else if (cID == '977860525830586379') {
+                // delete not-arraydcbot log in #_aigis_retweet
+                if (!['713624995372466179', '928492714482343997', '920485085935984641'].includes(msg.author.id)) { delFlag = true; }
+            }
 
-            // del all log in other channel
-            if (![DEBUG_CHANNEL_ID, '977860525830586379'].includes(cID)) { delFlag = true; };
+            else if (cID == '1054284227375542333' || cID == '1113369067177381918') {
+                // skip last message in #sao / #sao2
+                delFlag = (before || i > 1);
+                // before == true => not first times fetch;
+                // i > 0          => not last message;
+            }
 
+            else {
+                // del all log in other channel
+                delFlag = true;
+            };
+
+            
             // skip delall button
             if (((msg.components || [])[0]?.components || [])[0]?.customId == 'delall') { delFlag = false; };
 
@@ -58,6 +74,7 @@ const deleteAllMessage = async (message) => {
             bulkDel.push(msg);
 
             ++delcount;
+            before = key;
         }
         if (require('fs').existsSync("./.env")) {
             console.log(`     Checked ${msgs.size} messages in ${channel.name}`)
@@ -78,7 +95,7 @@ module.exports = {
 
     execute(message, pluginConfig, command, args, lines) {
 
-        if (command == 'delall') {
+        if (command == 'delall' || (command == 'delall2' && require('fs').existsSync("./.env"))) {
 
             deleteAllMessage(message);
             return;
