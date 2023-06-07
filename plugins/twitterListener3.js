@@ -14,6 +14,8 @@ const configPath = `./configs`;
 const loginPath = `./configs/login.json`;
 const regUrl = /^https:\/\/twitter\.com\/([a-zA-Z0-9_]{1,15})(?:\/status\/)(\d+)$/;
 
+let tllog = fs.existsSync("./.env") ? console.log : () => { };
+
 class ChromeDriver {
 
     driver = null;
@@ -39,6 +41,8 @@ class ChromeDriver {
             .forBrowser('chrome')
             .setChromeOptions(chromeOptions)
             .build();
+
+        tllog('Chrome driver init.');
 
         while (!await this.login()) { };
 
@@ -100,6 +104,7 @@ class ChromeDriver {
     }
 
     async login() {
+        tllog('Chrome login');
 
         const loginBar = 'div.css-1dbjc4n.r-aqfbo4.r-1p0dtai.r-1d2f490.r-12vffkv.r-1xcajam.r-zchlnj';
         const userBtn = 'div.css-1dbjc4n.r-13awgt0.r-12vffkv > div.css-1dbjc4n.r-13awgt0.r-12vffkv > div.css-1dbjc4n.r-18u37iz.r-13qz1uu.r-417010:last-child > header.css-1dbjc4n.r-obd0qt.r-16y2uox.r-lrvibr.r-1g40b8q:nth-child(3) > div.css-1dbjc4n.r-f9dfq4 > div.css-1dbjc4n.r-aqfbo4.r-1pi2tsx.r-1xcajam.r-ipm5af > div.css-1dbjc4n.r-1pi2tsx.r-1wtj0ep.r-1rnoaur.r-1pn2ns4.r-f9dfq4 > div.css-1dbjc4n.r-1awozwy:first-child > div.css-1dbjc4n.r-1awozwy.r-1p6iasa.r-e7q0ms:last-child > a.css-4rbku5.css-18t94o4.css-1dbjc4n.r-sdzlij.r-1phboty.r-rs99b7.r-1waj6vr.r-1loqt21.r-19yznuf.r-64el8z.r-1ny4l3l.r-o7ynqc.r-6416eg.r-lrvibr > div.css-901oao.r-1awozwy.r-6koalj.r-18u37iz.r-16y2uox.r-37j5jr.r-a023e6.r-b88u0q.r-1777fci.r-rjixqe.r-bcqeeo.r-q4m81j.r-qvutc0';
@@ -217,6 +222,7 @@ class ChromeDriver {
 
         let searchResult = new Map();
         for (let keyword of keywords) {
+            tllog(`Chrome search: ${keyword}`);
 
             // search page
             let _keyword = querystring.escape(keyword);
@@ -296,11 +302,11 @@ class ChromeDriver {
                             .sendKeys(Key.END)
                             .perform()
                             .catch(console.log);
-                        // console.log('Key.PAGE_UP')
+                        tllog('Key.PAGE_UP')
                     } else {
                         lastTweetID = tID;
                         await this.scrollToElement(lastElement);
-                        // console.log('scrollToElement')
+                        tllog('scrollToElement')
                     }
                 }
             }
@@ -377,35 +383,39 @@ module.exports = {
 
     async execute(message, pluginConfig, command, args, lines) {
 
-        if (command != 'tl3') { return; }
+        if (command == 'tl3') {
 
-        let { client, channel } = message;
+            let { client, channel } = message;
 
-        // get channel id
-        const cID = channel.id;
+            // get channel id
+            const cID = channel.id;
 
-        // get last times tweet ID
-        let limit;
-        let lastMessage = await findLastTwitterMessage(channel, client.user.id)
-        let [, , tID] = lastMessage.content.match(regUrl) || [];
-        if (tID) { limit = BigInt(tID); }
+            // get last times tweet ID
+            let limit;
+            let lastMessage = await findLastTwitterMessage(channel, client.user.id)
+            let [, , tID] = lastMessage.content.match(regUrl) || [];
+            if (tID) { limit = BigInt(tID); }
 
-        // get keywords from config
-        const config = pluginConfig.find((cfg) => { return cID == cfg.RETWEET_CHANNEL_ID });
-        if (!config) { return; }
-        let keywords = config.RETWEET_KEYWORD;
+            // get keywords from config
+            const config = pluginConfig.find((cfg) => { return cID == cfg.RETWEET_CHANNEL_ID });
+            if (!config) { return; }
+            let keywords = config.RETWEET_KEYWORD;
 
-        chromeDriver.search({ cID, limit, keywords })
-            .then(async (searchResult) => {
-                // searchResult = Map(<tID>, <href>)
+            chromeDriver.search({ cID, limit, keywords })
+                .then(async (searchResult) => {
+                    // searchResult = Map(<tID>, <href>)
 
-                for (let key of Array.from(searchResult.keys()).sort()) {
-                    let url = searchResult.get(key);
+                    for (let key of Array.from(searchResult.keys()).sort()) {
+                        let url = searchResult.get(key);
 
-                    await channel.send(url).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
-                }
-            });
-        setTimeout(() => message.delete().catch(() => { }), 250);
+                        await channel.send(url).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+                    }
+                });
+            setTimeout(() => message.delete().catch(() => { }), 250);
+
+        } else if (command == 'tldebug') {
+            tllog = (tllog == console.log) ? () => { } : console.log;
+        }
     },
 
     async messageReactionAdd(reaction, user, pluginConfig) {
