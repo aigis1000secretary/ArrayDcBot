@@ -7,7 +7,7 @@ module.exports = {
     clientSecret: process.env.DISCORD_713624995372466179_SECRET,
     resonance: 'ぼた',
     plugins: (process.env.HOST_TYPE == 'debug') ? [
-        // 'memberChecker3',
+        'twitterListener3',
     ] : [
         // 'delall',
         'fxtwitter',
@@ -25,7 +25,7 @@ module.exports = {
         'streamStartTime',
         'superChat',
         'twitterAntiFilter',
-        // 'twitterListener2',
+        // 'twitterListener3',
         // 'uptimer',
         'verifyThread',
         'welcomeMsg',

@@ -267,7 +267,7 @@ class AntiFilterCore {
     async downloadBlacklist() {
         if (!this.client) { return; }
         if (fs.existsSync(dataPath)) {
-            if (fs.existsSync("./.env")) { return; }
+            // if (fs.existsSync("./.env")) { return; }
             fs.rmSync(dataPath, { recursive: true, force: true });
         }
 

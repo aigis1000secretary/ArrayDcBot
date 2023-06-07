@@ -14,5 +14,7 @@ ngrok.zip
 
 blacklist/
 
+twitter.json
+configs/login.json
 cookies.txt
 yt-dlp.exe

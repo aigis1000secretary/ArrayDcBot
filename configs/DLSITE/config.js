@@ -7,9 +7,11 @@ module.exports = {
     clientSecret: null,
     resonance: 'ぬる',
     plugins: (process.env.HOST_TYPE == 'debug') ? [
-        'delall',
-        'twitterAntiFilter',
+        `twitterListener3`,
+        // 'delall',
+        // 'twitterAntiFilter',
         // 'memberChecker3',
+        'reboot',
     ] : [
         'eval',
         'delall',
@@ -28,7 +30,7 @@ module.exports = {
         'streamStartTime',
         // 'superChat',
         'twitterAntiFilter',
-        // 'twitterListener2',
+        // 'twitterListener3',
         // 'uptimer',
         // 'verifyThread',
         // 'welcomeMsg',
