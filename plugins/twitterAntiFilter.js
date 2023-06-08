@@ -554,7 +554,7 @@ module.exports = {
                     .setTitle(`推特過濾器:`)
                     .addFields([
                         { name: `Content:`, value: content },
-                        { name: `Channel:`, value: `[${channel.toString()}](${message.url})` },
+                        { name: `Channel:`, value: channel.toString() },
                     ]);
                 mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
 
