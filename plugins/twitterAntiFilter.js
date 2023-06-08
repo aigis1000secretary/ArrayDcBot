@@ -605,12 +605,38 @@ module.exports = {
         if (message.author?.id != `353625493876113440`) { return; }
         if (client.user.id != `920485085935984641`) { return; }
 
+        if (command == 'updatabl') {
+
+            if (/\d+/.test(args[0])) {
+                let uID = args[0];
+                // await twitter.getUser(uID);
+                // Array.from(spamUserList.userIDList.values()).includes(uID);
+
+                let oldUsername, newUsername;
+                // get old username
+                for (let [username, _uID] of spamUserList.userIDList) {
+                    if (_uID != args[0]) { continue; }
+                    oldUsername = username;
+                }
+                // get new username
+                newUsername = await twitter.getUser(args[0]);
+
+                if (oldUsername != newUsername) {
+                    spamUserList.userIDList.delete(oldUsername);
+                    spamUserList.userIDList.set(newUsername, uID);
+                    spamUserList.userList.get(uID).username = newUsername;
+                    mainAFCore.uploadBlacklist();
+                }
+            }
+
+            return;
+        }
         if (command == 'rembl') {
 
             let log = [];
             for (let target of args) {
-                if (spamUserList.userIDList.has(username)) {
-                    spamUserList.removeUser(username);
+                if (spamUserList.userIDList.has(target)) {
+                    spamUserList.removeUser(target);
                     log.push(`[-] ${target}`);
                 }
             }
@@ -896,6 +922,11 @@ class Twitter {
         const user = await this.client.v2.userByUsername(username);
         let result = user?.data?.id || (user?.errors || [])[0]?.detail || null;
         this.userID.set(username, result);
+        return result;
+    }
+    async getUser(uID) {
+        const user = await this.client.v2.user(uID);
+        let result = user?.data?.username || (user?.errors || [])[0]?.detail || null;
         return result;
     }
 }
