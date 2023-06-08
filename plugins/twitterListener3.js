@@ -13,6 +13,7 @@ const [EMOJI_RECYCLE] = ['♻️']
 const configPath = `./configs`;
 const loginPath = `./configs/login.json`;
 const regUrl = /^https:\/\/twitter\.com\/([a-zA-Z0-9_]{1,15})(?:\/status\/)(\d+)$/;
+const isWin32 = require("os").platform() == 'win32';
 
 let tllog = fs.existsSync("./.env") ? console.log : () => { };
 
@@ -20,7 +21,9 @@ class ChromeDriver {
 
     driver = null;
     constructor() {
-        this.initBotChrome();
+        if (isWin32) {
+            this.initBotChrome();
+        }
     }
 
     constructed = false;
@@ -32,9 +35,7 @@ class ChromeDriver {
         chromeOptions.addArguments('--window-size=800,600');
         // chromeOptions.addArguments('User-Agent=Mozilla/5.0 (Linux; U; Android 8.1.0; zh-cn; BLA-AL00 Build/HUAWEIBLA-AL00) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.132 MQQBrowser/8.9 Mobile Safari/537.36')
 
-        if (!fs.existsSync("./.env")) {
-            chromeOptions.addArguments('--headless');                // 啟動Headless 無頭
-        }
+        chromeOptions.addArguments('--headless');                // 啟動Headless 無頭
 
         // tab page
         this.driver = new Builder()
@@ -373,6 +374,15 @@ class crypto {
     }
 }
 
+if (isWin32) {
+    const TEMP = process.env.TMP || process.env.TEMP;
+    for (let dir of fs.readdirSync(TEMP)) {
+        if (!dir.startsWith(`scoped_dir`) || !fs.lstatSync(`${TEMP}\\${dir}`).isDirectory()) { continue; }
+
+        fs.rmSync(`${TEMP}\\${dir}`, { recursive: true, force: true });
+    }
+}
+
 
 
 
@@ -382,6 +392,8 @@ module.exports = {
     description: "search twitter every hour",
 
     async execute(message, pluginConfig, command, args, lines) {
+
+        if (!isWin32) { return; }
 
         if (command == 'tl3') {
 
@@ -419,6 +431,9 @@ module.exports = {
     },
 
     async messageReactionAdd(reaction, user, pluginConfig) {
+
+        if (isWin32) { return; }
+
         // skip bot reaction
         if (user.bot) { return false; }
 
@@ -449,12 +464,17 @@ module.exports = {
 
     async setup(client) {
 
+        if (!isWin32) { return; }
+
         client.once('close', () => {
             chromeDriver.close();
         });
     },
 
     async clockMethod(client, { hours, minutes, seconds }) {
+
+        if (!isWin32) { return; }
+        
         // update tweet at time
 
         // update flag

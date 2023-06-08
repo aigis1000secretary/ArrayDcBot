@@ -53,7 +53,7 @@ const deleteAllMessage = async (message) => {
 
             else if (cID == '1054284227375542333' || cID == '1113369067177381918') {
                 // skip last message in #sao / #sao2
-                delFlag = (before || i > 1);
+                delFlag = (before || i > 0);
                 // before == true => not first times fetch;
                 // i > 0          => not last message;
             }
@@ -63,7 +63,7 @@ const deleteAllMessage = async (message) => {
                 delFlag = true;
             };
 
-            
+
             // skip delall button
             if (((msg.components || [])[0]?.components || [])[0]?.customId == 'delall') { delFlag = false; };
 
@@ -93,11 +93,13 @@ module.exports = {
     name: 'delall',
     description: 'delall msg',
 
-    execute(message, pluginConfig, command, args, lines) {
+    async execute(message, pluginConfig, command, args, lines) {
 
         if (command == 'delall' || (command == 'delall2' && require('fs').existsSync("./.env"))) {
 
-            deleteAllMessage(message);
+            let { channel, author } = message;
+            await message.delete().catch(console.error);
+            deleteAllMessage({ channel, author });
             return;
         }
 

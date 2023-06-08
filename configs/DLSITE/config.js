@@ -30,7 +30,7 @@ module.exports = {
         'streamStartTime',
         // 'superChat',
         'twitterAntiFilter',
-        // 'twitterListener3',
+        'twitterListener3',
         // 'uptimer',
         // 'verifyThread',
         // 'welcomeMsg',
