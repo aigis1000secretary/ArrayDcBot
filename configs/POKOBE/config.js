@@ -21,7 +21,7 @@ module.exports = {
         // 'reboot',
         // 'reportThread',
         // 'rssbot',
-        'spambotkicker',
+        'spamBotKicker',
         'streamStartTime',
         // 'superChat',
         'twitterAntiFilter',

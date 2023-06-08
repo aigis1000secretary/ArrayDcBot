@@ -53,7 +53,7 @@ module.exports = {      // KTG
     ],
 
     // /*
-    spambotKicker: {
+    spamBotKicker: {
         LOG_CHANNEL_ID: '1024627281592848434',      // #_log
         PERMISSION_ROLE_ID: '1009001004454383656',      // @&TEST
         // PERMISSION_ROLE_ID: null,

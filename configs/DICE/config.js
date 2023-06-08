@@ -11,7 +11,7 @@ module.exports = {
         // // 'uptimer',
         // 'rssbot', 'dlsitebot',
         // 'memberCounter',
-        // // 'spambotKicker',
+        // // 'spamBotKicker',
         // 'streamStartTime',
         // 'reactionRole',
         // 'superChat',

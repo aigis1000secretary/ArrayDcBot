@@ -156,7 +156,7 @@ const spamChecker = [
 let guildMessagesCache = {};
 
 module.exports = {
-    name: 'spambotKicker',
+    name: 'spamBotKicker',
     description: "kick spam bot",
 
     async execute(message, pluginConfig, command, args, lines) {
@@ -201,6 +201,7 @@ module.exports = {
         const authorPermissions = channel.permissionsFor(authorInGuild);
         // admin mentions  // if (message.mentions.everyone){}
         if (authorPermissions.has(PermissionFlagsBits.MentionEveryone)) {
+            // is admin
             punish.kick = false;
             punish.delete = punish.forceDel;
         };

@@ -18,7 +18,7 @@ module.exports = {      // いろは幕府
 
 
 
-    spambotKicker: {
+    spamBotKicker: {
         LOG_CHANNEL_ID: '917998055012302918',      // #機器人紀錄
         PERMISSION_ROLE_ID: null,
         BAN_CHANNEL_ID: null
