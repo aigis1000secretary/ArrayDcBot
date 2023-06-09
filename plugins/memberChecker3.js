@@ -1199,9 +1199,15 @@ class McGuildCore {
         }
     }
 
+    liveChatCache = new Set();
+
     async sendChatMessage(auDetails, message, superchat, isMemberOnly) {
         let vID = mainMcCore.ytChannelCores.get(this.holoChannelID).cacheStreamID;
         let now = new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' });
+
+        let hash = md5(`${vID}${auDetails.channelId}${message}`.trim());
+        if (this.liveChatCache.has(hash)) { return; }
+        this.liveChatCache.add(hash);
 
         const cID = isMemberOnly ? this.memberChannelID : this.streamChannelID;
         const channel = await this.client.channels.fetch(cID);
@@ -1214,7 +1220,7 @@ class McGuildCore {
         let url;
         if (auDetails.timestampText) {
             let timeText = '00:00:' + auDetails.timestampText;
-            let [, hrs, min, sec] = timeText.match(/(\d+):(\d+):(\d+)$/) || [, null, null, null];
+            let [, hrs, min, sec] = timeText.match(/(\d+):(\d+):(\d+)$/) || [, '00', '00', '00'];
             timeText = `${hrs}h${min}m${sec}s`.replace(/^[0hm]+/, '');
 
             url = `https://youtu.be/${vID}&t=${timeText}`;
