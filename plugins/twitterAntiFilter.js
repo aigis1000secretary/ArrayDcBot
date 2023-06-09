@@ -9,7 +9,7 @@ const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 const [EMOJI_LABEL] = ['🏷️']
 
-function sleep(ms) { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
+const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
 
 // const { twitter } = require('./twitterListener2.js');
 let imagesList = [];
@@ -320,6 +320,8 @@ class AntiFilterCore {
             let uID = jsonRaw.userIDList[username];
             let user = jsonRaw.userList[uID];
 
+            twitter.userID.set(username, uID);
+
             let { addTime } = user;
             await spamUserList.addUser(username, uID, addTime);
 
@@ -410,15 +412,17 @@ class SpamUserList {
 
             // still error, new user but already banned
             if (!/^\d+$/.test(uID)) {
-                console.log(`[TAF] Get user ${username} TweetID fail! uID:`, uID);
-                return false;
+                let res = `[TAF] Get user ${username} identifier fail! uID: ${uID}`;
+                console.log(res);
+                return res;
             }
         }
 
         if (this.userList.has(uID)) {
-            console.log(`[TAF] Add user ${username} fail, found exist uID!`);
+            let res = `[TAF] Add user ${username} fail, found exist uID!`;
+            console.log(res);
             console.log(this.userList.get(uID));
-            return false;
+            return res;
         }
 
         this.userList.set(uID, new SpamUser({ username, uID, addTime }));
@@ -588,8 +592,8 @@ module.exports = {
 
                 // image in blacklist but username not, add to blacklist
                 if (!spamUserList.userIDList.has(username)) {
-                    await spamUserList.addUser(username)
-                    mainAFCore.logToDiscord(`[+] ${username}`);
+                    let res = await spamUserList.addUser(username);
+                    mainAFCore.logToDiscord(res === true ? `[+] ${username}` : res);
                 }
 
                 // set data to db
@@ -609,7 +613,7 @@ module.exports = {
 
             if (/\d+/.test(args[0])) {
                 let uID = args[0];
-                // await twitter.getUser(uID);
+                // await twitter.getUsername(uID);
                 // Array.from(spamUserList.userIDList.values()).includes(uID);
 
                 let oldUsername, newUsername;
@@ -619,7 +623,7 @@ module.exports = {
                     oldUsername = username;
                 }
                 // get new username
-                newUsername = await twitter.getUser(args[0]);
+                newUsername = await twitter.getUsername(args[0]);
 
                 if (oldUsername != newUsername) {
                     spamUserList.userIDList.delete(oldUsername);
@@ -630,6 +634,19 @@ module.exports = {
             }
 
             return;
+        }
+        if (command == 'adduid') {
+            let username = args[0];
+            let uID = args[1];
+            // !adduid Mpwpwp1787259 1657108133142224896
+            // !adduid Zkiart168463 1657141092171620352
+
+            twitter.userID.set(username, uID);
+
+            await spamUserList.addUser(username, uID, Date.now());
+
+            mainAFCore.uploadBlacklist();
+
         }
         if (command == 'rembl') {
 
@@ -788,8 +805,8 @@ module.exports = {
 
         // set username to blacklist
         if (!spamUserList.userIDList.has(username)) {
-            await spamUserList.addUser(username);
-            resultLog.push(`[+] ${username}`);
+            let res = await spamUserList.addUser(username);
+            resultLog.push(res === true ? `[+] ${username}` : res);
         }
 
         // get twitter image
@@ -919,13 +936,15 @@ class Twitter {
         if (this.userID.has(username)) { return this.userID.get(username); }
         this.userID.set(username, 'Loading...');
 
-        const user = await this.client.v2.userByUsername(username);
-        let result = user?.data?.id || (user?.errors || [])[0]?.detail || null;
-        this.userID.set(username, result);
-        return result;
+        console.log(`[TAF] v2.userByUsername(${username})`)
+        const user = await this.client.v2.userByUsername(username).catch(console.log);
+        let uID = user?.data?.id || (user?.errors || [])[0]?.detail || null;
+        this.userID.set(username, uID);
+        return uID;
     }
-    async getUser(uID) {
-        const user = await this.client.v2.user(uID);
+    async getUsername(uID) {
+        console.log(`[TAF] v2.user(${uID})`)
+        const user = await this.client.v2.user(uID).catch(console.log);
         let result = user?.data?.username || (user?.errors || [])[0]?.detail || null;
         return result;
     }
@@ -1021,5 +1040,3 @@ app.get('/blacklist/blacklist.html', async (req, res) => {
     // console.log(html.join(''))
     res.send(html.join(''));
 });
-
-
