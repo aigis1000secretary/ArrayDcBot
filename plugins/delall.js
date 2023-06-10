@@ -17,9 +17,8 @@ const workspaceChannelIDs = [
     '1010005672152281218'   // #⚫_member
 ]
 
-const deleteAllMessage = async (message) => {
+const deleteAllMessage = async ({ channel, author }) => {
 
-    let { channel, author } = message;
     const cID = channel.id;
 
     if (!workspaceChannelIDs.includes(cID)) { return; }
@@ -44,6 +43,8 @@ const deleteAllMessage = async (message) => {
                 if (Date.now() - msg.createdTimestamp > 90000000) { delFlag = true; }
                 // del not-arraydcbot log in DEBUG_CHANNEL_ID
                 if (!['713624995372466179', '928492714482343997', '920485085935984641'].includes(msg.author.id)) { delFlag = true; }
+
+                if (msg.content.includes('🏗️') || msg.content.includes('🛠️')) { delFlag = true; }
             }
 
             else if (cID == '977860525830586379') {
@@ -67,6 +68,7 @@ const deleteAllMessage = async (message) => {
             // skip delall button
             if (((msg.components || [])[0]?.components || [])[0]?.customId == 'delall') { delFlag = false; };
 
+            before = key;
             if (!delFlag) { continue; }
 
             // await msg.delete().then(msg => console.log(`Del msg: ${msg.content}`)).catch(() => { });
@@ -74,10 +76,9 @@ const deleteAllMessage = async (message) => {
             bulkDel.push(msg);
 
             ++delcount;
-            before = key;
         }
         if (require('fs').existsSync("./.env")) {
-            console.log(`     Checked ${msgs.size} messages in ${channel.name}`)
+            console.log(`     Checked ${msgs.size} messages in ${channel.name}, before: ${before}`)
         }
 
         await channel.bulkDelete(bulkDel).catch(console.error);
@@ -138,7 +139,7 @@ module.exports = {
     },
 
     async setup(client) {
-        await deleteAllMessage({ client, author: { id: '353625493876113440' }, channel: await client.channels.fetch(DEBUG_CHANNEL_ID) })
-        await deleteAllMessage({ client, author: { id: '353625493876113440' }, channel: await client.channels.fetch('1009645372831977482') })
+        await deleteAllMessage({ author: { id: '353625493876113440' }, channel: await client.channels.fetch(DEBUG_CHANNEL_ID) });
+        await deleteAllMessage({ author: { id: '353625493876113440' }, channel: await client.channels.fetch('1009645372831977482') });
     }
 }
