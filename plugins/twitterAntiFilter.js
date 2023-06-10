@@ -87,7 +87,8 @@ const replacer = (key, value) => {
 }
 
 // [, username, , tID]
-const regUrl = /https?:\/\/twitter\.com\/([^\/]+)(\/status\/(\d*))?/i;
+const regUrl = /https?:\/\/twitter\.com\/([^\/]+)(?:\/status\/(\d*))?/i;
+const regUsername = /\(@([A-Za-z0-9_]+)\)$/;
 const CODE_CHANNEL = '872122458545725451';
 const LOGS_CHANNEL = '713623232070156309';
 class AntiFilterCore {
@@ -320,7 +321,7 @@ class AntiFilterCore {
             let uID = jsonRaw.userIDList[username];
             let user = jsonRaw.userList[uID];
 
-            twitter.userID.set(username, uID);
+            twitter.userIDs.set(username, uID);
 
             let { addTime } = user;
             await spamUserList.addUser(username, uID, addTime);
@@ -519,57 +520,113 @@ module.exports = {
         // twitter url
         if (regUrl.test(content)) {
 
-            const [, username, , tID] = content.match(regUrl);
-            let embedImage = {};
+            let [, username, tID] = (content.match(regUrl) || [, null, , null]);
+            https://twitter.com/Zkiart168463/status/1667195580496453637
 
-            if (tID) {
-                // 30sec timeout for tweet detail
-                for (let i = 0; i < 60; ++i) {
+            // https://twitter.com/musk
+            if (!tID) {
+                // check username
+                for (let [_username, _uID] of spamUserList.userIDList) {
+                    if (username == _username || username == _uID) {
+                        // username or uid in blacklist
+                        // no image, delete
+                        message.delete().catch(() => { });
 
-                    let embed = (message.embeds || [])[0];  // embed or undefined
-                    embedImage = embed?.image || embed?.thumbnail || {};        // image or {}
+                        // log
+                        const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
+                            .setTitle(`推特過濾器:`)
+                            .addFields([
+                                { name: `Content:`, value: content },
+                                { name: `Channel:`, value: channel.toString() },
+                                { name: `uID:`, value: _uID },
+                                { name: `Username:`, value: _username },
+                            ]);
+                        mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
 
-                    // found discord embed image, break
-                    if (embedImage.url || embedImage.proxyURL) { break; }
-                    // found embed without image, break
-                    if (embed && !embed.image) { break; }
-
-                    // wait 0.5sec
-                    await sleep(500);
-                    // console.log(`[TAF] await sleep(500)`);
-
-                    // update message
-                    message = await message.channel.messages.fetch({ message: id, force: true }).catch(() => { return null; });
-
-                    // can't found message, maybe deleted
-                    if (!message) {
-                        // console.log(`[TAF] can't ferch message`);
-                        return false;
+                        break;
                     }
                 }
+
+                return;
             }
 
+            // https://twitter.com/musk/status/0123456789
+            // wait embed
+            let embed = (message?.embeds || [])[0];  // embed or undefined
+            for (let i = 0; i < 60; ++i) {
+
+                if (embed) { break; }
+
+                // wait 0.5sec
+                await sleep(500);
+                // console.log(`[TAF] await sleep(500)`);
+
+                // update message
+                message = await message.channel.messages.fetch({ message: id, force: true }).catch(() => { return null; });
+                if (!message) { break; }
+
+                // try get embed
+                embed = (message?.embeds || [])[0];  // embed or undefined
+            }
+
+            // can't found message, maybe deleted
+            // or can't load embed
+            if (!embed) {
+                // console.log(`[TAF] can't get message embed`);
+                return false;
+            }
+
+            // get data from embed
+            const embedImage = embed.image || embed.thumbnail || {};        // image or {}
+            // can't found discord embed image
+            if (!embedImage.url && !embedImage.proxyURL) { return false; }
+
+            // get real username, get uID from crawler
+            let [, authorName] = (embed.author?.name || '').match(regUsername) || [,];
+            let uID;
+            if (authorName == username) {
+                // normal url
+                // try get uID from db
+                if (spamUserList.userIDList.has(username)) {
+                    uID = spamUserList.userIDList.get(username);
+                }
+                // if fail, keep uID undefined, wait until check image
+
+            } else if (authorName && /^\d+$/.test(username)) {
+                // url from crawler
+                // https://twitter.com/<uID>/status/<tID>
+                uID = username;
+                username = authorName;
+            }
+
+
+
+            // got data
+            // { uID, username, tID, embedImage: { url, proxyURL } }
+
             let deleted = false;
+            let fields = [{ name: `Content:`, value: content }, { name: `Channel:`, value: channel.toString() },];
 
-            // username in blacklist
-            if (spamUserList.userIDList.has(username)) {
+            // username or uID in blacklist, just delete
+            for (let [_username, _uID] of spamUserList.userIDList) {
 
-                const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
-                    .setTitle(`推特過濾器:`)
-                    .addFields([
-                        { name: `Content:`, value: content },
-                        { name: `Channel:`, value: channel.toString() },
-                    ]);
-                mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
+                // username in blacklist
+                if (username == _username) {
+                    fields.push({ name: `Username:`, value: username }); deleted = true;
+                }
+
+                //  uID in blacklist
+                if (uID == _uID) {
+                    fields.push({ name: `uID:`, value: uID }); deleted = true;
+                }
 
                 // delete message
-                message.delete().catch(() => { });
-                deleted = true;
-                // message.suppressEmbeds(true).catch(() => { });
+                if (deleted) { message.delete().catch(() => { }); break; }
             }
 
             // found tID & image
-            if (tID && embedImage) {
+            if (embedImage != {}) {
+
                 let result = await mainAFCore.getImageComparison(username, tID, embedImage);
 
                 // found tID & image but tweet image not in blacklist
@@ -580,19 +637,16 @@ module.exports = {
                 console.log(`[TAF] image in blacklist. ${username} ${tID} ${ssim}`);
                 console.log(` ${image}`);
 
-                if (!deleted) {
-                    const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
-                        .setTitle(`推特過濾器:`)
-                        .addFields([{ name: `Content:`, value: content }]);
-                    mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
-
-                    message.delete().catch(() => { });
-                }
-                // mainAFCore.logToDiscord(`delete msg: ${message.url}`);
+                // delete message
+                if (!deleted) { message.delete().catch(() => { }); }
+                fields.push({ name: `image:`, value: image }); deleted = true;
 
                 // image in blacklist but username not, add to blacklist
                 if (!spamUserList.userIDList.has(username)) {
-                    let res = await spamUserList.addUser(username);
+
+                    // if didn't got uID from crawler, uID == undefined
+                    // get uID by API in addUser
+                    let res = await spamUserList.addUser(username, uID, Date.now());
                     mainAFCore.logToDiscord(res === true ? `[+] ${username}` : res);
                 }
 
@@ -602,7 +656,13 @@ module.exports = {
                 if (tag) { spamUserList.addUserTweetTag(username, tID, tag); }
 
                 mainAFCore.uploadBlacklist();
-                return;
+            }
+
+            if (deleted) {
+                const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
+                    .setTitle(`推特過濾器:`).addFields(fields);
+
+                mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
             }
         }
 
@@ -641,7 +701,7 @@ module.exports = {
             // !adduid Mpwpwp1787259 1657108133142224896
             // !adduid Zkiart168463 1657141092171620352
 
-            twitter.userID.set(username, uID);
+            twitter.userIDs.set(username, uID);
 
             await spamUserList.addUser(username, uID, Date.now());
 
@@ -793,10 +853,32 @@ module.exports = {
         // is twitter url or not
         if (!regUrl.test(content)) { return; }
 
+
         // get tweet data
-        const [, username, , tID] = (content.match(regUrl) || [, null, , null]);
+        let [, username, tID] = (content.match(regUrl) || [, null, , null]);
+        let uID;
         // get image data
-        const embedImage = (embeds || [])[0]?.image || null;
+        const embed = (embeds || [])[0];  // embed or undefined
+        const embedImage = embed?.image || embed?.thumbnail || {};        // image or {}
+
+        // get real username, get uID from crawler
+        if (embed) {
+            let [, authorName] = (embed.author?.name || '').match(regUsername) = [,];
+            if (authorName == username) {
+                // normal url
+                // try get uID from db
+                if (spamUserList.userIDList.has(username)) {
+                    uID = spamUserList.userIDList.get(username);
+                }
+                // if fail, keep uID undefined, wait until check image
+
+            } else if (authorName && /^\d+$/.test(username)) {
+                // url from crawler
+                // https://twitter.com/<uID>/status/<tID>
+                uID = username;
+                username = authorName;
+            }
+        }
 
         // check tweet data
         if (username == null) { return; }
@@ -805,12 +887,14 @@ module.exports = {
 
         // set username to blacklist
         if (!spamUserList.userIDList.has(username)) {
-            let res = await spamUserList.addUser(username);
+            // if didn't got uID from crawler, uID == undefined
+            // get uID by API in addUser
+            let res = await spamUserList.addUser(username, uID, Date.now());
             resultLog.push(res === true ? `[+] ${username}` : res);
         }
 
         // get twitter image
-        if (tID && embedImage) {
+        if (tID && embedImage != {}) {
 
             let image = await downloadImage(embedImage.url, embedImage.proxyURL);
             if (image) {
@@ -931,22 +1015,28 @@ class Twitter {
     client = new TwitterApi(process.env.TWITTER_BEARER_TOKEN);
     constructor() { }
 
-    userID = new Map();
+    userIDs = new Map();
     async getUserID(username) {
-        if (this.userID.has(username)) { return this.userID.get(username); }
-        this.userID.set(username, 'Loading...');
+        if (this.userIDs.has(username)) { return this.userIDs.get(username); }
+        this.userIDs.set(username, 'Loading...');
 
         console.log(`[TAF] v2.userByUsername(${username})`)
         const user = await this.client.v2.userByUsername(username).catch(console.log);
         let uID = user?.data?.id || (user?.errors || [])[0]?.detail || null;
-        this.userID.set(username, uID);
+
+        if (uID) { this.userIDs.set(username, uID); }    // keep uID cache
         return uID;
     }
+    usernames = new Map();
     async getUsername(uID) {
+        if (this.username.has(uID)) { return this.username.get(uID); }
+
         console.log(`[TAF] v2.user(${uID})`)
         const user = await this.client.v2.user(uID).catch(console.log);
-        let result = user?.data?.username || (user?.errors || [])[0]?.detail || null;
-        return result;
+        let username = user?.data?.username || (user?.errors || [])[0]?.detail || null;
+
+        if (username) { this.userIDs.set(uID, username); }    // keep username cache
+        return username;
     }
 }
 const twitter = new Twitter();

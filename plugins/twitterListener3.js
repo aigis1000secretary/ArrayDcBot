@@ -12,7 +12,7 @@ function sleep(ms) { return new Promise((resolve) => { setTimeout(resolve, ms); 
 const [EMOJI_RECYCLE] = ['♻️']
 const configPath = `./configs`;
 const loginPath = `./configs/login.json`;
-const regUrl = /^https:\/\/twitter\.com\/([a-zA-Z0-9_]{1,15})(?:\/status\/)(\d+)$/;
+const regUrl = /^https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)$/;
 const isWin32 = require("os").platform() == 'win32';
 
 let tllog = fs.existsSync("./.env") ? console.log : () => { };
@@ -210,6 +210,7 @@ class ChromeDriver {
     }
 
     searching = false;
+    userIDs = new Map();    // <username>, <uID>
     async search({ cID, keywords, limit }) {
         // console.log({ cID, keywords, limit })
 
@@ -221,7 +222,7 @@ class ChromeDriver {
         // start search
         this.searching = true;
 
-        let searchResult = new Map();
+        let searchResult = new Map();   // <tID>, <href>;
         for (let keyword of keywords) {
             tllog(`Chrome search: ${keyword}`);
 
@@ -318,6 +319,40 @@ class ChromeDriver {
         // for (let key of Array.from(searchResult.keys()).sort()) {
         //     console.log(`{"${key}" => "${searchResult.get(key)}"}`);
         // }
+
+        for (let tID of Array.from(searchResult.keys())) {
+            let href = searchResult.get(tID);
+            let [, username] = href.match(regUrl);
+            let uID;
+
+            // get user id
+            if (this.userIDs.has(username)) {
+                uID = this.userIDs.get(username);
+            } else {
+                // get uID by crawler
+                await this.driver.get(`https://twitter.com/${username}`);
+
+                let ele = await this.driver.wait(until.elementLocated(By.css('script[type="application/ld+json"]')), 10000).catch(() => null)
+                let innerHTML = await ele.getAttribute('innerHTML').catch(() => '');
+
+                innerHTML = JSON.parse(innerHTML);
+                uID = innerHTML.author.identifier;
+
+                if (!uID) {
+                    console.log(`[TL3] get user id fail.`);
+
+                    await this.driver.get('https://twitter.com');
+                    this.searching = false;
+                    return new Map();
+                }
+
+                this.userIDs.set(username, uID);
+
+                console.log(uID.padEnd(20, ' '), username)
+            }
+            href = href.replace(`/${username}/`, `/${uID}/`);
+            searchResult.set(tID, href);
+        }
 
         await this.driver.get('https://twitter.com');
         this.searching = false;
@@ -417,8 +452,8 @@ module.exports = {
                 .then(async (searchResult) => {
                     // searchResult = Map(<tID>, <href>)
 
-                    for (let key of Array.from(searchResult.keys()).sort()) {
-                        let url = searchResult.get(key);
+                    for (let tID of Array.from(searchResult.keys()).sort()) {
+                        let url = searchResult.get(tID);
 
                         await channel.send(url).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
                     }
@@ -474,11 +509,11 @@ module.exports = {
     async clockMethod(client, { hours, minutes, seconds }) {
 
         if (!isWin32) { return; }
-        
+
         // update tweet at time
 
         // update flag
-        let update = ([0, 30].includes(minutes) && seconds == 00);
+        let update = ([0, 30].includes(minutes) && seconds == 0);
         if (!update) { return; }
 
         for (let gID of client.guildConfigs.keys()) {
