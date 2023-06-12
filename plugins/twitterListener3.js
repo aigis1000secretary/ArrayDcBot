@@ -210,7 +210,6 @@ class ChromeDriver {
     }
 
     searching = false;
-    userIDs = new Map();    // <username>, <uID>
     async search({ cID, keywords, limit }) {
         // console.log({ cID, keywords, limit })
 
@@ -224,7 +223,7 @@ class ChromeDriver {
 
         let searchResult = new Map();   // <tID>, <href>;
         for (let keyword of keywords) {
-            tllog(`Chrome search: ${keyword}`);
+            tllog(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} ${keyword}`);
 
             // search page
             let _keyword = querystring.escape(keyword);
@@ -323,33 +322,15 @@ class ChromeDriver {
         for (let tID of Array.from(searchResult.keys())) {
             let href = searchResult.get(tID);
             let [, username] = href.match(regUrl);
-            let uID;
 
-            // get user id
-            if (this.userIDs.has(username)) {
-                uID = this.userIDs.get(username);
-            } else {
-                // get uID by crawler
-                await this.driver.get(`https://twitter.com/${username}`);
+            let uID = await this.getUserID(username);
 
-                let ele = await this.driver.wait(until.elementLocated(By.css('script[type="application/ld+json"]')), 10000).catch(() => null)
-                let innerHTML = await ele.getAttribute('innerHTML').catch(() => '');
-
-                innerHTML = JSON.parse(innerHTML);
-                uID = innerHTML.author.identifier;
-
-                if (!uID) {
-                    console.log(`[TL3] get user id fail.`);
-
-                    await this.driver.get('https://twitter.com');
-                    this.searching = false;
-                    return new Map();
-                }
-
-                this.userIDs.set(username, uID);
-
-                console.log(uID.padEnd(20, ' '), username)
+            if (!uID) {
+                await this.driver.get('https://twitter.com');
+                this.searching = false;
+                return new Map();
             }
+
             href = href.replace(`/${username}/`, `/${uID}/`);
             searchResult.set(tID, href);
         }
@@ -357,6 +338,33 @@ class ChromeDriver {
         await this.driver.get('https://twitter.com');
         this.searching = false;
         return searchResult;
+    }
+
+    userIDs = new Map();    // <username>, <uID>
+    async getUserID(username) {
+        // get user id
+        if (this.userIDs.has(username)) {
+            return this.userIDs.get(username);
+        } else {
+            // get uID by crawler
+            await this.driver.get(`https://twitter.com/${username}`);
+
+            let ele = await this.driver.wait(until.elementLocated(By.css('script[type="application/ld+json"]')), 10000).catch(() => null)
+            let innerHTML = await ele?.getAttribute('innerHTML').catch(() => '{}') || '{}';
+
+            innerHTML = JSON.parse(innerHTML);
+            let uID = innerHTML.author?.identifier;
+
+            if (!uID) {
+                console.log(`[TL3] get ${username} uID fail.`);
+                return null;
+            }
+
+            this.userIDs.set(username, uID);
+
+            console.log(uID.padEnd(20, ' '), username)
+            return uID;
+        }
     }
 
     async close() {
@@ -461,7 +469,18 @@ module.exports = {
             setTimeout(() => message.delete().catch(() => { }), 250);
 
         } else if (command == 'tldebug') {
+
             tllog = (tllog == console.log) ? () => { } : console.log;
+
+        } else if (command == 'getuid') {
+
+            if (chromeDriver.searching) {
+                message.channel.send(`chromeDriver.searching...`).catch(() => { });
+            } else {
+                let uID = await chromeDriver.getUserID(args[0]);
+                message.channel.send(`adduid ${args[0]} ${uID}`).catch(() => { });
+            }
+
         }
     },
 
@@ -537,6 +556,7 @@ module.exports = {
                 chromeDriver.search({ cID, limit, keywords })
                     .then(async (searchResult) => {
                         // searchResult = Map(<tID>, <href>)
+                        tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
 
                         for (let key of Array.from(searchResult.keys()).sort()) {
                             let url = searchResult.get(key);
