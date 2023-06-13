@@ -25,7 +25,7 @@ module.exports = {
         let reboot = false;
 
         // reboot at 01:55, 09:55, 17:55 (every 8hr)
-        if ([1, 9, 17].includes(hours) && minutes == 55 && seconds == 00) {
+        if ([1, 9, 17].includes(hours) && minutes == 55 && seconds == 0) {
             reboot = true;
         }
 

@@ -52,6 +52,11 @@ module.exports = {      // KTG
         BAN_CHANNEL_ID: '928570341448626176'      // #_ban
     },
 
+    timeTag2: {
+        TIME_TAG_CHANNEL_ID: '827069773039796245',      // #直播時間軸tag
+        DEBUG_TAG_LOG_CHANNEL_ID: '851618481350770738',      // #_time-tag-log
+    },
+
 
     eval: {},
     fxtwitter: {},

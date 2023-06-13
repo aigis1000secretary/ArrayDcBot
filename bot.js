@@ -130,7 +130,7 @@ module.exports = {
                 const { command, args } = lines[0];
 
                 // call funstion
-                value.execute(message, pluginConfig, command, args);
+                value.execute(message, pluginConfig, command, args, lines);
             }
         });
 

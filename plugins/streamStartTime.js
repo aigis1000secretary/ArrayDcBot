@@ -1,4 +1,4 @@
-// const { youtube } = require('../config.js');
+
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 
 const CLOCK_A = ['<:clocka_0:895230067104440350>', '<:clocka_1:895230174382129162>', '<:clocka_2:895230190169509919>'];
@@ -7,14 +7,15 @@ const CLOCK_C = ['<:clockc_0:895230214026723358>', '<:clockc_1:89523024497648845
 const CLOCK_D = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
 const EMOJI_SMALL_BLUE_DIAMOND = '🔹';
 const EMOJI_RECYCLE = '♻️';
-const regUrl = /(?:https?:\/\/)(?:(?:www\.|m\.)?youtube\.com|youtu\.be|holodex\.net)(?:\/?(?:watch|v|embed|shorts|live|attribution_link(?:[\?&][^\/]+=[^\/]*)*)?\/)(?:(?:watch)?(?:[\?&][^\?&\/]+=[^\?&\/]*)*[\?&]?v=)?(?:multiview\/\w{4})?([\w\-]+)/
+const regUrl = /(?:https?:\/\/)(?:(?:www\.|m\.)?youtube\.com|youtu\.be|holodex\.net)(?:\/?(?:watch|v|embed|shorts|live|attribution_link(?:[\?&][^\/]+=[^\/]*)*)?\/)(?:(?:watch)?(?:[\?&][^\?&\/]+=[^\?&\/]*)*[\?&]?v=)?(?:multiview\/\w{4})?([\w\-]+)/;
 
 // youtube api
 const get = require('util').promisify(require('request').get);
 
-class youtube {
+class YoutubeAPI {
     apiKey = [];
     quotaExceeded = [false, false];
+
     constructor(config = {}) { this.init(config); };
     init({ apiKey }) {
         this.apiKey = apiKey;
@@ -129,7 +130,7 @@ module.exports = {
     setup(client) {
         const apiKey = client.mainConfig.youtube.apiKey;
         const uID = client.user.id;
-        cores.set(uID, new youtube({ apiKey }));
+        cores.set(uID, new YoutubeAPI({ apiKey }));
     },
 
     async execute(message, pluginConfig, command, args, lines) {

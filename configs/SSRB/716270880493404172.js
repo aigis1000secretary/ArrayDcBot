@@ -36,6 +36,11 @@ module.exports = {      // SSRB的聚集地
         BAN_CHANNEL_ID: '890150363305504798'      // #自爆按鈕
     },
 
+    timeTag2: {
+        TIME_TAG_CHANNEL_ID: '828259412257800222',      // #✏直播時間tag
+        DEBUG_TAG_LOG_CHANNEL_ID: '851618481350770738', // #_time-tag-log
+    },
+
     verifyThread: [
         // {
         //     VERIFT_CHANNEL_ID: '1049971164962889778',    // #holo官方頻道人工認證
