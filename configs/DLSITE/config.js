@@ -15,6 +15,7 @@ module.exports = {
     ] : [
         'eval',
         'delall',
+        'dlimg',
         'dlsitebot',
         'fxtwitter',
         // 'hook',

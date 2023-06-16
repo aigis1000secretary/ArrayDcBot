@@ -61,6 +61,7 @@ module.exports = {      // KTG
     eval: {},
     fxtwitter: {},
     delall: {},
+    dlimg: {},
     dlsitebot: {},
     ping: {},
     reboot: {},
