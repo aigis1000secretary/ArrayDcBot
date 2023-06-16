@@ -10,7 +10,7 @@ module.exports = {      // KTG
                 '#アイギスお絵かき', // '#アイギス10周年アートコン'
                 '@Aigis1000', '@Aigis_PhotoMemo', '@Applesyrup14g', '@BadhabhCath',
                 '@aigis2014', '@akagi_huyu', '@inoshishi4', '@koyaki93874607',
-                '@nemui_', '@sakananoniboshi', '@sighaz', '@yomerinne',
+                '@nemui_', '@sighaz', '@yomerinne',
                 '@yuasa_akira',
             ],
         },
