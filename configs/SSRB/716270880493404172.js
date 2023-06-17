@@ -42,39 +42,23 @@ module.exports = {      // SSRB的聚集地
     },
 
     verifyThread: [
-        // {
-        //     VERIFT_CHANNEL_ID: '1049971164962889778',    // #holo官方頻道人工認證
-        //     VERIFT_ROLE_ID: '1049699122845847612',       // @官方頻道會員認證
-        //     ADMIN_ROLE_ID: '1049958100897124352',        // @人工認證通知
-        // }, {
-        //     VERIFT_CHANNEL_ID: '1070303214924210217',    // #4th-fes演唱會驗證辦法
-        //     VERIFT_ROLE_ID: '1070306016253726782',       // @4th演唱會Day1
-        //     ADMIN_ROLE_ID: '1049958100897124352',        // @人工認證通知
-        // }, {
-        //     VERIFT_CHANNEL_ID: '1070303214924210217',    // #4th-fes演唱會驗證辦法
-        //     VERIFT_ROLE_ID: '1070306395292971018',       // @4th演唱會holo27
-        //     ADMIN_ROLE_ID: '1049958100897124352',        // @人工認證通知
-        // }, {
-        //     VERIFT_CHANNEL_ID: '1070303214924210217',    // #4th-fes演唱會驗證辦法
-        //     VERIFT_ROLE_ID: '1070306512586686524',       // @4th演唱會Day2
-        //     ADMIN_ROLE_ID: '1049958100897124352',        // @人工認證通知
-        // }, {
-        //     VERIFT_CHANNEL_ID: '1070303214924210217',    // #4th-fes演唱會驗證辦法
-        //     VERIFT_ROLE_ID: '1070337499668430949',       // @4th演唱會Day1+2
-        //     ADMIN_ROLE_ID: '1049958100897124352',        // @人工認證通知
-        // }, {
-        //     VERIFT_CHANNEL_ID: '1070303214924210217',    // #4th-fes演唱會驗證辦法
-        //     VERIFT_ROLE_ID: '1077581715586949182',       // @クイズ王
-        //     ADMIN_ROLE_ID: '1049958100897124352',        // @人工認證通知
-        // }, {
-        //     VERIFT_CHANNEL_ID: '1070303214924210217',    // #4th-fes演唱會驗證辦法
-        //     VERIFT_ROLE_ID: '1077581946718273538',       // @大懺悔室
-        //     ADMIN_ROLE_ID: '1049958100897124352',        // @人工認證通知
-        // }, {
-        //     VERIFT_CHANNEL_ID: '1070303214924210217',    // #4th-fes演唱會驗證辦法
-        //     VERIFT_ROLE_ID: '1077582045536059444',       // @expo內派出所
-        //     ADMIN_ROLE_ID: '1049958100897124352',        // @人工認證通知
-        // }
+        // //                                                                                 ADMIN_ROLE_ID: '1049958100897124352',    // @人工認證通知
+
+        // // #twinkle-4-you
+        // { VERIFT_CHANNEL_ID: '1119482232197873735', VERIFT_ROLE_ID: '1119482471407423550', ADMIN_ROLE_ID: '1049958100897124352', }, // @Twinkle 4 You
+
+        // // #holo官方頻道人工認證
+        // { VERIFT_CHANNEL_ID: '1049971164962889778', VERIFT_ROLE_ID: '1049699122845847612', ADMIN_ROLE_ID: '1049958100897124352', }, // @官方頻道會員認證
+
+        // // #4th-fes演唱會驗證辦法
+        // { VERIFT_CHANNEL_ID: '1070303214924210217', VERIFT_ROLE_ID: '1070306016253726782', ADMIN_ROLE_ID: '1049958100897124352', }, // @4th演唱會Day1
+        // { VERIFT_CHANNEL_ID: '1070303214924210217', VERIFT_ROLE_ID: '1070306395292971018', ADMIN_ROLE_ID: '1049958100897124352', }, // @4th演唱會holo27
+        // { VERIFT_CHANNEL_ID: '1070303214924210217', VERIFT_ROLE_ID: '1070306512586686524', ADMIN_ROLE_ID: '1049958100897124352', }, // @4th演唱會Day2
+        // { VERIFT_CHANNEL_ID: '1070303214924210217', VERIFT_ROLE_ID: '1070337499668430949', ADMIN_ROLE_ID: '1049958100897124352', }, // @4th演唱會Day1+2
+        // { VERIFT_CHANNEL_ID: '1070303214924210217', VERIFT_ROLE_ID: '1077581715586949182', ADMIN_ROLE_ID: '1049958100897124352', }, // @クイズ王
+        // { VERIFT_CHANNEL_ID: '1070303214924210217', VERIFT_ROLE_ID: '1077581946718273538', ADMIN_ROLE_ID: '1049958100897124352', }, // @大懺悔室
+        // { VERIFT_CHANNEL_ID: '1070303214924210217', VERIFT_ROLE_ID: '1077582045536059444', ADMIN_ROLE_ID: '1049958100897124352', }, // @expo內派出所
+
     ],
 
     welcomeMsg: {
