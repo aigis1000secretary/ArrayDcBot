@@ -323,7 +323,15 @@ class ChromeDriver {
             let href = searchResult.get(tID);
             let [, username] = href.match(regUrl);
 
-            let uID = await this.getUserID(username);
+            let uID = null;
+            for (let i = 0; i < 5; ++i) {
+                uID = await this.getUserID(username);
+                if (uID) {
+                    await this.driver.get('https://twitter.com');
+                    await sleep(500);
+                    break;
+                }
+            }
 
             if (!uID) {
                 await this.driver.get('https://twitter.com');
@@ -478,6 +486,7 @@ module.exports = {
                 message.channel.send(`chromeDriver.searching...`).catch(() => { });
             } else {
                 let uID = await chromeDriver.getUserID(args[0]);
+                if (!uID) { return; }
                 message.channel.send(`adduid ${args[0]} ${uID}`).catch(() => { });
             }
 
