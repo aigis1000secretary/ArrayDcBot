@@ -34,9 +34,9 @@ class ChromeDriver {
         chromeOptions.addArguments('--disable-gpu');             // 關閉GPU 避免某些系統或是網頁出錯
         chromeOptions.addArguments('--window-size=800,600');
         // chromeOptions.addArguments('User-Agent=Mozilla/5.0 (Linux; U; Android 8.1.0; zh-cn; BLA-AL00 Build/HUAWEIBLA-AL00) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.132 MQQBrowser/8.9 Mobile Safari/537.36')
-
-        chromeOptions.addArguments('--headless');                // 啟動Headless 無頭
-
+        if (!process.env.SHOW) {
+            chromeOptions.addArguments('--headless');                // 啟動Headless 無頭
+        }
         // tab page
         this.driver = new Builder()
             .forBrowser('chrome')
@@ -231,8 +231,7 @@ class ChromeDriver {
             while (1) {
                 await this.driver.get(url);
 
-                const tweetBtn = 'div.css-1dbjc4n.r-16y2uox:first-child > div.css-1dbjc4n > div.css-1dbjc4n:last-child > div.css-1dbjc4n > section.css-1dbjc4n > div.css-1dbjc4n:last-child > div > div:first-child > div.css-1dbjc4n.r-j5o65s.r-qklmqi.r-1adg3ll.r-1ny4l3l > div.css-1dbjc4n > article.css-1dbjc4n.r-1loqt21.r-18u37iz.r-1ny4l3l.r-1udh08x.r-1qhn6m8.r-i023vh.r-o7ynqc.r-6416eg > div.css-1dbjc4n.r-eqz5dr.r-16y2uox.r-1wbh5a2 > div.css-1dbjc4n.r-16y2uox.r-1wbh5a2.r-1ny4l3l > div.css-1dbjc4n.r-18u37iz:last-child > div.css-1dbjc4n.r-1iusvr4.r-16y2uox.r-1777fci.r-kzbkwu:last-child > div.css-1dbjc4n.r-zl2h9q:first-child > div.css-1dbjc4n.r-k4xj1c.r-18u37iz.r-1wtj0ep > div.css-1dbjc4n.r-1joea0r:last-child';
-                let ele = await this.driver.wait(until.elementLocated(By.css(tweetBtn)), 10000).catch(() => null);
+                let ele = await this.driver.wait(until.elementLocated(By.partialLinkText('@')), 10000).catch(() => null);
                 if (ele) { break; }
             }
 
