@@ -863,7 +863,7 @@ module.exports = {
 
         // get real username, get uID from crawler
         if (embed) {
-            let [, authorName] = (embed.author?.name || '').match(regUsername) = [,];
+            let [, authorName] = (embed.author?.name || '').match(regUsername) || [,];
             if (authorName == username) {
                 // normal url
                 // try get uID from db
