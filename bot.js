@@ -135,10 +135,7 @@ module.exports = {
         });
 
         client.on('messageDelete', async (message) => {
-            if (message.partial) {
-                // console.log(`[messageDelete] partial`)
-                await message.fetch().then(() => { }).catch(() => { });
-            }
+            if (message.partial) { await message.fetch().then(() => { }).catch(() => { }); }
 
             // Emitted
             for (let [key, value] of client.commands) {
@@ -170,9 +167,7 @@ module.exports = {
 
         client.on('interactionCreate', async (interaction) => {
             const { message } = interaction;
-            if (message.partial) {
-                await message.fetch().then(() => { }).catch(() => { });
-            }
+            if (message.partial) { await message.fetch().then(() => { }).catch(() => { }); }
 
             // Emitted
             for (let [key, value] of client.commands) {
@@ -188,11 +183,8 @@ module.exports = {
         });
 
         client.on('messageReactionAdd', async (reaction, user) => {
+            if (reaction.partial) { await reaction.fetch().then(() => { }).catch(() => { }); }
             const { message } = reaction;
-            if (message.partial) {
-                // console.log(`[messageReactionAdd] partial`)
-                await message.fetch().then(() => { }).catch(() => { });
-            }
 
             // Emitted
             for (let [key, value] of client.commands) {
@@ -208,10 +200,8 @@ module.exports = {
         });
 
         client.on('messageReactionRemove', async (reaction, user) => {
+            if (reaction.partial) { await reaction.fetch().then(() => { }).catch(() => { }); }
             const { message } = reaction;
-            if (message.partial) {
-                await message.fetch().then(() => { }).catch(() => { });
-            }
 
             // Emitted
             for (let [key, value] of client.commands) {
