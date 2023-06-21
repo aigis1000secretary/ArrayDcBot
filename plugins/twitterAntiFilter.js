@@ -239,6 +239,7 @@ class AntiFilterCore {
 
     // upload blacklist to discord
     async uploadBlacklist() {
+        console.log(`[TAF] uploadBlacklist`);
         if (!this.client || !fs.existsSync(dataPath)) { return; }
 
         // let jsonStr = JSON.stringify(spamUserList, replacer, 2).replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
@@ -254,18 +255,34 @@ class AntiFilterCore {
         if (!msg) { return; }
 
         // zip blacklist files
-        const filePath = `${dataPath}.zip`;
-        await compressing.zip.compressDir(dataPath, filePath).catch(() => { });
         const nowDate = (new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }))
             .replace(/[\/:]/g, '').replace(', ', '_');
-
+        const filePath = `${nowDate}.zip`;
+        await compressing.zip.compressDir(dataPath, filePath).catch(() => { });
+    
         // upload zip file
-        const attachment = new AttachmentBuilder(filePath, { name: `${nowDate}.zip` });
-        await msg.edit({ content: ' ', files: [attachment] }).catch(() => { });
-        if (fs.existsSync(filePath)) { fs.unlinkSync(filePath); }
+        let files = [];
+        let filenames = fs.readdirSync('./').filter(file => /^\d{8}_\d{6}\.zip$/.test(file));
+        if (filenames.length > 0) {
+            filenames = filenames.sort().reverse();
+            let fileDate = '';
+            for (let file of filenames) {
+                if (fileDate == file.substring(0, 8)) { continue; }
+                fileDate = file.substring(0, 8);
+
+                files.push(new AttachmentBuilder(file, { name: file }));
+                if (files.length >= 5) { break; }
+            }
+        }
+
+        if (files.length > 0) {
+            await msg.edit({ content: ' ', files }).catch(() => { });
+        }
+        // if (fs.existsSync(filePath)) { fs.unlinkSync(filePath); }
     }
 
     async downloadBlacklist() {
+        console.log(`[TAF] downloadBlacklist`);
         if (!this.client) { return; }
         if (fs.existsSync(dataPath)) {
             // if (fs.existsSync("./.env")) { return; }
@@ -281,14 +298,20 @@ class AntiFilterCore {
         // download blacklist files
         for (const [key, value] of msg.attachments) {
             const { name, url } = value;
-            const filename = `./${name}`;
+            const filepath = `./${name}`;
 
             // download blacklist files
-            await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filename)).on('close', resolve); });
+            if (fs.existsSync(filepath)) { fs.unlinkSync(filepath); }
+            await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); })
+                .then(() => console.log(`[TAF] download ${filepath}`));
+        }
 
-            // unzip
-            await compressing.zip.uncompress(filename, './').catch(() => { });
-            if (fs.existsSync(filename)) { fs.unlinkSync(filename); }
+        // unzip last version
+        let filenames = fs.readdirSync('./').filter(file => /^\d{8}_\d{6}\.zip$/.test(file));
+        if (filenames.length > 0) {
+            filenames = filenames.sort().reverse();
+            await compressing.zip.uncompress(filenames[0], './').catch(() => { })
+                .then(() => console.log(`[TAF] unzip ${filenames[0]}`));
         }
     }
 
