@@ -44,7 +44,8 @@ const deleteAllMessage = async ({ channel, author }) => {
                 // del not-arraydcbot log in DEBUG_CHANNEL_ID
                 if (!['713624995372466179', '928492714482343997', '920485085935984641'].includes(msg.author.id)) { delFlag = true; }
 
-                if (msg.content.includes('🏗️') || msg.content.includes('🛠️')) { delFlag = true; }
+                if ((msg.content.includes('🏗️') || msg.content.includes('🛠️')) &&
+                    Date.now() - msg.createdTimestamp > 28800000) { delFlag = true; }
             }
 
             else if (['977860525830586379'].includes(cID)) {
