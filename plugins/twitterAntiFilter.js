@@ -235,10 +235,13 @@ class AntiFilterCore {
         }
     }
 
-
-
+    uploadTimout = null;
     // upload blacklist to discord
     async uploadBlacklist() {
+        if (this.uploadTimout != null) { clearTimeout(this.uploadTimout); }
+        this.uploadTimout = setTimeout(async () => { this._uploadBlacklist(); this.uploadTimout = null }, 120 * 1000);
+    }
+    async _uploadBlacklist() {
         console.log(`[TAF] uploadBlacklist`);
         if (!this.client || !fs.existsSync(dataPath)) { return; }
 
@@ -259,7 +262,7 @@ class AntiFilterCore {
             .replace(/[\/:]/g, '').replace(', ', '_');
         const filePath = `${nowDate}.zip`;
         await compressing.zip.compressDir(dataPath, filePath).catch(() => { });
-    
+
         // upload zip file
         let files = [];
         let filenames = fs.readdirSync('./').filter(file => /^\d{8}_\d{6}\.zip$/.test(file));
@@ -267,17 +270,21 @@ class AntiFilterCore {
             filenames = filenames.sort().reverse();
             let fileDate = '';
             for (let file of filenames) {
-                if (fileDate == file.substring(0, 8)) { continue; }
+                if (fileDate == file.substring(0, 8)) {
+                    fs.unlinkSync(file);
+                    continue;
+                }
                 fileDate = file.substring(0, 8);
 
                 files.push(new AttachmentBuilder(file, { name: file }));
-                if (files.length >= 5) { break; }
+                if (files.length >= 3) { break; }
             }
         }
 
         if (files.length > 0) {
-            await msg.edit({ content: ' ', files }).catch(() => { });
+            await msg.edit({ content: ' ', files }).catch(console.log);
         }
+
         // if (fs.existsSync(filePath)) { fs.unlinkSync(filePath); }
     }
 
@@ -526,8 +533,9 @@ module.exports = {
             mainAFCore.setClient(client);
 
             // if (fs.existsSync(dataPath)) {
-            //     mainAFCore.readBlacklist();
+            //     await mainAFCore.readBlacklist();
             //     await mainAFCore.uploadBlacklist();
+            //     return;
             // }
 
             await mainAFCore.downloadBlacklist();
