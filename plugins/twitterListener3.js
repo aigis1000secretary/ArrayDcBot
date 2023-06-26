@@ -17,6 +17,24 @@ const isWin32 = require("os").platform() == 'win32';
 
 let tllog = fs.existsSync("./.env") ? console.log : () => { };
 
+class UserData {
+    dateCreated;
+    uID = '';
+    username = '';
+    ssim = 0;
+    suspended = false;
+    // padding;
+    following = 0;
+    followers = 0;
+    tweets = 0;
+    icon;
+    givenName;
+    description;
+    constructor(username) {
+        this.username = username;
+        this.suspended = false;
+    }
+}
 class ChromeDriver {
 
     driver = null;
@@ -78,7 +96,7 @@ class ChromeDriver {
                 console.log(); break;
             }
 
-            // let user set username/passworf
+            // let user set username/password
             child_process.execSync(`notepad.exe ${loginPath}`).toString();
         }
 
@@ -101,7 +119,7 @@ class ChromeDriver {
     async scrollToElement(ele) {
         await this.driver.actions()
             .scroll(0, 0, 0, 0, ele).perform()
-            .catch(console.log);
+            .catch(e => console.log(e.message));
     }
 
     async login() {
@@ -113,8 +131,8 @@ class ChromeDriver {
         // main page
         await this.driver.get('https://twitter.com');
         let ele = await Promise.race([
-            this.driver.wait(until.elementLocated(By.css(userBtn)), 10000).catch(() => null),
-            this.driver.wait(until.elementLocated(By.css(loginBar)), 10000).catch(() => null)
+            this.driver.wait(until.elementLocated(By.css(userBtn)), 5000).catch(() => null),
+            this.driver.wait(until.elementLocated(By.css(loginBar)), 5000).catch(() => null)
         ]);
         if (ele === null) { return false; }
 
@@ -141,7 +159,7 @@ class ChromeDriver {
 
             // await home page
             await this.driver.get('https://twitter.com');
-            await this.driver.wait(until.elementLocated(By.css(userBtn)), 10000).catch(() => null);
+            await this.driver.wait(until.elementLocated(By.css(userBtn)), 5000).catch(() => null);
         } else {
 
             const userInput = `input[autocomplete='username']`;
@@ -154,7 +172,7 @@ class ChromeDriver {
                 const loginData = (await this.getLoginData())[0];
 
                 // username
-                ele = await this.driver.wait(until.elementLocated(By.css(userInput)), 10000).catch(() => null)
+                ele = await this.driver.wait(until.elementLocated(By.css(userInput)), 5000).catch(() => null)
                 if (!ele) { await sleep(500); continue; }
                 // typein
                 await ele.clear().catch(() => { });
@@ -166,7 +184,7 @@ class ChromeDriver {
                 await ele.click().catch(() => { })
 
                 // password
-                ele = await this.driver.wait(until.elementLocated(By.css(passInput)), 10000).catch(() => null)
+                ele = await this.driver.wait(until.elementLocated(By.css(passInput)), 5000).catch(() => null)
                 if (!ele) { await sleep(500); continue; }
                 // typein
                 await ele.clear().catch(() => { });
@@ -183,8 +201,8 @@ class ChromeDriver {
 
         // wait login done
         ele = await Promise.race([
-            this.driver.wait(until.elementLocated(By.css(userBtn)), 10000).catch(() => null),
-            this.driver.wait(until.elementLocated(By.css(loginBar)), 10000).catch(() => null)
+            this.driver.wait(until.elementLocated(By.css(userBtn)), 5000).catch(() => null),
+            this.driver.wait(until.elementLocated(By.css(loginBar)), 5000).catch(() => null)
         ]);
         if (ele === null) { return false; }
 
@@ -210,8 +228,8 @@ class ChromeDriver {
     }
 
     searching = false;
-    async search({ cID, keywords, limit }) {
-        // console.log({ cID, keywords, limit })
+    async searchTweet({ keywords, limit }) {
+        // console.log({ keywords, limit })
 
         // waiting...
         while (!this.constructed || this.searching) {
@@ -231,7 +249,7 @@ class ChromeDriver {
             while (1) {
                 await this.driver.get(url);
 
-                let ele = await this.driver.wait(until.elementLocated(By.partialLinkText('@')), 10000).catch(() => null);
+                let ele = await this.driver.wait(until.elementLocated(By.partialLinkText('@')), 5000).catch(() => null);
                 if (ele) { break; }
             }
 
@@ -314,8 +332,8 @@ class ChromeDriver {
 
         // console.log(cID, keywords[0], limit);
         // // console.log(searchResult)
-        // for (let key of Array.from(searchResult.keys()).sort()) {
-        //     console.log(`{"${key}" => "${searchResult.get(key)}"}`);
+        // for (let tID of Array.from(searchResult.keys()).sort()) {
+        //     console.log(`{"${tID}" => "${searchResult.get(tID)}"}`);
         // }
 
         for (let tID of Array.from(searchResult.keys())) {
@@ -324,7 +342,7 @@ class ChromeDriver {
 
             let uID = null;
             for (let i = 0; i < 5; ++i) {
-                uID = await this.getUserID(username);
+                uID = (await this.getUserData(username))?.uID;
                 if (uID) {
                     await this.driver.get('https://twitter.com');
                     await sleep(500);
@@ -337,6 +355,7 @@ class ChromeDriver {
                 this.searching = false;
                 return new Map();
             }
+            tllog(uID.padEnd(20, ' '), username)
 
             href = href.replace(`/${username}/`, `/${uID}/`);
             searchResult.set(tID, href);
@@ -344,35 +363,81 @@ class ChromeDriver {
 
         await this.driver.get('https://twitter.com');
         this.searching = false;
+
+        tllog(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
+
         return searchResult;
     }
 
-    userIDs = new Map();    // <username>, <uID>
-    async getUserID(username) {
+    async getUserData(username, force = false) {
         // get user id
-        if (this.userIDs.has(username)) {
-            return this.userIDs.get(username);
-        } else {
-            // get uID by crawler
-            await this.driver.get(`https://twitter.com/${username}`);
+        if (this.mainUserDB.has(username)) {
 
-            let ele = await this.driver.wait(until.elementLocated(By.css('script[type="application/ld+json"]')), 10000).catch(() => null)
-            let innerHTML = await ele?.getAttribute('innerHTML').catch(() => '{}') || '{}';
-
-            innerHTML = JSON.parse(innerHTML);
-            let uID = innerHTML.author?.identifier;
-
-            if (!uID) {
-                console.log(`[TL3] get ${username} uID fail.`);
-                return null;
+            if (this.mainUserDB.get(username).suspended) {
+                return this.mainUserDB.get(username);
             }
 
-            this.userIDs.set(username, uID);
+            if (force == false && this.mainUserDB.get(username).uID) {
+                return this.mainUserDB.get(username);
+            }
+        }
+        {
+            // get user obj
+            let result = this.mainUserDB.has(username) ? this.mainUserDB.get(username) : new UserData(username);
 
-            console.log(uID.padEnd(20, ' '), username)
-            return uID;
+            // crawle user page
+            await this.driver.get(`https://twitter.com/${username}`);
+
+            // get data object
+            const suspendedText = 'div.css-1dbjc4n.r-aqfbo4.r-16y2uox > div.css-1dbjc4n.r-1oszu61.r-1niwhzg.r-18u37iz.r-16y2uox.r-1wtj0ep.r-2llsf.r-13qz1uu > div.css-1dbjc4n.r-14lw9ot.r-jxzhtn.r-1ljd8xs.r-13l2t4g.r-1phboty.r-16y2uox.r-1jgb5lz.r-11wrixw.r-61z16t.r-1ye8kvj.r-13qz1uu.r-184en5c:first-child > div.css-1dbjc4n > div.css-1dbjc4n:last-child > div.css-1dbjc4n.r-16y2uox > div.css-1dbjc4n.r-1jgb5lz.r-1ye8kvj.r-13qz1uu > div.css-1dbjc4n.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div.css-1dbjc4n > div.css-901oao.r-18jsvk2.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0';
+            const userDataScript = 'script[type="application/ld+json"]';
+            await Promise.race([
+                this.driver.wait(until.elementLocated(By.css(suspendedText)), 5000).catch(() => null),
+                this.driver.wait(until.elementLocated(By.css(userDataScript)), 5000).catch(() => null)
+            ]);
+            let ele = await this.driver.findElement(By.css(suspendedText)).catch(() => null);
+            if (ele) {
+                result.suspended = true; this.mainUserDB.set(username, result); return result;
+            }
+
+            // read data
+            ele = await this.driver.findElement(By.css(userDataScript)).catch(() => null);
+            if (ele) {
+                let innerHTML = await ele.getAttribute('innerHTML').catch(() => '{}') || '{}';
+                innerHTML = JSON.parse(innerHTML);
+
+                // get data
+                result.dateCreated = innerHTML.dateCreated || null;
+                result.uID = innerHTML.author?.identifier || null;
+                result.following = 0;
+                result.followers = 0;
+                result.tweets = 0;
+                for (let { name, userInteractionCount } of (innerHTML.author?.interactionStatistic || [])) {
+                    if (name == 'Follows') { result.followers = userInteractionCount; }
+                    else if (name == 'Friends') { result.following = userInteractionCount; }
+                    else if (name == 'Tweets') { result.tweets = userInteractionCount; }
+                }
+                result.icon = innerHTML.author?.image?.contentUrl || '';
+
+                result.givenName = innerHTML.author?.givenName || '';
+                result.description = innerHTML.author?.description || '';
+            }
+            // get following
+            // const followingSpan = 'div.css-1dbjc4n.r-1mf7evn:first-child > a.css-4rbku5.css-18t94o4.css-901oao.r-18jsvk2.r-1loqt21.r-37j5jr.r-a023e6.r-16dba41.r-rjixqe.r-bcqeeo.r-qvutc0 > span.css-901oao.css-16my406.r-18jsvk2.r-poiln3.r-1b43r93.r-b88u0q.r-1cwl3u0.r-bcqeeo.r-qvutc0:first-child > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0';
+            // ele = await this.driver.findElement(By.css(followingSpan)).catch(() => null);
+
+            // get followers
+            // const followersSpan = 'div.css-1dbjc4n:last-child > a.css-4rbku5.css-18t94o4.css-901oao.r-18jsvk2.r-1loqt21.r-37j5jr.r-a023e6.r-16dba41.r-rjixqe.r-bcqeeo.r-qvutc0 > span.css-901oao.css-16my406.r-18jsvk2.r-poiln3.r-1b43r93.r-b88u0q.r-1cwl3u0.r-bcqeeo.r-qvutc0:first-child > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0';
+            // ele = await this.driver.findElement(By.css(followersSpan)).catch(() => null);
+
+            this.mainUserDB.set(username, result);
+            return result;
         }
     }
+
+
+
+    mainUserDB = new Map();  // <username>, <UserData>
 
     async close() {
         await this.driver.quit().catch(() => { });
@@ -463,15 +528,18 @@ module.exports = {
             if (!config) { return; }
             let keywords = config.RETWEET_KEYWORD;
 
-            chromeDriver.search({ cID, limit, keywords })
+            chromeDriver.searchTweet({ limit, keywords })
                 .then(async (searchResult) => {
                     // searchResult = Map(<tID>, <href>)
+                    tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
 
                     for (let tID of Array.from(searchResult.keys()).sort()) {
                         let url = searchResult.get(tID);
 
                         await channel.send(url).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
                     }
+
+                    tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
                 });
             setTimeout(() => message.delete().catch(() => { }), 250);
 
@@ -484,7 +552,7 @@ module.exports = {
             if (chromeDriver.searching) {
                 message.channel.send(`chromeDriver.searching...`).catch(() => { });
             } else {
-                let uID = await chromeDriver.getUserID(args[0]);
+                let { uID } = await chromeDriver.getUserData(args[0]);
                 if (!uID) { return; }
                 message.channel.send(`adduid ${args[0]} ${uID}`).catch(() => { });
             }
@@ -561,16 +629,18 @@ module.exports = {
                 // get keywords from config
                 let keywords = config.RETWEET_KEYWORD;
 
-                chromeDriver.search({ cID, limit, keywords })
+                chromeDriver.searchTweet({ limit, keywords })
                     .then(async (searchResult) => {
                         // searchResult = Map(<tID>, <href>)
                         tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
 
-                        for (let key of Array.from(searchResult.keys()).sort()) {
-                            let url = searchResult.get(key);
+                        for (let tID of Array.from(searchResult.keys()).sort()) {
+                            let url = searchResult.get(tID);
 
                             await channel.send(url).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
                         }
+
+                        tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
                     });
             }
         }
