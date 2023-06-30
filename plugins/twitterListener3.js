@@ -341,12 +341,13 @@ class ChromeDriver {
             let [, username] = href.match(regUrl);
 
             let uID = null;
-            for (let i = 0; i < 5; ++i) {
+            for (let i = 0; i < 10; ++i) {
                 uID = (await this.getUserData(username))?.uID;
                 if (uID) {
+                    break;
+                } else {
                     await this.driver.get('https://twitter.com');
                     await sleep(500);
-                    break;
                 }
             }
 
@@ -371,7 +372,7 @@ class ChromeDriver {
 
     async getUserData(username, force = false) {
         if (!this.constructed) { return {}; }
-        
+
         // get user id
         if (this.mainUserDB.has(username)) {
 
@@ -424,7 +425,7 @@ class ChromeDriver {
 
                 result.givenName = innerHTML.author?.givenName || '';
                 result.description = innerHTML.author?.description || '';
-            } else {
+            } else if (await this.driver.findElement(By.css(suspendedText)).catch(() => null)) {
                 result.suspended = true; this.mainUserDB.set(username, result); return result;
             }
 
