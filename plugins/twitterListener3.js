@@ -125,18 +125,18 @@ class ChromeDriver {
     async login() {
         tllog('Chrome login');
 
-        const loginBar = 'div.css-1dbjc4n.r-aqfbo4.r-1p0dtai.r-1d2f490.r-12vffkv.r-1xcajam.r-zchlnj';
-        const userBtn = 'div.css-1dbjc4n.r-13awgt0.r-12vffkv > div.css-1dbjc4n.r-13awgt0.r-12vffkv > div.css-1dbjc4n.r-18u37iz.r-13qz1uu.r-417010:last-child > header.css-1dbjc4n.r-obd0qt.r-16y2uox.r-lrvibr.r-1g40b8q:nth-child(3) > div.css-1dbjc4n.r-f9dfq4 > div.css-1dbjc4n.r-aqfbo4.r-1pi2tsx.r-1xcajam.r-ipm5af > div.css-1dbjc4n.r-1pi2tsx.r-1wtj0ep.r-1rnoaur.r-1pn2ns4.r-f9dfq4 > div.css-1dbjc4n.r-1awozwy:first-child > div.css-1dbjc4n.r-1awozwy.r-1p6iasa.r-e7q0ms:last-child > a.css-4rbku5.css-18t94o4.css-1dbjc4n.r-sdzlij.r-1phboty.r-rs99b7.r-1waj6vr.r-1loqt21.r-19yznuf.r-64el8z.r-1ny4l3l.r-o7ynqc.r-6416eg.r-lrvibr > div.css-901oao.r-1awozwy.r-6koalj.r-18u37iz.r-16y2uox.r-37j5jr.r-a023e6.r-b88u0q.r-1777fci.r-rjixqe.r-bcqeeo.r-q4m81j.r-qvutc0';
+        const loginBar = `input[autocomplete='username']`;
+        const userBtn = 'a.css-4rbku5.css-18t94o4.css-1dbjc4n.r-sdzlij.r-1phboty.r-rs99b7.r-1waj6vr.r-1loqt21.r-19yznuf.r-64el8z.r-1ny4l3l.r-o7ynqc.r-6416eg.r-lrvibr > div.css-901oao.r-1awozwy.r-6koalj.r-18u37iz.r-16y2uox.r-37j5jr.r-a023e6.r-b88u0q.r-1777fci.r-rjixqe.r-bcqeeo.r-q4m81j.r-qvutc0';
 
         // main page
-        await this.driver.get('https://twitter.com');
+        await this.driver.get('https://twitter.com/home');
         let ele = await Promise.race([
             this.driver.wait(until.elementLocated(By.css(userBtn)), 5000).catch(() => null),
             this.driver.wait(until.elementLocated(By.css(loginBar)), 5000).catch(() => null)
         ]);
         if (ele === null) { return false; }
 
-        let logged = !(await ele.getText().catch(() => '')).includes('Twitter');
+        let logged = (await this.driver.getCurrentUrl().catch(() => '')).includes('home');
         if (logged) { return true; }
 
 
@@ -158,7 +158,7 @@ class ChromeDriver {
             }
 
             // await home page
-            await this.driver.get('https://twitter.com');
+            await this.driver.get('https://twitter.com/home');
             await this.driver.wait(until.elementLocated(By.css(userBtn)), 5000).catch(() => null);
         } else {
 
@@ -370,6 +370,8 @@ class ChromeDriver {
     }
 
     async getUserData(username, force = false) {
+        if (!this.constructed) { return {}; }
+        
         // get user id
         if (this.mainUserDB.has(username)) {
 
@@ -391,14 +393,15 @@ class ChromeDriver {
             // get data object
             const suspendedText = 'div.css-1dbjc4n.r-aqfbo4.r-16y2uox > div.css-1dbjc4n.r-1oszu61.r-1niwhzg.r-18u37iz.r-16y2uox.r-1wtj0ep.r-2llsf.r-13qz1uu > div.css-1dbjc4n.r-14lw9ot.r-jxzhtn.r-1ljd8xs.r-13l2t4g.r-1phboty.r-16y2uox.r-1jgb5lz.r-11wrixw.r-61z16t.r-1ye8kvj.r-13qz1uu.r-184en5c:first-child > div.css-1dbjc4n > div.css-1dbjc4n:last-child > div.css-1dbjc4n.r-16y2uox > div.css-1dbjc4n.r-1jgb5lz.r-1ye8kvj.r-13qz1uu > div.css-1dbjc4n.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div.css-1dbjc4n > div.css-901oao.r-18jsvk2.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0';
             const userDataScript = 'script[type="application/ld+json"]';
+            const userProfileLock = 'svg.r-og9te1 > g';
             await Promise.race([
                 this.driver.wait(until.elementLocated(By.css(suspendedText)), 5000).catch(() => null),
                 this.driver.wait(until.elementLocated(By.css(userDataScript)), 5000).catch(() => null)
             ]);
-            let ele = await this.driver.findElement(By.css(suspendedText)).catch(() => null);
-            if (ele) {
-                result.suspended = true; this.mainUserDB.set(username, result); return result;
-            }
+
+            // locked profile
+            let ele = await this.driver.findElement(By.css(userProfileLock)).catch(() => null);
+            if (ele) { result.locked = true; }
 
             // read data
             ele = await this.driver.findElement(By.css(userDataScript)).catch(() => null);
@@ -421,7 +424,14 @@ class ChromeDriver {
 
                 result.givenName = innerHTML.author?.givenName || '';
                 result.description = innerHTML.author?.description || '';
+            } else {
+                result.suspended = true; this.mainUserDB.set(username, result); return result;
             }
+
+
+
+
+
             // get following
             // const followingSpan = 'div.css-1dbjc4n.r-1mf7evn:first-child > a.css-4rbku5.css-18t94o4.css-901oao.r-18jsvk2.r-1loqt21.r-37j5jr.r-a023e6.r-16dba41.r-rjixqe.r-bcqeeo.r-qvutc0 > span.css-901oao.css-16my406.r-18jsvk2.r-poiln3.r-1b43r93.r-b88u0q.r-1cwl3u0.r-bcqeeo.r-qvutc0:first-child > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0';
             // ele = await this.driver.findElement(By.css(followingSpan)).catch(() => null);
