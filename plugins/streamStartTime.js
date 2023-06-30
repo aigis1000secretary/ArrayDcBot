@@ -142,6 +142,7 @@ module.exports = {
 
         // get vID
         const [, vID] = content.match(regUrl);
+        if (['post', 'channel'].includes(vID)) { return; }
         let time = await core.getStreamStatus(vID);
         // console.log(time)
 
@@ -201,6 +202,7 @@ module.exports = {
 
             // get vID
             const [, vID] = content.match(regUrl);
+            if (['post', 'channel'].includes(vID)) { return; }
             let data = await core.getVideoStatus(vID);
             if (!data) { return false; }
 
