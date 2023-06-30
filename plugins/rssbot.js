@@ -57,10 +57,7 @@ const checkRss = async (client, nowMinutes) => {
             // set rss embed
             const embeds = await itemsToEmbeds(items);
             // sort
-            embeds.sort((a, b) => {
-                let tA = a.timestamp, tB = b.timestamp;
-                return (tA == tB) ? 0 : (tA > tB) ? 1 : -1;
-            })
+            embeds.sort(({ timestamp: tA }, { timestamp: tB }) => ((tA == tB) ? 0 : ((tA > tB) ? 1 : -1)));
             // send embeds
             let newRss = false;
             for (let embed of embeds) {
@@ -71,8 +68,7 @@ const checkRss = async (client, nowMinutes) => {
                         .then(async (msg) => {
                             await msg.react(EMOJI_RECYCLE).catch(() => { });
 
-                            let field = embed.fields.find(field => field.name == 'Product id');
-                            if (field) { await msg.react(EMOJI_ENVELOPE_WITH_ARROW).catch(() => { }); }
+                            if (reg1.test(embed.footer?.text)) { await msg.react(EMOJI_ENVELOPE_WITH_ARROW).catch(() => { }); }
                         });
                     newRss = true;
                 } else {
@@ -114,6 +110,7 @@ const decodeEntities = (encodedString) => {
         return String.fromCharCode(num);
     });
 }
+const reg1 = /[RBV]J\d{6,}/i;
 const reg2 = new RegExp(/(Circle[：:])|(Brand[：:])(\<\/span ?\>)?([^\<]+)\</, 'i');
 const reg3 = new RegExp(/\<img[^>]*src=\"([^\"]+)\"/, 'i');
 const reg4 = new RegExp(/[_\/]([RBV]J\d{6,})[_\.]/, 'i');
@@ -149,7 +146,7 @@ const itemsToEmbeds = async (items) => {
             color,
             url: link,
             // description: contentEncoded,
-            fields: [{ name: 'category', value: category, inline: false }],
+            // fields: [{ name: 'category', value: category, inline: false }],
             timestamp: pubTime,
         };
 
@@ -159,7 +156,7 @@ const itemsToEmbeds = async (items) => {
 
         // get Circle
         match = contentEncoded.match(reg2);
-        if (match && match[4]) { embed.author = { name: decodeEntities(match[4]).trim() }; }
+        if (match && match[4]) { embed.author = { name: `${category ? `(${category}) ` : ''}${decodeEntities(match[4]).trim()}` }; }
 
         // get image
         match = contentEncoded.match(reg3);
@@ -167,7 +164,7 @@ const itemsToEmbeds = async (items) => {
 
         // get url
         match = description.match(reg4);
-        if (match && match[1]) { embed.fields.push({ name: 'Product id', value: match[1].toUpperCase().trim(), inline: false }); }
+        if (match && match[1]) { embed.footer = { text: match[1].toUpperCase().trim() }; }
 
         result.push(embed);
     }
@@ -381,10 +378,9 @@ module.exports = {
 
             let [embed] = message.embeds || [{ fields: [] }];
             if (!embed) { return; }
-            let field = embed.fields.find(field => field.name == 'Product id');
-            if (!field) { return; }
+            if (!reg1.test(embed.footer?.text)) { return; }
 
-            let productID = field.value;
+            let productID = embed.footer.text;
             channel.send({ content: `!${productID}` });
             return;
         }
