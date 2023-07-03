@@ -229,7 +229,7 @@ module.exports = {
                 .setTitle(`洗頻訊息:`).setDescription(punish.content)
                 .addFields([
                     { name: `Reason:`, value: `${punish.reason}` },
-                    { name: `Channel:`, value: channel.toString() },
+                    { name: `Channel:`, value: message.url },
                     { name: `Roles:`, value: roleLog.join('\n') || 'null' }
                 ])
                 .setTimestamp();

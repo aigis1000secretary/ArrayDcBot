@@ -568,7 +568,7 @@ module.exports = {
                             .setTitle(`推特過濾器:`)
                             .addFields([
                                 { name: `Content:`, value: content },
-                                { name: `Channel:`, value: channel.toString() },
+                                { name: `Channel:`, value: message.url },
                                 { name: `uID:`, value: _uID },
                                 { name: `Username:`, value: _username },
                             ]);
@@ -636,7 +636,7 @@ module.exports = {
             // { uID, username, tID, embedImage: { url, proxyURL } }
 
             let deleted = false;
-            let fields = [{ name: `Content:`, value: content }, { name: `Channel:`, value: channel.toString() },];
+            let fields = [{ name: `Content:`, value: content }, { name: `Channel:`, value: message.url },];
 
             // username or uID in blacklist, just delete
             for (let [_username, _uID] of spamUserList.userIDList) {

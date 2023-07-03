@@ -42,7 +42,8 @@ module.exports = {
         if (content) {
             fields.push({ name: `Content:`, value: content });
         }
-        fields.push({ name: `Channel:`, value: channel.toString() });
+        fields.push({ name: `Channel:`, value: message.url });
+
         if (attachments.size > 0) {
             let value = '';
             for (let [i, attachment] of message.attachments) {
@@ -100,7 +101,7 @@ module.exports = {
         // event data
         let fields = [];
         fields.push({ name: `Content:`, value: marge.join('\n') });
-        fields.push({ name: `Channel:`, value: channel.toString() });
+        fields.push({ name: `Channel:`, value: newMessage.url });
 
         logEmbed.addFields(fields);
 
