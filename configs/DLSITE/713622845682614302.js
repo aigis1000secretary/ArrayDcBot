@@ -8,10 +8,13 @@ module.exports = {      // KTG
         {
             RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: [
                 '#アイギスお絵かき', // '#アイギス10周年アートコン'
-                '@Aigis1000', '@Aigis_PhotoMemo', '@Applesyrup14g', '@BadhabhCath',
-                '@aigis2014', '@akagi_huyu', '@inoshishi4', '@koyaki93874607',
-                '@nemui_', '@sighaz', '@yomerinne',
-                '@yuasa_akira',
+                'filter:links (from:Aigis1000)', '(from:aigis2014)',
+                'filter:links (from:Aigis_PhotoMemo)', 'filter:links (from:Applesyrup14g)',
+                'filter:links (from:akagi_huyu)', 'filter:links (from:inoshishi4)',
+                'filter:links (from:koyaki93874607)', 'filter:links (from:nemui_)',
+                'filter:links (from:sighaz)', 'filter:links (from:yomerinne)',
+                'filter:links (from:yuasa_akira)',
+                // 'filter:links (from:BadhabhCath)',
             ],
         },
         // #sao
