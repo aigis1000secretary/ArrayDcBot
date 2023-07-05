@@ -90,7 +90,8 @@ const replacer = (key, value) => {
 const regUrl = /https?:\/\/twitter\.com\/([^\/]+)(?:\/status\/(\d*))?/i;
 const regUsername = /\(@([A-Za-z0-9_]+)\)$/;
 const CODE_CHANNEL = '872122458545725451';
-const LOGS_CHANNEL = '713623232070156309';
+const LOG1_CHANNEL = '713623232070156309';
+const LOG2_CHANNEL = '1009645372831977482';
 class AntiFilterCore {
 
     client = null;
@@ -101,13 +102,11 @@ class AntiFilterCore {
         this.client = client;
 
         // get channel/message by id
-        client.channels.fetch(CODE_CHANNEL)
-            .then((channel) => { if (channel) { this.channels.set(CODE_CHANNEL, channel); } })
-            .catch(() => { return null; });
-
-        client.channels.fetch(LOGS_CHANNEL)
-            .then((channel) => { if (channel) { this.channels.set(LOGS_CHANNEL, channel); } })
-            .catch(() => { return null; });
+        for (let cID of [CODE_CHANNEL, LOG1_CHANNEL, LOG2_CHANNEL]) {
+            client.channels.fetch(cID)
+                .then((channel) => { if (channel) { this.channels.set(cID, channel); } })
+                .catch(() => { return null; });
+        }
 
     }
 
@@ -572,7 +571,7 @@ module.exports = {
                                 { name: `uID:`, value: _uID },
                                 { name: `Username:`, value: _username },
                             ]);
-                        mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
+                        mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOG1_CHANNEL)
 
                         break;
                     }
@@ -693,7 +692,7 @@ module.exports = {
                 const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
                     .setTitle(`推特過濾器:`).addFields(fields);
 
-                mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
+                mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOG1_CHANNEL)
             }
         }
 
@@ -979,7 +978,7 @@ module.exports = {
         const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
             .setTitle(`推特過濾器:`)
             .addFields([{ name: `Content:`, value: content }]);
-        mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOGS_CHANNEL)
+        mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOG1_CHANNEL)
 
         message.delete().catch(() => { });
     },
@@ -1055,6 +1054,8 @@ class Twitter {
         const user = await this.client.v2.userByUsername(username).catch(console.log);
         let uID = user?.data?.id || (user?.errors || [])[0]?.detail || null;
 
+        mainAFCore.logToDiscord(`[TAF] userByUsername(${username})`, LOG2_CHANNEL);
+
         if (uID) { this.userIDs.set(username, uID); }    // keep uID cache
         return uID;
     }
@@ -1065,6 +1066,8 @@ class Twitter {
         console.log(`[TAF] v2.user(${uID})`)
         const user = await this.client.v2.user(uID).catch(console.log);
         let username = user?.data?.username || (user?.errors || [])[0]?.detail || null;
+
+        mainAFCore.logToDiscord(`[TAF] getUsername(${uID})`, LOG2_CHANNEL);
 
         if (username) { this.userIDs.set(uID, username); }    // keep username cache
         return username;
