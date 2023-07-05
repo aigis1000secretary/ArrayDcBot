@@ -236,9 +236,9 @@ class AntiFilterCore {
 
     uploadTimout = null;
     // upload blacklist to discord
-    async uploadBlacklist() {
+    async uploadBlacklist(delay = 120 * 1000) {
         if (this.uploadTimout != null) { clearTimeout(this.uploadTimout); }
-        this.uploadTimout = setTimeout(async () => { this._uploadBlacklist(); this.uploadTimout = null }, 120 * 1000);
+        this.uploadTimout = setTimeout(async () => { this._uploadBlacklist(); this.uploadTimout = null }, delay);
     }
     async _uploadBlacklist() {
         console.log(`[TAF] uploadBlacklist`);
@@ -460,61 +460,62 @@ class SpamUserList {
         return true;
     }
     getUser(username) {
-        let uID = this.userIDList.get(username) // uID or undefined
-        return this.userList.get(uID);          // user or undefined
+        let uID = this.userIDList.get(username);    // uID or undefined
+        return this.userList.get(uID);              // user or undefined
     }
     removeUser(username) {
 
-        let uID = this.userIDList.get(username) // uID or undefined
-        return this.userList.delete(uID);       // true or false
+        let uID = this.userIDList.get(username);    // uID or undefined
+        this.userIDList.delete(username);
+        return this.userList.delete(uID);           // true or false
     }
 
     addUserTweet(username, { tID, image, ssim }) {
 
-        let uID = this.userIDList.get(username) // uID or undefined
-        let user = this.userList.get(uID);      // user or undefined
+        let uID = this.userIDList.get(username);    // uID or undefined
+        let user = this.userList.get(uID);          // user or undefined
         return user?.tweetList.set(tID, new SpamTweet({ tID, image, ssim }));    // tweetList or undefined
     }
     getUserTweets(username) {
 
-        let uID = this.userIDList.get(username) // uID or undefined
-        let user = this.userList.get(uID);      // user or undefined
-        return user?.tweetList;                 // tweetList or undefined
+        let uID = this.userIDList.get(username);    // uID or undefined
+        let user = this.userList.get(uID);          // user or undefined
+        return user?.tweetList;                     // tweetList or undefined
     }
     removeUserTweet(username, tID) {
 
-        let uID = this.userIDList.get(username) // uID or undefined
-        let user = this.userList.get(uID);      // user or undefined
-        return user?.tweetList.delete(tID);     // true or false or undefined
+        let uID = this.userIDList.get(username);    // uID or undefined
+        let user = this.userList.get(uID);          // user or undefined
+        return user?.tweetList.delete(tID);         // true or false or undefined
     }
 
     addUserTweetTag(username, tID, tag) {
 
-        let uID = this.userIDList.get(username) // uID or undefined
-        let user = this.userList.get(uID);      // user or undefined
+        let uID = this.userIDList.get(username);    // uID or undefined
+        let user = this.userList.get(uID);          // user or undefined
         user?.tags.add(tag);
-        let tweet = user?.tweetList.get(tID);   // tweet or undefined
-        return tweet?.tags.add(tag);            // tags or undefined
+        let tweet = user?.tweetList.get(tID);       // tweet or undefined
+        return tweet?.tags.add(tag);                // tags or undefined
     }
     getUserTags(username) {
 
-        let uID = this.userIDList.get(username) // uID or undefined
-        let user = this.userList.get(uID);      // user or undefined
-        return user?.tags;                     // tags or undefined
+        let uID = this.userIDList.get(username);    // uID or undefined
+        let user = this.userList.get(uID);          // user or undefined
+        return user?.tags;                          // tags or undefined
     }
     getUserTweetTags(username, tID) {
 
-        let uID = this.userIDList.get(username) // uID or undefined
-        let user = this.userList.get(uID);      // user or undefined
-        let tweet = user?.tweetList.get(tID);   // tweet or undefined
-        return tweet?.tags;                     // tags or undefined
+        let uID = this.userIDList.get(username);    // uID or undefined
+        let user = this.userList.get(uID);          // user or undefined
+        let tweet = user?.tweetList.get(tID);       // tweet or undefined
+        return tweet?.tags;                         // tags or undefined
     }
     removeUserTweetTag(username, tID, tag) {
 
-        let uID = this.userIDList.get(username) // uID or undefined
-        let user = this.userList.get(uID);      // user or undefined
-        let tweet = user?.tweetList.get(tID);   // tweet or undefined
-        return tweet?.tags.delete(tag);         // true or false
+        let uID = this.userIDList.get(username);    // uID or undefined
+        let user = this.userList.get(uID);          // user or undefined
+        let tweet = user?.tweetList.get(tID);       // tweet or undefined
+        return tweet?.tags.delete(tag);             // true or false
     }
 }
 
@@ -533,7 +534,7 @@ module.exports = {
 
             // if (fs.existsSync(dataPath)) {
             //     await mainAFCore.readBlacklist();
-            //     await mainAFCore.uploadBlacklist();
+            //     await mainAFCore.uploadBlacklist(0);
             //     return;
             // }
 
@@ -551,9 +552,7 @@ module.exports = {
         if (regUrl.test(content)) {
 
             let [, username, tID] = (content.match(regUrl) || [, null, , null]);
-            https://twitter.com/Zkiart168463/status/1667195580496453637
 
-            // https://twitter.com/musk
             if (!tID) {
                 // check username
                 for (let [_username, _uID] of spamUserList.userIDList) {
