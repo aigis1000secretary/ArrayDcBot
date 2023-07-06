@@ -521,6 +521,14 @@ class ChromeDriver {
         // check db get username
         if (!username && uID) { username = this.getUsernameByUID(uID); }
         if (this.mainUserDB.has(username)) {
+
+            --this.searchingTask;
+    
+            if (this.searchingTask <= 0) {
+                this.searchingTask = 0;
+                await this.driver.get('https://twitter.com/notifications');
+            }
+            
             return this.mainUserDB.get(username);
         }
         // still no data

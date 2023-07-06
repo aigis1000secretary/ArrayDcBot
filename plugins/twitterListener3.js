@@ -116,9 +116,16 @@ module.exports = {
 
             tllog = (tllog == console.log) ? () => { } : console.log;
 
-        } else if (command == 'getuid') {
+        } else if (command == 'getuid' && args[0]) {
 
-            if (chromeDriver.searching) {
+            if (regUrl.test(args[0])) {
+                let [, username, tID] = args[0].match(regUrl);
+                let { uID } = await chromeDriver.getUserData({ username });
+
+                message.channel.send(`https://twitter.com/${uID}/status/${tID}`).catch(() => { });
+                setTimeout(() => message.delete().catch(() => { }), 250);
+
+            } else if (chromeDriver.searching) {
                 message.channel.send(`chromeDriver.searching...`).catch(() => { });
             } else {
                 let { uID } = await chromeDriver.getUserData({ username: args[0] });

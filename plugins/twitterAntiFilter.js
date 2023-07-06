@@ -680,9 +680,13 @@ module.exports = {
                 }
 
                 // set data to db
-                spamUserList.addUserTweet(username, { tID, ssim, image })
-                let [, tag] = image.match(/^\.\/blacklist\/(.+)\/[^\/]+$/) || [, null];
-                if (tag) { spamUserList.addUserTweetTag(username, tID, tag); }
+                let res = spamUserList.addUserTweet(username, { tID, ssim, image })
+                if (res) {
+                    let [, tag] = image.match(/^\.\/blacklist\/(.+)\/[^\/]+$/) || [, null];
+                    if (tag) { spamUserList.addUserTweetTag(username, tID, tag); }
+                } else {
+                    mainAFCore.logToDiscord(`!getuid <https://twitter.com/${username}/status/${tID}>`);
+                }
 
                 mainAFCore.uploadBlacklist();
             }
@@ -913,14 +917,12 @@ module.exports = {
         // check tweet data
         if (username == null) { return; }
 
-        let resultLog = [];
-
         // set username to blacklist
         if (!spamUserList.userIDList.has(username)) {
             // if didn't got uID from crawler, uID == undefined
             // get uID by API in addUser
             let res = await spamUserList.addUser(username, uID, Date.now());
-            resultLog.push(res === true ? `[+] ${username}` : res);
+            mainAFCore.logToDiscord(res === true ? `[+] ${username}` : res);
         }
 
         // get twitter image
@@ -951,7 +953,7 @@ module.exports = {
 
                     // set image to blacklist
                     imagesList.push(filepath);
-                    resultLog.push(`[+] ${filename}`);
+                    mainAFCore.logToDiscord(`[+] ${filename}`);
 
                     // download image to blacklist
                     await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); });
@@ -963,17 +965,17 @@ module.exports = {
                     mainAFCore.tweetStatus.set(tID, result);
 
                     // set data to db
-                    spamUserList.addUserTweet(username, { tID, ssim: 1.0, image: filepath })
-                    spamUserList.addUserTweetTag(username, tID, 'new');
-
+                    let res = spamUserList.addUserTweet(username, { tID, ssim: 1.0, image: filepath })
+                    if (res) {
+                        spamUserList.addUserTweetTag(username, tID, 'new');
+                    } else {
+                        mainAFCore.logToDiscord(`!getuid <https://twitter.com/${username}/status/${tID}>`);
+                    }
                 }
             }
         }
 
-        if (resultLog.length > 0) {
-            mainAFCore.logToDiscord(resultLog.join('\n'));
-            mainAFCore.uploadBlacklist();
-        }
+        mainAFCore.uploadBlacklist();
 
         const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
             .setTitle(`推特過濾器:`)
