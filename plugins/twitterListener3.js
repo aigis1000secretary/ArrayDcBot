@@ -36,6 +36,10 @@ const chromeDriverSearchTweet = async ({ after, keywords, channel }) => {
                 let { url, timestamp, description, author, media } = searchResult.get(tID);
                 media = media || [];
 
+                await channel.send({ content: url }).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+
+                /*
+                // disable crawler embed
                 let embeds = [], files;
                 if (author) {
                     let embed = new EmbedBuilder()
@@ -68,6 +72,7 @@ const chromeDriverSearchTweet = async ({ after, keywords, channel }) => {
                 }
 
                 await channel.send({ content: url, embeds, files }).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+                //*/
             }
 
             tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
