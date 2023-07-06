@@ -732,7 +732,8 @@ module.exports = {
 
             twitter.userIDs.set(username, uID);
 
-            await spamUserList.addUser(username, uID, Date.now());
+            let res = await spamUserList.addUser(username, uID, Date.now());
+            mainAFCore.logToDiscord(res === true ? `[+] ${username}` : res);
 
             mainAFCore.uploadBlacklist();
 
@@ -1039,6 +1040,7 @@ app.use(webdav.extensions.express('/blacklist/', server)); // GET 以外
 //*/
 
 const { TwitterApi } = require('twitter-api-v2');
+const { chromeDriver } = require('./webdriver.js') || require('./plugins/webdriver.js');;
 class Twitter {
 
     client = new TwitterApi(process.env.TWITTER_BEARER_TOKEN);
@@ -1049,11 +1051,15 @@ class Twitter {
         if (this.userIDs.has(username)) { return this.userIDs.get(username); }
         this.userIDs.set(username, 'Loading...');
 
-        console.log(`[TAF] v2.userByUsername(${username})`)
-        const user = await this.client.v2.userByUsername(username).catch(console.log);
-        let uID = user?.data?.id || (user?.errors || [])[0]?.detail || null;
+        let { uID } = await chromeDriver.getUserData({ username });
 
-        mainAFCore.logToDiscord(`[TAF] userByUsername(${username})`, LOG2_CHANNEL);
+        if (!uID) {
+            // twitter API v2
+            const user = await this.client.v2.userByUsername(username).catch((e) => console.log(e.message));
+            uID = user?.data?.id || (user?.errors || [])[0]?.detail || null;
+
+            mainAFCore.logToDiscord(`[TAF] v2.userByUsername(${username})`, LOG2_CHANNEL);
+        }
 
         if (uID) { this.userIDs.set(username, uID); }    // keep uID cache
         return uID;
@@ -1062,11 +1068,15 @@ class Twitter {
     async getUsername(uID) {
         if (this.username.has(uID)) { return this.username.get(uID); }
 
-        console.log(`[TAF] v2.user(${uID})`)
-        const user = await this.client.v2.user(uID).catch(console.log);
-        let username = user?.data?.username || (user?.errors || [])[0]?.detail || null;
+        let { username } = await chromeDriver.getUserData({ uID });
 
-        mainAFCore.logToDiscord(`[TAF] getUsername(${uID})`, LOG2_CHANNEL);
+        if (!username) {
+            // twitter API v2
+            const user = await this.client.v2.user(uID).catch((e) => console.log(e.message));
+            username = user?.data?.username || (user?.errors || [])[0]?.detail || null;
+
+            mainAFCore.logToDiscord(`[TAF] v2.user(${uID})`, LOG2_CHANNEL);
+        }
 
         if (username) { this.userIDs.set(uID, username); }    // keep username cache
         return username;

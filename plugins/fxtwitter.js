@@ -30,7 +30,7 @@ module.exports = {
                 .then(msg => msg.react(EMOJI_RECYCLE))
                 .catch(() => { });
 
-            message.suppressEmbeds(true).catch(() => { });
+            // message.suppressEmbeds(true).catch(() => { });
 
         } else if (reaction.emoji.name == EMOJI_RECYCLE) {
             // ♻️
