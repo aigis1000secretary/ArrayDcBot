@@ -194,14 +194,25 @@ module.exports = {
                 } break;
             }
 
+            let description = [
+                `動作: ${interaction.customId == 'authorize' ? `驗證` : '撤銷'}`,
+                `驗證人員: <@${member.id}>`,
+                `驗證日期: <t:${parseInt(Date.now() / 1000)}>`
+            ].join('\n');
+
             channel.send({
                 content: ' ', embeds: [
-                    new EmbedBuilder().setDescription(`驗證人員: <@${member.id}>\n驗證日期: <t:${parseInt(Date.now() / 1000)}>`)
+                    new EmbedBuilder().setDescription(description)
                 ]
             }).catch(() => { });
 
             // mute reply
             interaction.reply({ content: ' ' }).catch(() => { });
+
+            if (interaction.customId == 'authorize') {
+                setTimeout(() => { channel.setArchived(true).catch(() => { }); }, 20000);
+            }
+
             return false;
         }
     },
