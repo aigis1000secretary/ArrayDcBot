@@ -518,6 +518,7 @@ class McChannelCore {
 
             // get REALLY video data & liveStreamingDetails
             let videoStatus = await this.youtube.getVideoStatus(vID);
+            if (!videoStatus) { continue; }
 
             // API error, quotaExceeded
             if (!videoStatus.snippet) {
@@ -853,7 +854,7 @@ class McChannelCore {
                 // 'liveChatTickerSponsorItemRenderer',      'liveChatPaidMessageRenderer',
                 // 'liveChatTickerPaidMessageItemRenderer',  'liveChatSponsorshipsGiftPurchaseAnnouncementRenderer',
                 // 'liveChatPaidStickerRendere',             'liveChatSponsorshipsGiftRedemptionAnnouncementRenderer'
-                if (!renderer) { continue; }
+                if (!renderer || !renderer.authorName) { continue; }
 
 
                 // set result
