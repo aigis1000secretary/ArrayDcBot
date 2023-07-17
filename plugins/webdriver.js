@@ -293,10 +293,10 @@ class ChromeDriver {
                     if (authorImage) { authorImage = await authorImage.getAttribute('src').catch(() => { return; }); }
 
                     // check data
-                    if (!(hrefs.length && !!textEle && authorHrefs.length && !!authorImage)) {
+                    if ((!textEle && !mediaEle.length) || !authorImage || !hrefs.length || !authorHrefs.length) {
                         // console.log(elePath);
                         // console.log(hrefs.length, !!textEle, authorHrefs.length, !!authorImage, mediaEle.length);
-                        i = elements.length;
+                        // i = elements.length;
                         continue;
                     }
 
@@ -398,6 +398,7 @@ class ChromeDriver {
                         } else {
                             // add tweet
                             searchResult.set(tID, tweet);
+                            continue;
                         }
 
                     } else {
@@ -523,12 +524,12 @@ class ChromeDriver {
         if (this.mainUserDB.has(username)) {
 
             --this.searchingTask;
-    
+
             if (this.searchingTask <= 0) {
                 this.searchingTask = 0;
                 await this.driver.get('https://twitter.com/notifications');
             }
-            
+
             return this.mainUserDB.get(username);
         }
         // still no data
