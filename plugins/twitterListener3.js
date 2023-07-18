@@ -32,7 +32,12 @@ const chromeDriverSearchTweet = async ({ after, keywords, channel }) => {
             // searchResult = Map(<tID>, <tweet>)
             tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
 
-            for (let tID of Array.from(searchResult.keys()).sort()) {
+            let tIDs = Array.from(searchResult.keys()).sort();
+            for (let i = 0; i < tIDs.length; ++i) {
+                let tID = tIDs[i];
+
+                tllog(`Discord send. [${(i + 1).toString().padStart(4, ' ')}/${tIDs.length.toString().padStart(4, ' ')}]`);
+
                 let { url, timestamp, description, author, media } = searchResult.get(tID);
                 media = media || [];
 

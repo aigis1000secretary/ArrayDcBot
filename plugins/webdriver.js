@@ -64,6 +64,8 @@ class ChromeDriver {
 
         while (!await this.login()) { };
 
+        console.log('Chrome driver login done.');
+
         this.constructed = true;
     }
 
@@ -122,7 +124,7 @@ class ChromeDriver {
     }
 
     async login() {
-        console.log('Chrome login');
+        console.log('Chrome driver login...');
 
         const loginBar = `input[autocomplete='username']`;
         const userBtn = 'a.css-4rbku5.css-18t94o4.css-1dbjc4n.r-sdzlij.r-1phboty.r-rs99b7.r-1waj6vr.r-1loqt21.r-19yznuf.r-64el8z.r-1ny4l3l.r-o7ynqc.r-6416eg.r-lrvibr > div.css-901oao.r-1awozwy.r-6koalj.r-18u37iz.r-16y2uox.r-37j5jr.r-a023e6.r-b88u0q.r-1777fci.r-rjixqe.r-bcqeeo.r-q4m81j.r-qvutc0';
