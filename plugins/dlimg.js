@@ -69,7 +69,9 @@ const downloadImage = async ({ channel }) => {
         if (!newimg) { break; }
     }
 
-    if (fs.existsSync('./image')) {
+    dilog(`donwload image done.`);
+
+    if (fs.existsSync('./image') && !fs.existsSync('./.env')) {
 
         const nowDate = (new Date(Date.now()).toLocaleString('en-ZA'))
             .replace(/[\/:]/g, '').replace(', ', '_');
@@ -94,7 +96,7 @@ module.exports = {
 
     async execute(message, pluginConfig, command, args, lines) {
 
-        if (command == 'img') {
+        if ((command == 'img' && !fs.existsSync('./.env')) || (command == 'img2' && fs.existsSync('./.env'))) {
 
             let { channel } = message;
             await message.delete().catch(console.error);

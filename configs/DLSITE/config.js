@@ -12,6 +12,7 @@ module.exports = {
         // 'twitterAntiFilter',
         // 'memberChecker3',
         'reboot',
+        'dlimg',
     ] : [
         'eval',
         'delall',
