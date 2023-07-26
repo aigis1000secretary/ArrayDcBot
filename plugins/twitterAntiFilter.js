@@ -591,7 +591,15 @@ module.exports = {
                 // console.log(`[TAF] await sleep(500)`);
 
                 // update message
-                message = await message.channel.messages.fetch({ message: id, force: true }).catch(() => { return null; });
+                if (message?.author?.id == client.user.id) {
+
+                    message = await message.edit({ content: `${content}?` }).catch(() => null);
+                    if (message) { message = await message.edit({ content }).catch(() => null); }
+
+                } else {
+                    message = await message.channel.messages.fetch({ message: id, force: true }).catch(() => null);
+                }
+                // catch error, message === null, break
                 if (!message) { break; }
 
                 // try get embed
