@@ -7,7 +7,7 @@ const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const regexToken = /([A-Za-z0-9_\-]{24,}\.[A-Za-z0-9_\-]{6,}\.[A-Za-z0-9_\-]{27,})/;
 const regexMentions = /(@here|@everyone)/i;
 const regexInviteUrl = /(https?:\/\/)?discord.gg\/\S+/;
-const blacklist = ['GrastonBerry', '_CMRA_', 'sui1911'];
+const blacklist = ['GrastonBerry', '_CMRA_', 'sui1911', 'g123_en', 'FromCanadaOrg1'];
 const regexAnti = new RegExp(`twitter\.com/(${blacklist.join('|')})/?`, 'i');
 
 // spam bot Level 1 (only delete message)

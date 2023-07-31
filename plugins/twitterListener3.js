@@ -189,7 +189,7 @@ module.exports = {
         // update tweet at time
 
         // update flag
-        let update = ([0, 30].includes(minutes) && seconds == 0);
+        let update = ([30].includes(minutes) && seconds == 0);
         if (!update) { return; }
 
         for (let gID of client.guildConfigs.keys()) {
