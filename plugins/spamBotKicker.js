@@ -200,7 +200,7 @@ module.exports = {
         const authorInGuild = guild.members.cache.get(author.id);
         const authorPermissions = channel.permissionsFor(authorInGuild);
         // admin mentions  // if (message.mentions.everyone){}
-        if (authorPermissions.has(PermissionFlagsBits.MentionEveryone)) {
+        if (authorPermissions?.has(PermissionFlagsBits.MentionEveryone)) {
             // is admin
             punish.kick = false;
             punish.delete = punish.forceDel;

@@ -289,6 +289,9 @@ class ChromeDriver {
                     let authorHrefs = await this.driver.findElements(By.css(`${elePath} div[data-testid="User-Name"] a`)).catch(() => []);
                     let mediaEle = await this.driver.findElements(By.css(`${elePath} div[data-testid="tweetPhoto"]`)).catch(() => []);
 
+                    let advertisement = await this.driver.findElements(By.css(`${elePath} .r-1s2bzr4 > div > div > span`)).catch(() => []);
+                    if (advertisement.length > 0) { continue; }
+
                     // get tweet text
                     if (textEle) { textEle = await textEle.getText().catch(() => { return }); }
                     // get tweet author image

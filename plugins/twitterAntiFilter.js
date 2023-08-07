@@ -670,6 +670,8 @@ module.exports = {
                 if (!result) { return false; }
                 let { ssim, image } = result;
 
+                if (image.includes('fakeuser')) { return false; }
+
                 // image in blacklist
                 console.log(`[TAF] image in blacklist. ${username} ${tID} ${ssim}`);
                 console.log(` ${image}`);
