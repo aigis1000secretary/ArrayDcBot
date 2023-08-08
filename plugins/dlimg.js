@@ -13,7 +13,7 @@ const downloadFile = (url, filepath) => new Promise((resolve) => { require('requ
 
 let dilog = fs.existsSync('./.env') ? console.log : () => { };
 
-const downloadImage = async ({ channel }) => {
+const downloadImage = async ({ channel, fastmode }) => {
 
     let before;
     while (1) {
@@ -54,11 +54,16 @@ const downloadImage = async ({ channel }) => {
                 let filename = `${username}-${tID}-${nowDate}-img${i}.${ext}`
                 let filepath = `./image/${username}`;
 
+                if (fastmode) {
+                    image = image.replace(`name=orig`, `name=thumb`);
+                    filepath = `./image`;
+                }
+
                 // set folder
                 if (!fs.existsSync(filepath)) { fs.mkdirSync(filepath, { recursive: true }); }
 
                 // download
-                await downloadFile(image, `${filepath}/${filename}`);
+                if (!fs.existsSync(`${filepath}/${filename}`)) { await downloadFile(image, `${filepath}/${filename}`); }
                 dilog(`mID: ${mID}, donwload image ${filename}`);
                 ++i;
                 newimg = true;  // set flag
@@ -96,11 +101,12 @@ module.exports = {
 
     async execute(message, pluginConfig, command, args, lines) {
 
-        if ((command == 'img' && !fs.existsSync('./.env')) || (command == 'img2' && fs.existsSync('./.env'))) {
+        if ((command == 'img' && !fs.existsSync('./.env')) ||
+            (['img2', 'img3'].includes(command) && fs.existsSync('./.env'))) {
 
             let { channel } = message;
             await message.delete().catch(console.error);
-            downloadImage({ channel });
+            downloadImage({ channel, fastmode: command == 'img3' });
             return;
         }
     },
