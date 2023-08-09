@@ -125,7 +125,9 @@ module.exports = {
 
             if (regUrl.test(args[0])) {
                 let [, username, tID] = args[0].match(regUrl);
+
                 let { uID } = await chromeDriver.getUserData({ username });
+                if (!uID) { return; }
 
                 message.channel.send(`https://twitter.com/${uID}/status/${tID}`).catch(() => { });
                 setTimeout(() => message.delete().catch(() => { }), 250);
@@ -135,6 +137,7 @@ module.exports = {
             } else {
                 let { uID } = await chromeDriver.getUserData({ username: args[0] });
                 if (!uID) { return; }
+
                 message.channel.send(`adduid ${args[0]} ${uID}`).catch(() => { });
             }
 
