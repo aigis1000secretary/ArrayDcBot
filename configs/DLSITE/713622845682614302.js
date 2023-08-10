@@ -29,7 +29,7 @@ module.exports = {      // KTG
         // #sao2
         {
             RETWEET_CHANNEL_ID: '1113369067177381918', RETWEET_KEYWORD: [
-                '#レトロノーブル', '#猫神奉納品', '#KANGDANIELxSPAO', '#見てよねぇ七瀬',
+                '#レトロノーブル', '#猫神奉納品', '#見てよねぇ七瀬',
                 '#ヌォンタート', '#Yuuriart', '#jooin_art', '#iwa_art',
             ],
         },
