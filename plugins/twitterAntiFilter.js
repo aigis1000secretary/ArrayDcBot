@@ -547,8 +547,7 @@ const messageExecute = async (message) => {
     const imageUrl = embedImage?.url || null;
     const imageProxyURL = embedImage?.proxyURL || null;
     // get display username
-    const [, authorName] = (regUrl.test(author?.url)) ?
-        (author?.name)?.match(regUsername) : [, null];
+    const [, authorName] = (author?.name)?.match(regUsername) || [, null];
     // get username, tweetID
     let uID;
     let [, username, tID] = (content.match(regUrl) || [, null, null]);
@@ -769,8 +768,7 @@ module.exports = {
                     // check ebmed
                     const embed = (embeds || [null])[0];  // embed or null
                     const author = embed?.author;
-                    const [, authorName] = (regUrl.test(author?.url)) ?
-                        (author?.name)?.match(regUsername) : [, null];
+                    const [, authorName] = (author?.name)?.match(regUsername) || [, null];
                     // found ebmed, break, wait messageUpdate => messageExecute result
                     if (authorName) { break; }
                 }
@@ -986,8 +984,7 @@ module.exports = {
         const imageUrl = embedImage?.url || null;
         const imageProxyURL = embedImage?.proxyURL || null;
         // get display username
-        const [, authorName] = (regUrl.test(author?.url)) ?
-            (author?.name)?.match(regUsername) : [, null];
+        const [, authorName] = (author?.name)?.match(regUsername) || [, null];
         // get username, tweetID
         let uID;
         let [, username, tID] = (content.match(regUrl) || [, null, null]);
