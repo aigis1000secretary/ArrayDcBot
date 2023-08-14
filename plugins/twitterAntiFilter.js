@@ -251,7 +251,7 @@ class AntiFilterCore {
         // if (fs.existsSync("./.env")) { return; }
 
         // get channel/message by id
-        const channel = await this.client.channels.fetch(`872122458545725451`).catch(() => { return null; });
+        const channel = await this.client.channels.fetch(CODE_CHANNEL).catch(() => { return null; });
         if (!channel) { return; }
         const msg = await channel.messages.fetch({ message: `1111207166871871538`, force: true }).catch(() => { return null; });
         if (!msg) { return; }
@@ -296,7 +296,7 @@ class AntiFilterCore {
         }
 
         // get channel/message by id
-        const channel = await this.client.channels.fetch(`872122458545725451`).catch(() => { return null; });
+        const channel = await this.client.channels.fetch(CODE_CHANNEL).catch(() => { return null; });
         if (!channel) { return; }
         const msg = await channel.messages.fetch({ message: `1111207166871871538`, force: true }).catch(() => { return null; });
         if (!msg) { return; }
@@ -760,17 +760,19 @@ module.exports = {
             if (!embedChecked && message.author?.id == client.user.id) {
                 for (let i = 0; i < 10; ++i) {
                     await sleep(1000);
-                    message = await message.edit({ content: message.content }).catch(() => null);
 
-                    // edit error, break
-                    if (!message) { break; }
-
-                    // check ebmed
+                    // check embed after 1 sec
                     const embed = (embeds || [null])[0];  // embed or null
                     const author = embed?.author;
                     const [, authorName] = (author?.name)?.match(regUsername) || [, null];
                     // found ebmed, break, wait messageUpdate => messageExecute result
                     if (authorName) { break; }
+
+                    // edit message, trigger messageUpdate, wait 1 sec loop
+                    message = await message.edit({ content: message.content }).catch(() => null);
+
+                    // edit error, break
+                    if (!message) { break; }
                 }
             }
 
