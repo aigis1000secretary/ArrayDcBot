@@ -24,6 +24,8 @@ const findLastTwitterMessage = async (channel, uID) => {
     return { content: '' };
 }
 
+let tweetEmbedsCache = new Map();
+
 const chromeDriverSearchTweet = async ({ after, keywords, channel }) => {
     chromeDriver.searchKeywords(keywords, { after })
         .then(async (searchResult) => {
@@ -41,43 +43,46 @@ const chromeDriverSearchTweet = async ({ after, keywords, channel }) => {
                 let { url, timestamp, description, author, media } = searchResult.get(tID);
                 media = media || [];
 
-                await channel.send({ content: url }).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+                if (false) {
+                    // embed by discord
+                    await channel.send({ content: url }).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+                } else {
+                    // embed from crawler data
+                    // /*
+                    let embeds = [], files;
+                    if (author) {
+                        let embed = new EmbedBuilder()
+                            .setURL(url).setDescription(description)
+                            .setTimestamp(timestamp).setAuthor(author)
+                            // .setColor(1942002);
+                            .setColor(0);
+                        embed.data.type = 'rich';
 
-                /*
-                // disable crawler embed
-                let embeds = [], files;
-                if (author) {
-                    let embed = new EmbedBuilder()
-                        .setURL(url).setDescription(description)
-                        .setColor(1942002).setTimestamp(timestamp)
-                        .setAuthor(author);
-                    embed.data.type = 'rich';
-                    embed.setFooter({ text: `Twitter`, iconURL: `https://abs.twimg.com/icons/apple-touch-icon-192x192.png` });
+                        embed.setFooter({ text: `Twitter`, iconURL: `https://abs.twimg.com/icons/apple-touch-icon-192x192.png` });
 
-                    // if found video
-                    for (let m of media) {
-                        if (!m.video) { continue; }
-                        files = [new AttachmentBuilder('./video.png', { name: `video.png` })];
-                        embed.setThumbnail(`attachment://video.png`);
-                        break;
+                        embeds.push(embed);
+                    }
+                    for (let i = 0; i < media.length; ++i) {
+
+                        if (!embeds[i]) {
+                            embeds[i] = new EmbedBuilder().setURL(url);
+                            embeds[i].data.type = 'rich';
+                        }
+
+                        let m = media[i];
+                        if (m.image) { embeds[i].setImage(m.image.url); }
+                        if (m.video) {
+                            embeds[i].setImage(m.video.url);
+                            files = [new AttachmentBuilder('./video.png', { name: `video.png` })];
+                            embeds[0].setThumbnail(`attachment://video.png`);
+                        }
                     }
 
-                    embeds.push(embed);
+                    let payload = { content: `<${url}>`, embeds, files };
+                    tweetEmbedsCache.set(tID, payload);
+                    await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+                    //*/
                 }
-                for (let i = 0; i < media.length; ++i) {
-
-                    if (!embeds[i]) {
-                        embeds[i] = new EmbedBuilder().setURL(url);
-                        embeds[i].data.type = 'rich';
-                    }
-
-                    let m = media[i];
-                    if (m.image) { embeds[i].setImage(m.image.url); }
-                    if (m.video) { embeds[i].setImage(m.video.url); }
-                }
-
-                await channel.send({ content: url, embeds, files }).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
-                //*/
             }
 
             tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
@@ -129,7 +134,17 @@ module.exports = {
                 let { uID } = await chromeDriver.getUserData({ username });
                 if (!uID) { return; }
 
-                message.channel.send(`https://twitter.com/${uID}/status/${tID}`).catch(() => { });
+                if (tweetEmbedsCache.has(tID)) {
+                    message.channel.send(tweetEmbedsCache.get(tID)).catch(() => { });
+                } else {
+                    // chromeDriver.getTweet({tID});
+                    // let payload = { content: `<${url}>`, embeds, files };
+                    // tweetEmbedsCache.set(tID, payload);
+                    // await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+
+                    message.channel.send(`<https://twitter.com/${uID}/status/${tID}>`).catch(() => { });
+                }
+
                 setTimeout(() => message.delete().catch(() => { }), 250);
 
             } else if (chromeDriver.searching) {
@@ -188,6 +203,8 @@ module.exports = {
     async clockMethod(client, { hours, minutes, seconds }) {
 
         if (!chromeDriver.isWin32) { return; }
+
+        // if (true) { return; }
 
         // update tweet at time
 
