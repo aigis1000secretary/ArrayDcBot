@@ -5,7 +5,7 @@ const fs = require('fs');
 const compressing = require('compressing');
 const { AttachmentBuilder } = require('discord.js');
 
-const regUrl = /^https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/(\d+))?$/;
+const regUrl = /^\<?https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/(\d+))?[\>\?]*$/;
 // const regUsername = /\(@([a-zA-Z0-9_]+)\)$/;
 
 const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); };
@@ -29,15 +29,16 @@ const downloadImage = async ({ channel, fastmode }) => {
 
             let { embeds } = message;
             if (!embeds || !embeds[0]) { continue; }
+            let embed = embeds[0];
 
             // get embed data
-            const [, , tID] = (embeds[0].url || '').match(regUrl) || [, null, null];
+            const [, , tID] = (embed.url || '').match(regUrl) || [, null, null];
             if (!tID) { continue; }
 
-            const [, username] = (embeds[0].author?.url || '').match(regUrl) || [, null];
+            const [, username] = (embed.author?.url || '').match(regUrl) || [, null];
             if (!username) { continue; }
 
-            const timestamp = embeds[0].timestamp;
+            const timestamp = embed.timestamp;
             if (!timestamp) { continue; }
             const nowDate = (new Date(timestamp).toLocaleString('en-ZA'))
                 .replace(/[\/:]/g, '').replace(', ', '_');
