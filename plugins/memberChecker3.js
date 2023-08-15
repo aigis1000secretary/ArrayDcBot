@@ -864,7 +864,7 @@ class McChannelCore {
                     displayName: renderer.authorName.simpleText,
                     isChatModerator: false, isChatOwner: false,
                     isChatSponsor: false, isVerified: false,
-                    sponsorLevel: 0,
+                    sponsorLevel: -1,
                     profileImageUrl: '',
                     timestampText: renderer.timestampText?.simpleText || null
                 }
@@ -876,12 +876,14 @@ class McChannelCore {
                     if (tooltip.includes('ember')) {
                         auDetails.isChatSponsor = true;
                         switch (tooltip) {
-                            case 'New member': { auDetails.sponsorLevel = 1; } break;
-                            case 'Member (1 month)': { auDetails.sponsorLevel = 2; } break;
-                            case 'Member (2 months)': { auDetails.sponsorLevel = 3; } break;
-                            case 'Member (6 months)': { auDetails.sponsorLevel = 4; } break;
-                            case 'Member (1 year)': { auDetails.sponsorLevel = 5; } break;
-                            case 'Member (2 years)': { auDetails.sponsorLevel = 6; } break;
+                            case 'New member': { auDetails.sponsorLevel = 0; } break;
+                            case 'Member (1 month)': { auDetails.sponsorLevel = 1; } break;
+                            case 'Member (2 months)': { auDetails.sponsorLevel = 2; } break;
+                            case 'Member (6 months)': { auDetails.sponsorLevel = 3; } break;
+                            case 'Member (1 year)': { auDetails.sponsorLevel = 4; } break;
+                            case 'Member (2 years)': { auDetails.sponsorLevel = 5; } break;
+                            case 'Member (3 years)': { auDetails.sponsorLevel = 6; } break;
+                            case 'Member (4 years)': { auDetails.sponsorLevel = 7; } break;
                             default: {
                                 auDetails.sponsorLevel = -1;
                                 console.log(`[MC3] tooltip`, tooltip);
@@ -1217,8 +1219,10 @@ class McGuildCore {
 
         if (auDetails.isChatOwner) { embed.setColor(0xFFD600); }
         else if (auDetails.isChatModerator) { embed.setColor(0x5F84F1); }
+        else if (auDetails.isVerified) { embed.setColor(0x16C60C); }
         else if (auDetails.isChatSponsor) { embed.setColor(0x13B56E); }
-        let url;
+
+        let url = `https://youtu.be/${vID}`;
         if (auDetails.timestampText) {
             let timeText = '00:00:' + auDetails.timestampText;
             let [, hrs, min, sec] = timeText.match(/(\d+):(\d+):(\d+)$/) || [, '00', '00', '00'];
@@ -1313,7 +1317,7 @@ class MainMemberCheckerCore {
 
 
             // check special livechat
-            if (auDetails.isChatOwner || auDetails.isChatModerator) {
+            if (auDetails.isChatOwner || auDetails.isChatModerator || auDetails.isVerified) {
 
                 // fix emojis
                 if (customEmojis && customEmojis.size > 0) {
