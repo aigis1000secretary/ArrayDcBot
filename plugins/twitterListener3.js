@@ -43,7 +43,7 @@ const chromeDriverSearchTweet = async ({ after, keywords, channel }) => {
                 let { url, timestamp, description, author, media } = searchResult.get(tID);
                 media = media || [];
 
-                if (false) {
+                if (true) {
                     // embed by discord
                     await channel.send({ content: url }).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
                 } else {
@@ -142,7 +142,7 @@ module.exports = {
                     // tweetEmbedsCache.set(tID, payload);
                     // await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
 
-                    message.channel.send(`<https://twitter.com/${uID}/status/${tID}>`).catch(() => { });
+                    message.channel.send(`https://twitter.com/${uID}/status/${tID}`).catch(() => { });
                 }
 
                 setTimeout(() => message.delete().catch(() => { }), 250);
