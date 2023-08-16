@@ -952,16 +952,18 @@ class McGuildCore {
     expiresKey = '';
 
     memberRoleID = '';
+    memberLevelID = [];
     logChannelID = '';
     streamChannelID = '';
     memberChannelID = '';
-    constructor({ holoChannelID, expiresKey, memberRoleID, logChannelID, streamChannelID, memberChannelID }, { client, gID }) {
+    constructor({ holoChannelID, expiresKey, memberRoleID, memberLevelID, logChannelID, streamChannelID, memberChannelID }, { client, gID }) {
         this.client = client;
         this.guildID = gID;
 
         this.holoChannelID = holoChannelID;
         this.expiresKey = expiresKey;
         this.memberRoleID = memberRoleID;
+        this.memberLevelID = memberLevelID || [];
         this.logChannelID = logChannelID;
         this.streamChannelID = streamChannelID;
         this.memberChannelID = memberChannelID;
@@ -969,10 +971,14 @@ class McGuildCore {
 
     guild = null;
     memberRole = null;
+    memberLevel = [];
     async init() {
 
         this.guild = await this.client.guilds.fetch(this.guildID);
         this.memberRole = await this.guild.roles.fetch(this.memberRoleID);
+        for (let roleID of this.memberLevelID) {
+            this.memberLevel.push(await this.guild.roles.fetch(roleID));
+        }
 
         let channel = await this.client.channels.fetch(this.logChannelID);
         if (channel) {
@@ -1019,6 +1025,11 @@ class McGuildCore {
                     mclog(`[MC3] User <@${dID}> expired, Remove role!`);
                     this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Red).setDescription(`認證過期, 刪除身分組(${this.memberRole}): ${dcUser.user.tag} ${dcUser.toString()}`));
                     dcUser.roles.remove(this.memberRole).catch(console.log);
+                    // remove level role
+                    for (let role of this.memberLevel) {
+                        if (!dcUser.roles.cache.has(role.id)) { continue; }
+                        dcUser.roles.remove(role).catch(() => { });
+                    }
                 }
                 // else { mclog(`[MC3] User <@${dcUser.user.tag}> in guild without role <${this.memberRole.name}>.`); }
             } else {
@@ -1065,6 +1076,7 @@ class McGuildCore {
         // check user level
         let isSpecalUser = dcUser.roles.cache.has(this.memberRole.id);
         let isChatSponsor = (auDetails.isChatSponsor || auDetails.isChatOwner || auDetails.isChatModerator);
+        let sponsorLevel = auDetails.sponsorLevel;
 
         if (this.mamberCache.has(youtubeID)) {
             // skip if sponsor statu didnt change
@@ -1091,6 +1103,18 @@ class McGuildCore {
                 await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Blue).setDescription(`認證成功, 新增身分組(${this.memberRole}): ${dcUser.user.tag} ${dcUser.toString()}`));
                 dcUser.roles.add(this.memberRole).catch(console.error);
             }
+            // update level role
+            for (let i in this.memberLevel) {
+                let role = this.memberLevel[i];
+                let isThisLevel = (i == sponsorLevel);
+                // is this level & has role / NOT this level & NOT has role : skip
+                if (isThisLevel == dcUser.roles.cache.has(role.id)) { continue; }
+                if (isThisLevel) {
+                    dcUser.roles.add(role).catch(() => { });
+                } else {
+                    dcUser.roles.remove(role).catch(() => { });
+                }
+            }
         }
         if (!isChatSponsor) {
             if (pgUser[this.expiresKey] != 0) { Pg.updateExpires(dID, this.expiresKey, 0); }
@@ -1104,6 +1128,11 @@ class McGuildCore {
             //     mclog(`[MC3] User <${auDetails.displayName}> in guild <${this.guild}>.`);
             //     this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Orange).setDescription(`${pgUser[this.expiresKey] > 0 ? '申請無效, 清除申請' : '申請無效'}: ${dcUser.user.tag} ${dcUser.toString()}`));
             // }
+            // remove level role
+            for (let role of this.memberLevel) {
+                if (!dcUser.roles.cache.has(role.id)) { continue; }
+                dcUser.roles.remove(role).catch(() => { });
+            }
         }
 
         // console.log(
