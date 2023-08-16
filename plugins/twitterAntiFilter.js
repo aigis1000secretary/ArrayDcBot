@@ -753,7 +753,7 @@ module.exports = {
         const { client, content, channel, embeds, id } = message;
 
         // is twitter url
-        if (regUrl.test(content)) {
+        if (regUrl.test(content) && command != 'getuid') {
 
             let embedChecked = await messageExecute(message);
 
