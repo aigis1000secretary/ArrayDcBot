@@ -295,7 +295,7 @@ const checkLastRss = async (client, RSS_CHANNEL_ID, RSS_FEEDURL) => {
     }
 }
 
-
+let client = null;
 module.exports = {
     name: 'rssbot',
     description: "check rss every hour",
@@ -332,11 +332,20 @@ module.exports = {
             // check message target
             let [embed] = message.embeds || [];
             if (!embed) { return; }
-            let del = false, host = (new URL(embed.url)).host;
 
             // check host
-            if (host == 'www.dlsite.com') { del = true; }
-            else if (pluginConfig.find((cfg) => (host == (new URL(cfg.RSS_FEEDURL)).host))) {
+            let host = (new URL(embed.url)).host;
+            if (host == 'www.dlsite.com') {
+                setTimeout(async () => {
+                    await message.suppressEmbeds(true).catch(() => { });
+                    await message.delete().catch(() => { });
+                }, 250);
+                return;
+            }
+
+            // check embed type
+            let color = parseInt(require('crypto').createHash('md5').update(host).digest('hex').substring(0, 6), 16);
+            if (embed.color == color) {
                 // delete last feed later
                 // get message log
                 let notLastMessage = false;
@@ -361,16 +370,14 @@ module.exports = {
                         break;
                     }
                 }
-                del = notLastMessage;
+                if (notLastMessage) {
+                    setTimeout(async () => {
+                        await message.suppressEmbeds(true).catch(() => { });
+                        await message.delete().catch(() => { });
+                    }, 250);
+                    return;
+                }
             }
-
-            if (del) {
-                setTimeout(async () => {
-                    await message.suppressEmbeds(true).catch(() => { });
-                    await message.delete().catch(() => { });
-                }, 250);
-            }
-            return;
         }
 
         // EMOJI_ENVELOPE_WITH_ARROW
@@ -403,4 +410,95 @@ module.exports = {
 
         return true;
     },
+
+    setup(_client) { client = _client; }
 }
+
+
+const app = require('../server.js').app;
+
+const cors = require('cors');
+app.use(cors());
+
+const multer = require('multer');
+app.post('/rssbot', multer().array(), async (req, res) => {
+    if (!client) { return; }
+
+    res.sendStatus(200);
+
+    const xml = req.body.text;
+    if (!xml) { return; }
+
+    let cID;
+    const href = req.body.href;
+    if (href.includes('voice') || href.includes('audio')) { cID = '979765968727310336'; }
+    if (href.includes('game')) { cID = '979815303749967932'; }
+    if (href.includes('anim') || href.includes('ova')) { cID = '979808194710880266'; }
+    if (!cID) { return; }
+
+
+
+    // check discord channel
+    const channel = await client.channels.fetch(cID);
+    if (!channel) { return; }
+    // get message log
+    let messages = await channel.messages.fetch().catch(() => { }) || [];
+    let lastPostTimestamp = 0;
+    for (let key of messages.keys()) {
+        let message = messages.get(key);
+        // only check bot message
+        if (message.author?.id != client.user.id) { continue; }
+        // only check message with embed;
+        if (!message.embeds[0]) { continue; }
+
+        // only check embed url in same host;
+        let workUrl = new URL(href);
+        let oldUrl = new URL(message.embeds[0].url || 'https://127.0.0.1/');
+        if (workUrl.host != oldUrl.host) { continue; }
+
+        let messageTimestamp = new Date(message.embeds[0].timestamp).getTime();
+        lastPostTimestamp = Math.max(lastPostTimestamp, messageTimestamp);
+    }
+
+
+    const items = (await xmlTojson(xml)).item;
+
+    // set rss embed
+    const embeds = await itemsToEmbeds(items);
+    // sort
+    embeds.sort(({ timestamp: tA }, { timestamp: tB }) => ((tA == tB) ? 0 : ((tA > tB) ? 1 : -1)));
+    // send embeds
+    let newRss = false;
+    for (let embed of embeds) {
+        // check last post time
+        if (embed.timestamp > lastPostTimestamp) {
+            // send msg
+            channel.send({ embeds: [new EmbedBuilder(embed)] })
+                .then(async (msg) => {
+                    await msg.react(EMOJI_RECYCLE).catch(() => { });
+
+                    if (reg1.test(embed.footer?.text)) { await msg.react(EMOJI_ENVELOPE_WITH_ARROW).catch(() => { }); }
+                });
+            newRss = true;
+        } else {
+            let message = messages.find((msg) => (msg && msg.embeds && msg.embeds[0]?.url == embed.url))
+
+            if (message) {
+                let embed0 = message.embeds[0];
+                if ((embed.author?.name != embed0.author?.name) ||
+                    (JSON.stringify(embed.fields) != JSON.stringify(embed0.fields)) ||
+                    (embed.image?.url != embed0.image?.url) ||
+                    (embed.timestamp != new Date(embed0.timestamp).getTime()) ||
+                    (embed.title != embed0.title)) {
+                    message.edit({ embeds: [new EmbedBuilder(embed)] })
+                        // .catch(() => { })
+                        .catch(console.log);
+                }
+            }
+        }
+    }
+    // check old rss
+    if (newRss) { checkLastRss(client, cID, href); }
+
+    return;
+});
