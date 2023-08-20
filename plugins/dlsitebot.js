@@ -59,7 +59,29 @@ const getDLsitePage = async (index) => {
             const ele = res.eq(i);
 
             let temp = ele.attr('data-src');
+            if (!temp) { continue; }
             result.thumb.push(`https:${temp}`);
+        }
+        if (result.thumb.length == 0) {
+            res = $("script");
+            for (let i = 0; i < res.length; i++) {
+                const ele = res.eq(i);
+
+                let temp = ele.html();
+                if (!temp || !temp.includes('var contents')) { continue; }
+
+                try { eval(temp.replace('var contents', 'temp')); } catch (error) { temp = null; }
+                if (!temp || !temp.detail[0] || !temp.detail[0].image_main) { continue; }
+
+                [, temp] = temp.detail[0].image_main.match(/([RBV]J\d{6,})_img/) || [, null];
+                if (!temp || temp == index) { continue; }
+
+                temp = await getDLsitePage(temp);
+                if (!temp) { continue; }
+
+                result.thumb = temp.thumb;
+                break;
+            }
         }
 
         // title
@@ -68,6 +90,7 @@ const getDLsitePage = async (index) => {
             const ele = res.eq(i);
 
             let temp = ele.html();
+            if (!temp) { continue; }
             result.title = temp;
         }
 
@@ -78,6 +101,7 @@ const getDLsitePage = async (index) => {
             const ele = res.eq(i);
 
             let temp = ele.html().replace(/(\<[^\>]+\>)+/g, '\n').trim().split(/\s+/);
+            if (!temp) { continue; }
             let head = temp.shift();
             let body = temp.join(' ').replace('&nbsp;', ' ');
             if (head == 'サークル名') { body = body.replace(' フォローする', ''); }
@@ -90,6 +114,7 @@ const getDLsitePage = async (index) => {
             const ele = res.eq(i);
 
             let temp = ele.attr('href');
+            if (!temp) { continue; }
             result.makerUrl = temp;
         }
 
