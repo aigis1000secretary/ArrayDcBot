@@ -113,6 +113,7 @@ module.exports = {
             let lastMessage = await findLastTwitterMessage(channel, client.user.id)
             let [, , tID] = lastMessage.content.match(regUrl) || [];
             if (tID) { after = BigInt(tID); }
+            else if (args[0]) { after = BigInt(args[0]); }
 
             // get keywords from config
             const config = pluginConfig.find((cfg) => { return cID == cfg.RETWEET_CHANNEL_ID });

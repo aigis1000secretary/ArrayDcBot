@@ -231,7 +231,7 @@ class ChromeDriver {
     searching = false;
     searchingTask = 0;
 
-    async searchTweet(keyword, { dataNum = 20, after }) {
+    async searchTweet(keyword, { dataNum = 20, after = 0 }) {
         if (!this.isWin32) { return null; }
 
         // waiting login
