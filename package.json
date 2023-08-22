@@ -24,7 +24,7 @@
     "multer": "^1.4.5-lts.1",
     "pg": "^8.10.0",
     "request": "^2.88.2",
-    "selenium-webdriver": "^4.9.2",
+    "selenium-webdriver": "^4.11.1",
     "serve-index": "^1.9.1",
     "twitter-api-v2": "^1.14.2",
     "webdav-server": "^2.6.2",
