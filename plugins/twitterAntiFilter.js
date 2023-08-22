@@ -309,7 +309,7 @@ class AntiFilterCore {
             // download blacklist files
             if (fs.existsSync(filepath)) { fs.unlinkSync(filepath); }
             await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); })
-                .then(() => console.log(`[TAF] download ${filepath}`));
+                .then(() => console.log(`[TAF] download ${filepath} ${(fs.statSync(filepath)?.size / 1024).toFixed(2)} KB`));
         }
 
         // unzip last version
