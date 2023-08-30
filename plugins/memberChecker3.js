@@ -684,7 +684,7 @@ class McChannelCore {
             let auDetails = chatMessage.authorDetails;
             // let auDetails = {
             //     channelId: 'UCBcPAHz9RxwYkcpWs8XwkRw',
-            //     channelUrl: 'http://www.youtube.com/channel/UCBcPAHz9RxwYkcpWs8XwkRw',
+            //     channelUrl: 'https://www.youtube.com/channel/UCBcPAHz9RxwYkcpWs8XwkRw',
             //     displayName: 'Detron',
             //     isChatModerator: false,
             //     isChatOwner: false,
@@ -860,7 +860,7 @@ class McChannelCore {
                 // set result
                 let auDetails = {
                     channelId: renderer.authorExternalChannelId,
-                    channelUrl: `http://www.youtube.com/channel/${renderer.authorExternalChannelId}`,
+                    channelUrl: `https://www.youtube.com/channel/${renderer.authorExternalChannelId}`,
                     displayName: renderer.authorName.simpleText,
                     isChatModerator: false, isChatOwner: false,
                     isChatSponsor: false, isVerified: false,
@@ -1045,7 +1045,7 @@ class McGuildCore {
 
     // let auDetails = {
     //     channelId: renderer.authorExternalChannelId,
-    //     channelUrl: `http://www.youtube.com/channel/${renderer.authorExternalChannelId}`,
+    //     channelUrl: `https://www.youtube.com/channel/${renderer.authorExternalChannelId}`,
     //     displayName: renderer.authorName.simpleText,
     //     isChatModerator: false, isChatOwner: false,
     //     isChatSponsor: false, isVerified: false,
@@ -1053,7 +1053,7 @@ class McGuildCore {
     //     profileImageUrl: ''
     // }
 
-    mamberCache = new Map();
+    memberCache = new Map();
 
     async onLiveChat(gID, auDetails, message, superchat) {
 
@@ -1078,16 +1078,16 @@ class McGuildCore {
         let isChatSponsor = (auDetails.isChatSponsor || auDetails.isChatOwner || auDetails.isChatModerator);
         let sponsorLevel = auDetails.sponsorLevel;
 
-        if (this.mamberCache.has(youtubeID)) {
+        if (this.memberCache.has(youtubeID)) {
             // skip if sponsor statu didnt change
-            if (this.mamberCache.get(youtubeID) == isChatSponsor) {
+            if (this.memberCache.get(youtubeID) == isChatSponsor) {
                 return;
             }
 
             // sponsor statu changed, set user role again
         } else {
             // set sponsor statu flag to cache space
-            this.mamberCache.set(youtubeID, isChatSponsor);
+            this.memberCache.set(youtubeID, isChatSponsor);
         }
 
         // set user role
@@ -1178,14 +1178,14 @@ class McGuildCore {
             // get video data
             let description = video ? video.snippet.title : vID;
             if (status == 'upcoming') {
-                upcomingList.push(`[${description}](http://youtu.be/${vID})`);
+                upcomingList.push(`[${description}](https://youtu.be/${vID})`);
             } else if (status == 'live') {
-                liveList.push(`[${description}](http://youtu.be/${vID})`);
+                liveList.push(`[${description}](https://youtu.be/${vID})`);
             }
 
             // // get video data
             // let description = video ? video.snippet.title : vID;
-            // streamList.push(`[${description}](http://youtu.be/${vID})`);
+            // streamList.push(`[${description}](https://youtu.be/${vID})`);
         }
 
         return [].concat(['直播中:'], liveList, ['待機台:'], upcomingList);
@@ -1555,6 +1555,7 @@ module.exports = {
         const gCores = mainMcCore.guildCores.filter((gCore) => (gCore.guildID == guild.id));
         if (gCores.length <= 0) { return false; }
 
+        let video;
         for (let gCore of gCores) {
             const isLogChannel = (channel.id == gCore.logChannelID);
 
@@ -1567,19 +1568,26 @@ module.exports = {
             if (isLogChannel && command == 'user') {
                 let dID = args[0];
                 if (!dID) {
-                    channel.send({ content: `!user <user discord ID>` });
-                    continue;
+                    channel.send({ embeds: [new EmbedBuilder().setDescription(`!user <user discord ID>`)] });
+                    return;
                 }
 
                 let data = ((await Pg.getDataByDiscordID(dID.trim()))?.rows || [])[0];
-                console.log(data)
+                console.log(data);
 
-                channel.send({ content: `${dID}\n${JSON.stringify(data, null, 2)}` });
+                channel.send({ content: `\`\`\`js${dID}\n${JSON.stringify(data, null, 2)}\`\`\`` });
+                return;
+            }
+
+            if (isLogChannel && command == 'membercache') {
+                gCores.memberCache = new Map();
+
+                channel.send({ embeds: [new EmbedBuilder().setDescription(`!reset member cache`)] });
                 continue;
             }
 
             if (command == 'member') {
-                channel.send({ content: gCore.get301Url() });
+                channel.send({ content: `<${gCore.get301Url()}>` });
                 continue;
             }
 
@@ -1588,11 +1596,14 @@ module.exports = {
 
                 let ytCore = mainMcCore.ytChannelCores.get(gCore.holoChannelID);
                 if (regUrl.test(args[0])) {
-                    // get vID
-                    const [, vID] = args[0].match(regUrl);
+                    if (!video) {
+                        // get vID
+                        const [, vID] = args[0].match(regUrl);
 
-                    // get video data from API
-                    let video = await ytCore.youtube.getVideoStatus(vID)
+                        // get video data from API
+                        video = await ytCore.youtube.getVideoStatus(vID);
+                    }
+
                     // update cache data
                     if (video && video.snippet && video.snippet.channelId == ytCore.holoChannelID) {
 
@@ -1603,11 +1614,14 @@ module.exports = {
                         // cache video data
                         ytCore.streamList.set(vID, video);
 
-                        gCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`手動新增直播清單`));
+                        gCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`手動新增直播清單`).setFooter({ text: gCore.holoChannelID }));
                     }
-                } else if (isLogChannel) {
+                    continue;
+                }
+                if (isLogChannel) {
                     await ytCore.getVideoList();
-                    gCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`更新直播清單`));
+                    gCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`更新直播清單`).setFooter({ text: gCore.holoChannelID }));
+                    continue;
                 }
 
                 // get response
@@ -1643,9 +1657,20 @@ module.exports = {
             }
 
             if (command == 'test' && message.author?.id == '353625493876113440') {
-                let ytCore = mainMcCore.ytChannelCores.get('UCUKD-uaobj9jiqB-VXt71mA');
-                ytCore?.traceStreamChatByYtdlp({ vID: args[0] || 'Vx1K89idggs' });
-                return;
+                let vID = args[0] || 'Vx1K89idggs';
+
+                if (!video) {
+                    let ytCore = mainMcCore.ytChannelCores.get(gCore.holoChannelID);
+
+                    // get video data from API
+                    video = await ytCore.youtube.getVideoStatus(vID);
+                }
+
+                if (video && video.snippet && video.snippet.channelId == ytCore.holoChannelID) {
+
+                    ytCore?.traceStreamChatByYtdlp({ vID });
+                }
+                continue;
             }
         }
     },
