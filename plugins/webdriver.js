@@ -270,7 +270,7 @@ class ChromeDriver {
             while (1) {
 
                 // get all tweet
-                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > .css-1dbjc4n > div.r-18u37iz > div.r-13qz1uu > div > div`)).catch(() => []);
+                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div.css-1dbjc4n > div > div > div > div`)).catch(() => []);
 
                 // div[data-testid="cellInnerDiv"]  // main .r-14lw9ot section > .css-1dbjc4n > div.r-18u37iz > div.r-13qz1uu > div > div
                 // data-testid="tweet"
@@ -281,7 +281,7 @@ class ChromeDriver {
 
                 // get single tweet
                 for (let i = 0; i < elements.length; ++i) {
-                    const elePath = `main .r-14lw9ot section > .css-1dbjc4n > div.r-18u37iz > div.r-13qz1uu > div > div:nth-child(${i + 1})`;
+                    const elePath = `main .r-14lw9ot section > div.css-1dbjc4n > div > div:nth-child(${i + 1}) > div > div.css-1dbjc4n`;
 
                     let textEle = await this.driver.wait(until.elementLocated(By.css(`${elePath} div[data-testid="tweetText"]`)), 2500).catch(() => null);
                     let authorImage = await this.driver.wait(until.elementLocated(By.css(`${elePath} div[data-testid="Tweet-User-Avatar"] img`)), 2500).catch(() => null);
