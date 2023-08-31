@@ -16,6 +16,7 @@ let dilog = fs.existsSync('./.env') ? console.log : () => { };
 const downloadImage = async ({ channel, fastmode }) => {
 
     let before;
+    let donelog = [`donwload image done.`];
     while (1) {
         let newimg = false;
         let msgs = await channel.messages.fetch({ before, force: true });
@@ -28,7 +29,14 @@ const downloadImage = async ({ channel, fastmode }) => {
 
 
             let { embeds } = message;
-            if (!embeds || !embeds[0]) { continue; }
+            if (!embeds || !embeds[0]) {
+                let { author, content, client } = message;
+                if (author.id == client.user.id) {
+                    donelog.push(`message.edit ${content}`);
+                    message.edit({ content }).catch(() => { });
+                }
+                continue;
+            }
             let embed = embeds[0];
 
             // get embed data
@@ -50,21 +58,28 @@ const downloadImage = async ({ channel, fastmode }) => {
                 let image = embed.image?.url || '';
                 const [, ext] = image.match(/([^\.]+)$/) || [, null];
                 if (!image || !ext) { continue; }
-                image = image.replace(`.${ext}`, `?format=${ext}&name=orig`);
+                let dlImage = image.replace(`.${ext}`, `?format=${ext}&name=orig`);
 
+                let folderPath = `./image/${username}`;
                 let filename = `${username}-${tID}-${nowDate}-img${i}.${ext}`
-                let filepath = `./image/${username}`;
+                let filePath = `${folderPath}/${filename}`;
 
                 if (fastmode) {
-                    image = image.replace(`name=orig`, `name=thumb`);
-                    filepath = `./image`;
+                    dlImage = dlImage.replace(`name=orig`, `name=thumb`);
+                    folderPath = `./image`;
+                    filePath = `${folderPath}/${filename}`;
                 }
 
                 // set folder
-                if (!fs.existsSync(filepath)) { fs.mkdirSync(filepath, { recursive: true }); }
+                if (!fs.existsSync(folderPath)) { fs.mkdirSync(folderPath, { recursive: true }); }
 
                 // download
-                if (!fs.existsSync(`${filepath}/${filename}`)) { await downloadFile(image, `${filepath}/${filename}`); }
+                if (!fs.existsSync(filePath)) { await downloadFile(dlImage, filePath); }
+                if (!fs.statSync(filePath)?.size) {
+                    fs.unlinkSync(filePath);
+                    await downloadFile(image, filePath);
+                }
+
                 dilog(`mID: ${mID}, donwload image ${filename}`);
                 ++i;
                 newimg = true;  // set flag
@@ -75,7 +90,7 @@ const downloadImage = async ({ channel, fastmode }) => {
         if (!newimg) { break; }
     }
 
-    dilog(`donwload image done.`);
+    dilog(donelog.join('\n'));
 
     if (fs.existsSync('./image') && !fs.existsSync('./.env')) {
 
