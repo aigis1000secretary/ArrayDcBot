@@ -490,7 +490,12 @@ class McChannelCore {
             // check result
             if (!Array.isArray(_videos)) {
                 console.log(`getVideoLists error:`, this.holoChannelID);
-                console.log(_videos)
+                if (_videos.reason == 'quotaExceeded') {
+                    console.log(`{ code: 403, message: 'quotaExceeded', reason: 'quotaExceeded',`)
+                    console.log(`  variabale: { channelId: 'UCUKD-uaobj9jiqB-VXt71mA', eventType: 'live', } }`)
+                } else {
+                    console.log(_videos)
+                }
                 _videos = [];
             }   // something is wrong
 
@@ -1478,7 +1483,7 @@ class MainMemberCheckerCore {
                         _video = await ytCore.youtube.getVideoStatus(vID);
 
                         // API error, quotaExceeded
-                        if (!_video.snippet) {
+                        if (!_video?.snippet) {
                             // delete nan data video
                             if (ytCore.streamList.has(vID)) {
                                 ytCore.streamList.delete(vID);
