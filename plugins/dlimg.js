@@ -74,13 +74,20 @@ const downloadImage = async ({ channel, fastmode }) => {
                 if (!fs.existsSync(folderPath)) { fs.mkdirSync(folderPath, { recursive: true }); }
 
                 // download
-                if (!fs.existsSync(filePath)) { await downloadFile(dlImage, filePath); }
-                if (!fs.statSync(filePath)?.size) {
-                    fs.unlinkSync(filePath);
-                    await downloadFile(image, filePath);
+                if (!fs.existsSync(filePath)) {
+
+                    await downloadFile(dlImage, filePath);
+                    if (!fs.statSync(filePath)?.size) {
+                        fs.unlinkSync(filePath);
+                        await downloadFile(image, filePath);
+                    }
+
+                    dilog(`mID: ${mID}, donwload image ${filename}`);
+                } else {
+                    dilog(`mID: ${mID},     skip image ${filename}`);
                 }
 
-                dilog(`mID: ${mID}, donwload image ${filename}`);
+
                 ++i;
                 newimg = true;  // set flag
 
@@ -91,6 +98,7 @@ const downloadImage = async ({ channel, fastmode }) => {
     }
 
     dilog(donelog.join('\n'));
+    dilog('donelog.length', donelog.length - 1);
 
     if (fs.existsSync('./image') && !fs.existsSync('./.env')) {
 
@@ -122,7 +130,8 @@ module.exports = {
 
             let { channel } = message;
             await message.delete().catch(console.error);
-            downloadImage({ channel, fastmode: command == 'img3' });
+            downloadImage({ channel, fastmode: command == 'img3' })
+                .then(() => console.log('done'));
             return;
         }
     },
