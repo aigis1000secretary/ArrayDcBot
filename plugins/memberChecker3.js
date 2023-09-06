@@ -1580,14 +1580,14 @@ module.exports = {
                 let data = ((await Pg.getDataByDiscordID(dID.trim()))?.rows || [])[0];
                 console.log(data);
 
-                channel.send({ content: `\`\`\`js${dID}\n${JSON.stringify(data, null, 2)}\`\`\`` });
+                channel.send({ content: `\`\`\`js\n${dID}\n${JSON.stringify(data, null, 2)}\`\`\`` });
                 return;
             }
 
             if (isLogChannel && command == 'membercache') {
                 gCores.memberCache = new Map();
 
-                channel.send({ embeds: [new EmbedBuilder().setDescription(`!reset member cache`)] });
+                channel.send({ embeds: [new EmbedBuilder().setDescription(`Clear member cache done!`)] });
                 continue;
             }
 
