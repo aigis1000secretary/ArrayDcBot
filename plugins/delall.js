@@ -14,15 +14,22 @@ const workspaceChannelIDs = [
     '1113369067177381918',  // #sao2
     '713623232070156309',   // #_log
     '1008565763260551188',  // #⚫_stream
-    '1010005672152281218'   // #⚫_member
+    '1010005672152281218',  // #⚫_member
+
+    // for DICE
+    '1024627281592848434',  // #⁠_bot-test
+    '1024627739023650827',  // #⚫_stream
+    '1024627744681771108',  // #⚫_member 
+    '1110077306053070920',  // #⚫_stream2
+    '1110077379994472540',  // #⚫_member2
 ]
 
 const deleteAllMessage = async ({ channel, author }) => {
 
-    const cID = channel.id;
+    const cID = channel?.id;
 
     if (!workspaceChannelIDs.includes(cID)) { return; }
-    if (author?.id != '353625493876113440') { return; }
+    if (!['353625493876113440', '920485085935984641'].includes(author?.id)) { return; }
 
     // console.log(`bulkDelete ${channel.name}`);
 
@@ -82,7 +89,10 @@ const deleteAllMessage = async ({ channel, author }) => {
             console.log(`     Checked ${msgs.size} messages in ${channel.name}, before: ${before}`)
         }
 
-        await channel.bulkDelete(bulkDel).catch(console.error);
+        await channel.bulkDelete(bulkDel)
+            .catch(async (e) => {
+                if (e.message.includes('old')) { for (let msg of bulkDel) { await msg.delete().catch(() => null); } }
+            });
         if (msgs.size != 50) { break; }
     }
     if (require('fs').existsSync("./.env")) {
@@ -140,7 +150,7 @@ module.exports = {
     },
 
     async setup(client) {
-        await deleteAllMessage({ author: { id: '353625493876113440' }, channel: await client.channels.fetch(DEBUG_CHANNEL_ID) });
-        await deleteAllMessage({ author: { id: '353625493876113440' }, channel: await client.channels.fetch('1009645372831977482') });
+        await deleteAllMessage({ author: client.user, channel: await client.channels.fetch(DEBUG_CHANNEL_ID).catch(() => null) });
+        await deleteAllMessage({ author: client.user, channel: await client.channels.fetch('1009645372831977482').catch(() => null) });
     }
 }
