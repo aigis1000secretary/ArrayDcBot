@@ -3,20 +3,20 @@ module.exports = {      // SSRB的聚集地
     name: 'SSRB的聚集地',
     perfix: /^[\/\-!][\S]/,
 
-    memberChecker3: [
+    memberChecker4: [
         {
             holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB,
-            apiKey: [process.env.YOUTUBE_APIKEY_0, process.env.YOUTUBE_APIKEY_7],   // SSRB
-            expiresKey: 'ssrb_expires',
 
+            streamChannelID: '775100135515750470',      // #🌿獅白直播-streamchat
+            memberChannelID: '790236195794976808',  // #獅白會限直播討論用
+
+            expiresKey: 'ssrb_expires',
+            logChannelID: '904053455377825833',      // #會限認證紀錄
             memberRoleID: '847652060903243846',      // @&ししろん的食物
             memberLevelID: [
                 `1140986754170638418`, `1140986852908728340`, `1140986897758441582`, `1140986950837354607`,
                 `1140987055296487535`, `1140987107905638441`, `1140987355403132928`, `1140987431521366107`
             ],
-            logChannelID: '904053455377825833',      // #會限認證紀錄
-            streamChannelID: '775100135515750470',      // #🌿獅白直播-streamchat
-            memberChannelID: '790236195794976808',  // #獅白會限直播討論用
         },
     ],
 

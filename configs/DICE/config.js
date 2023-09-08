@@ -6,7 +6,10 @@ module.exports = {
     discordToken: process.env.DISCORD_427025310291197954_BOTTOKEN,
     clientSecret: process.env.null,
     resonance: 'ダイ',
-    plugins: [
+    plugins: (process.env.HOST_TYPE == 'debug') ? [
+        'memberChecker4',
+        'delall'
+    ] : [
         // `ping`,
         // // 'uptimer',
         // 'rssbot', 'dlsitebot',
@@ -15,7 +18,7 @@ module.exports = {
         // 'streamStartTime',
         // 'reactionRole',
         // 'superChat',
-        // 'memberChecker3',
+        // 'memberChecker4',
         'reboot',
     ],
 

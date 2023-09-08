@@ -8,7 +8,7 @@ module.exports = {
     resonance: 'ぬる',
     plugins: (process.env.HOST_TYPE == 'debug') ? [
         // 'delall',
-        // 'memberChecker3',
+        // 'memberChecker4',
         // 'twitterAntiFilter',
         'dlimg',
         'ip',
@@ -22,7 +22,7 @@ module.exports = {
         'fxtwitter',
         // 'hook',
         'ip',
-        // 'memberChecker3',
+        // 'memberChecker4',
         // 'memberCounter',
         // 'messageLogger',
         // `ping`,
