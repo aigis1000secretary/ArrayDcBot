@@ -1601,10 +1601,10 @@ module.exports = {
 
                 let ytCore = mainMcCore.ytChannelCores.get(gCore.holoChannelID);
                 if (regUrl.test(args[0])) {
-                    if (!video) {
-                        // get vID
-                        const [, vID] = args[0].match(regUrl);
+                    // get vID
+                    const [, vID] = args[0].match(regUrl);
 
+                    if (!video) {
                         // get video data from API
                         video = await ytCore.youtube.getVideoStatus(vID);
                     }
@@ -1663,16 +1663,15 @@ module.exports = {
 
             if (command == 'test' && message.author?.id == '353625493876113440') {
                 let vID = args[0] || 'Vx1K89idggs';
+                let ytCore = mainMcCore.ytChannelCores.get(gCore.holoChannelID);
 
                 if (!video) {
-                    let ytCore = mainMcCore.ytChannelCores.get(gCore.holoChannelID);
 
                     // get video data from API
                     video = await ytCore.youtube.getVideoStatus(vID);
                 }
 
                 if (video && video.snippet && video.snippet.channelId == ytCore.holoChannelID) {
-
                     ytCore?.traceStreamChatByYtdlp({ vID });
                 }
                 continue;
