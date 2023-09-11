@@ -271,6 +271,7 @@ class ChromeDriver {
 
                 // get all tweet
                 let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div.css-1dbjc4n > div > div > div > div`)).catch(() => []);
+                // let elements = await this.driver.findElements(By.css(`div[data-testid="cellInnerDiv"]`)).catch(() => []);
 
                 // div[data-testid="cellInnerDiv"]  // main .r-14lw9ot section > .css-1dbjc4n > div.r-18u37iz > div.r-13qz1uu > div > div
                 // data-testid="tweet"
@@ -282,6 +283,7 @@ class ChromeDriver {
                 // get single tweet
                 for (let i = 0; i < elements.length; ++i) {
                     const elePath = `main .r-14lw9ot section > div.css-1dbjc4n > div > div:nth-child(${i + 1}) > div > div.css-1dbjc4n`;
+                    // const elePath = `div[data-testid="cellInnerDiv"]:nth-child(${i + 1})`;
 
                     let textEle = await this.driver.wait(until.elementLocated(By.css(`${elePath} div[data-testid="tweetText"]`)), 2500).catch(() => null);
                     let authorImage = await this.driver.wait(until.elementLocated(By.css(`${elePath} div[data-testid="Tweet-User-Avatar"] img`)), 2500).catch(() => null);
@@ -289,8 +291,9 @@ class ChromeDriver {
                     let authorHrefs = await this.driver.findElements(By.css(`${elePath} div[data-testid="User-Name"] a`)).catch(() => []);
                     let mediaEle = await this.driver.findElements(By.css(`${elePath} div[data-testid="tweetPhoto"]`)).catch(() => []);
 
-                    let advertisement = await this.driver.findElements(By.css(`${elePath} .r-1s2bzr4 > div > div > span`)).catch(() => []);
-                    // if (advertisement.length > 0) { continue; }
+                    // is Ad or not
+                    let isAdvertisement = await this.driver.findElements(By.css(`${elePath} .r-1s2bzr4 > div > div > span`)).catch(() => []);
+                    isAdvertisement = !!(isAdvertisement.length > 0);
 
                     // get tweet text
                     if (textEle) { textEle = await textEle.getText().catch(() => { return }); }
@@ -306,7 +309,7 @@ class ChromeDriver {
                     }
 
 
-                    // get tweet base-data
+                    // get tweet url data
                     let tID, username, url;
                     for (let a of hrefs) {
                         // get link href
@@ -323,15 +326,15 @@ class ChromeDriver {
                             // set scroll target
                             lastElement = a;
 
-                            console.log(after, '<', tID, (BigInt(after) < BigInt(tID)));
+                            console.log(after, '<', tID, (BigInt(after) < BigInt(tID)), isAdvertisement);
 
                             break;
                         }
                     }
                     if (!tID) { continue; }
 
-                    // keep url
-                    let tweet = { url };
+                    // set result object
+                    let tweet = { url, isAdvertisement };
                     tweet.timestamp = parseInt(BigInt(tID) >> BigInt(22)) + 1288834974657;
 
                     // get tweet text
@@ -391,8 +394,8 @@ class ChromeDriver {
                         tweet.media = media;
                     }
 
-
-
+                    
+                    if (isAdvertisement) { continue; }
 
                     if (after) {
 
