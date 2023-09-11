@@ -1933,19 +1933,19 @@ app.all(`/member/:botid/:ekey`, async (req, res) => {
     let botID = req.params.botid;
     let expiresKey = req.params.ekey;
 
-    let gCore = null;
-    for (const [managerKey, gm] of mainMcCore.guildManagers) {
-        if (gm.client.user.id == botID && gm.expiresKey == expiresKey) {
-            gCore = mainMcCore.guildManagers.get(managerKey); break;
+    let rCore = null;
+    for (const [managerKey, rm] of mainMcCore.roleManagers) {
+        if (rm.client.user.id == botID && rm.expiresKey == expiresKey) {
+            rCore = mainMcCore.roleManagers.get(managerKey); break;
         }
     }
 
-    if (!gCore) {
+    if (!rCore) {
         res.send(`不明的參數組! 請聯絡管理員或製作者\n${botID}, ${expiresKey}`);
         return;
     }
 
-    res.redirect(301, gCore.getAuthorizeUrl());
+    res.redirect(301, rCore.getAuthorizeUrl());
     return;
 });
 
@@ -1953,25 +1953,25 @@ app.all('/callback', async (req, res) => {
     const param = req.query.state || '';
     const [, botID, expiresKey] = (param.match(/^(\d{17,19})(\S+)$/) || [, 'null', 'null']);
 
-    let gCores = [];
-    for (const [managerKey, gm] of mainMcCore.guildManagers) {
-        if (gm.client.user.id == botID && gm.expiresKey == expiresKey) {
-            gCores.push(mainMcCore.guildManagers.get(managerKey));
+    let rCores = [];
+    for (const [managerKey, rm] of mainMcCore.roleManagers) {
+        if (rm.client.user.id == botID && rm.expiresKey == expiresKey) {
+            rCores.push(mainMcCore.roleManagers.get(managerKey));
         }
     }
 
-    if (gCores.length <= 0) {
+    if (rCores.length <= 0) {
         res.status(404).send(`ERR! cant found member checker core (${botID}, ${expiresKey})`);
         console.log(`ERR! cant found member checker core (${botID}, ${expiresKey})`);
         return;
     }
 
-    let gCore = gCores[0];
+    let rCore = rCores[0];
     try {
         let headers = { "Content-Type": "application/x-www-form-urlencoded" };
         let body = [
-            `client_id=${gCore.client.user.id}`,
-            `&client_secret=${gCore.client.mainConfig.clientSecret}`,
+            `client_id=${rCore.client.user.id}`,
+            `&client_secret=${rCore.client.mainConfig.clientSecret}`,
             '&grant_type=authorization_code',
             `&code=${req.query.code}`,
             `&redirect_uri=${redirectUri}/callback`,
@@ -2037,16 +2037,16 @@ app.all('/callback', async (req, res) => {
             `User: ${username}`,
             `Youtube channel: https://www.youtube.com/channel/${cID}`,
         ];
-        if (parseInt(userData[gCore.expiresKey]) == 0) {
-            html.push(`expires in time: ${new Date(parseInt(userData[gCore.expiresKey])).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
+        if (parseInt(userData[rCore.expiresKey]) == 0) {
+            html.push(`expires in time: ${new Date(parseInt(userData[rCore.expiresKey])).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
         } else {
             html.push(`expires in time: waiting Authorize`);
         }
         res.send(html.join('<br>'));
 
-        for (gCore of gCores) {
+        for (rCore of rCores) {
             // log
-            gCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.Green).setDescription(`申請完成: ${username}@${tag} <@${dID}>`));
+            rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.Green).setDescription(`申請完成: ${username}@${tag} <@${dID}>`));
         }
         return;
     } catch (e) {
