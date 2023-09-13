@@ -1269,6 +1269,22 @@ class YoutubeCore {
                 // delete video data
                 this.streamList.delete(vID);
 
+                if (this.getVideoList == null) {
+
+                    for (let mKey of mainMcCore.guildManagers.keys()) {
+                        let [, gID, cID] = mKey.match(/^(\d+)-(.+)$/) || [, null, null];
+                        if (!gID || !cID) { continue; }     // unknown mkey
+
+                        if (this.holoChannelID == cID) {
+                            mainMcCore.guildManagers.delete(mKey);
+                            mainMcCore.configs = mainMcCore.configs.filter((config) => (config.gID != gID || config.holoChannelID != cID));
+                        }
+                    }
+
+                    // delete youtube core
+                    mainMcCore.ytChannelCores.delete(this.holoChannelID);
+                }
+
                 if (this.interval) { clearTimeout(this.interval); }
 
                 // log
@@ -1601,6 +1617,7 @@ class MainMemberCheckerCore {
     // get stream (live/upcoming) videos
     async getVideoLists() {
         for (const [holoChannelID, ytCore] of this.ytChannelCores) {
+            if (ytCore.getVideoList == null) { continue; }
             await ytCore.getVideoList();
         }
     }
@@ -1679,6 +1696,7 @@ class MainMemberCheckerCore {
 
                 const holoChannelID = managerKey.replace(/^\d+-/, '');
                 const ytCore = this.ytChannelCores.get(holoChannelID);
+                if (!ytCore) { continue; }
 
                 let video = ytCore.streamList.get(ytCore.cacheStreamID) || null;
                 if (!video) { } else {
@@ -1782,6 +1800,7 @@ module.exports = {
                     continue;
                 }
                 if (isLogChannel) {
+                    if (ytCore.getVideoList == null) { continue; }
                     await ytCore.getVideoList();
                     rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`更新直播清單`).setFooter({ text: holoChannelID }));
                     continue;
@@ -1819,14 +1838,10 @@ module.exports = {
                 continue;
             }
 
-            if (command == 'test' && message.author?.id == '353625493876113440') {
-                command == 'trace';
-                //    !test <https://youtube.com/watch/Vx1K89idggs>    // member
-                //    !test <https://youtube.com/watch/-ni8_BFjjB8>    // short live
-                //    !test <https://youtube.com/watch/37YNx2Gag4g>    // long live
-                //    !test <https://youtube.com/watch/0ZSnVjrZA_Q>    // subaru live
-            }
-
+            //    !trace  <https://youtube.com/watch/Vx1K89idggs>    // member
+            //    !trace  <https://youtube.com/watch/-ni8_BFjjB8>    // short live
+            //    !trace  <https://youtube.com/watch/37YNx2Gag4g>    // long live
+            //    !trace  <https://youtube.com/watch/0ZSnVjrZA_Q>    // subaru live
             if (command == 'trace' && message.author?.id == '353625493876113440') {
 
                 if (!regUrl.test(args[0])) { return; }
@@ -1840,30 +1855,34 @@ module.exports = {
                 let video = await ytCore.youtubeAPI.getVideoStatus(vID);
 
                 let newChannelID = video?.snippet?.channelId;
-                if (!video) { return; }
+                if (!video?.snippet) { return; }
 
                 if (mainMcCore.ytChannelCores.has(newChannelID)) {
+                    // set real youtube core
                     ytCore.destroy();
                     ytCore = mainMcCore.ytChannelCores.get(newChannelID);
-                    ytCore.streamList.set(vID, video);
+                    if (!ytCore) { return; }
 
+                    ytCore.streamList.set(vID, video);
+                    ytCore.traceStreamChatByYtdlp({ vID });
+                    return;
                 } else {
 
                     const cID = channel.id;
 
-                    // check channel in use or not
-                    for (let gID of client.guildConfigs.keys()) {
+                    // // check channel in use or not
+                    // for (let gID of client.guildConfigs.keys()) {
 
-                        const pluginConfig = client.getPluginConfig(gID, 'memberChecker4');
-                        if (!pluginConfig) { continue; }
+                    //     const pluginConfig = client.getPluginConfig(gID, 'memberChecker4');
+                    //     if (!pluginConfig) { continue; }
 
-                        for (let config of pluginConfig) {
-                            if (config.streamChannelID == cID || config.memberChannelID == cID) {
-                                mclog(`[MC4] This channel is in use`)
-                                return;
-                            }
-                        }
-                    }
+                    //     for (let config of pluginConfig) {
+                    //         if (config.streamChannelID == cID || config.memberChannelID == cID) {
+                    //             mclog(`[MC4] This channel is in use`)
+                    //             return;
+                    //         }
+                    //     }
+                    // }
 
                     const gID = guild.id;
 
@@ -1871,7 +1890,7 @@ module.exports = {
                     ytCore.init({ holoChannelID: newChannelID });
                     ytCore.streamList.set(vID, video);
                     // block clock method
-                    ytCore.getVideoList = () => { };
+                    ytCore.getVideoList = null;
 
                     // set youtube core
                     mainMcCore.ytChannelCores.set(newChannelID, ytCore);
@@ -1884,12 +1903,10 @@ module.exports = {
 
                     // set config object 
                     mainMcCore.configs.push({ gID, holoChannelID: newChannelID, streamChannelID: cID, memberChannelID: cID });
-                }
 
-                if (video && video.snippet) {
-                    ytCore?.traceStreamChatByYtdlp({ vID });
+                    ytCore.traceStreamChatByYtdlp({ vID });
+                    return;
                 }
-                return;
             }
         }
     },
