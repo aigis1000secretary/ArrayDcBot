@@ -1081,7 +1081,7 @@ class YoutubeCore {
             let nextTime = data.pollingIntervalMillis;
             let length = data.items.length;
             if (length == 0) { nextTime *= 3; }
-            mclog(`[MC4] -- ${length.toString().padStart(3, ' ')} messages returned -- ${nextTime} ${pageToken}`)
+            mclog(`[MC4] ${vID} -- ${length.toString().padStart(8, ' ')} messages returned -- ${nextTime} ${pageToken}`)
 
             this.interval = setTimeout(arg => this.traceStreamChat(arg), nextTime, { vID, liveChatId, pageToken, loop });
             return;
@@ -1294,7 +1294,7 @@ class YoutubeCore {
         // get chat data
         this.interval = setTimeout(() => this.readStreamChatFile(), 1000);
     }
-    async readStreamChatFile() {
+    async readStreamChatFile(calledTimes = 0) {
 
         for (const [vID, livechatRaw] of this.livechatRawPool) {
             let { filename, indexOfLine } = livechatRaw;
@@ -1414,10 +1414,12 @@ class YoutubeCore {
                 await mainMcCore.onLiveChat(this.holoChannelID, auDetails, message, superchat, emojis);
             }
 
+            if (calledTimes % 10 == 0) { mclog(`[MC4] ${vID} -- ${indexOfLine.toString().padStart(8, ' ')} messages returned --`) }
+
             fileStream.destroy();
         }
 
-        this.interval = setTimeout(() => this.readStreamChatFile(), 500);
+        this.interval = setTimeout(() => this.readStreamChatFile(++calledTimes), 500);
     }
 
     destroy() {
