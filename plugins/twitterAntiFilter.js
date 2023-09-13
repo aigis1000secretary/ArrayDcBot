@@ -225,12 +225,25 @@ class AntiFilterCore {
         }
     }
 
-    logToDiscord(message, channel = CODE_CHANNEL) {
-        if (this.channels.has(channel)) {
+    async logToDiscord(message, cID = CODE_CHANNEL) {
+        if (this.channels.has(cID)) {
+            const channel = this.channels.get(cID);
+
             let payload = (typeof message == 'string') ? { content: message } : message;
-            this.channels.get(channel).send(payload).catch((e) => console.log(e.message));
+            channel.send(payload).catch((e) => console.log(e.message));
+
+            if (/^\[\+\] \S+$/.test(message)) {
+                // fetch messages
+                let msgs = await channel.messages.fetch({ force: true });
+                for (let msg of msgs) {
+                    if (msg.content.startsWith(`[TAF] Get user ${message.replace('[+] ', '')} identifier fail!`)) {
+                        msg.delete().catch(() => { });
+                    }
+                }
+            }
+
         } else {
-            console.log(message);
+            console.log(`<#${cID}>`, message);
         }
     }
 
