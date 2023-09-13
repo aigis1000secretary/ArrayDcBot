@@ -812,8 +812,8 @@ class GuildManager {
     guild = null;
 
     // channel obj
-    streamChannel = null;
-    memberChannel = null;
+    streamChannelID = null;
+    memberChannelID = null;
 
     // config = { client, gID, streamChannelID, memberChannelID }
     constructor(config = null) { if (config == null) { return; } this.init(config); };
@@ -828,17 +828,17 @@ class GuildManager {
 
         // get stream channel
         const { streamChannelID, memberChannelID } = config;
-        this.streamChannel = await this.client.channels.fetch(streamChannelID);
-        this.memberChannel = await this.client.channels.fetch(memberChannelID);
+        this.streamChannelID = streamChannelID;
+        this.memberChannelID = memberChannelID;
     }
 
 
     setingName = new Set();
     async changeChannelName(onLive = [false, false]) {
-        let streamChannels = [this.streamChannel, this.memberChannel];
+        let streamChannelIDs = [this.streamChannelID, this.memberChannelID];
 
         for (let i = 0; i < 2; ++i) {
-            const channel = streamChannels[i];
+            const channel = await this.client.channels.fetch(streamChannelIDs[i]);
             if (this.setingName.has(channel.id)) { continue; }
 
             // skip unset channel
@@ -888,7 +888,7 @@ class GuildManager {
         this.liveChatCache.add(hash);
 
         // get send channel
-        const channel = isMemberOnly ? this.memberChannel : this.streamChannel;
+        const channel = await this.client.channels.fetch(isMemberOnly ? this.memberChannelID : this.streamChannelID);
 
         // build embed
         let embed = new EmbedBuilder();
