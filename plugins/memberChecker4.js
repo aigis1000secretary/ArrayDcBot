@@ -833,11 +833,13 @@ class GuildManager {
     }
 
 
+    setingName = new Set();
     async changeChannelName(onLive = [false, false]) {
         let streamChannels = [this.streamChannel, this.memberChannel];
 
         for (let i = 0; i < 2; ++i) {
             const channel = streamChannels[i];
+            if (this.setingName.has(channel.id)) { continue; }
 
             // skip unset channel
             if (!/^[🔴⚫]/.test(channel.name)) { continue; }
@@ -853,15 +855,21 @@ class GuildManager {
             let channelName = `${channelStatus}${channel.name.replace(/^[🔴⚫]+/, '')}`;
 
             if (channel.name != channelName) {
-                console.log(`Set Channel's name to ${channelName}`)
+
+                this.setingName.add(channel.id);
+                console.log(`<#${channel.id}> set name to ${channelName}`);
+
                 channel.setName(channelName)
-                    .then(newChannel => console.log(`Channel's name now is ${newChannel.name}`))
-                    // .catch(console.log);
+                    .then((newChannel) => {
+                        console.log(`<#${channel.id}> now name is ${newChannel.name}`);
+                        this.setingName.delete(channel.id);
+                    })
                     .catch((error) => {
                         console.log(this.client);
                         console.log(channel);
                         console.log(permissions.has(PermissionFlagsBits.ManageChannels));
                         console.log(error);
+                        this.setingName.delete(channel.id);
                     });
             }
         }
