@@ -21,7 +21,8 @@ module.exports = {
                     .setCustomId("ping")
                 );
 
-            message.reply({ content: `pong!`, components: [actionRow], allowedMentions: { repliedUser: false } }).catch(() => { });
+            // message.reply({ content: `pong!`, components: [actionRow], allowedMentions: { repliedUser: false } }).catch(() => { });
+            channel.send({ content: args[0] }).catch(() => { });
         }
 
         // pong!
@@ -93,7 +94,7 @@ module.exports = {
         let { channel } = message;
         let content = message.content;
 
-        if (message.author.id == message.client.user.id && !user?.bot) {
+        if (message.author?.id == message.client.user.id && !user?.bot) {
             message.edit({ content: `${content}?` })
                 .then(message => {
                     message.edit({ content }).catch(() => { });
