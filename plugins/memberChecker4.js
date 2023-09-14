@@ -1741,8 +1741,10 @@ module.exports = {
 
             // switch mclog
             if (isLogChannel && command == 'mcdebug') {
-                mclog = (mclog == console.log) ?
-                    (() => { }) : console.log;
+
+                setTimeout((showLog) => {
+                    mclog = showLog ? (() => { }) : console.log;
+                }, 500, (mclog == console.log));
                 return;
             }
             // get user db data
