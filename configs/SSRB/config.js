@@ -8,7 +8,6 @@ module.exports = {
     resonance: 'ぼた',
     plugins: (process.env.HOST_TYPE == 'debug') ? [
         'twitterListener3',
-        // 'memberChecker4',
     ] : [
         // 'delall',
         'fxtwitter',

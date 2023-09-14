@@ -1444,7 +1444,7 @@ class MainMemberCheckerCore {
     async init(client) {
 
         // pick SSRB bot for emoji manager
-        if (client && client.user.id == `713624995372466179`) {
+        if (client && [`713624995372466179`, `427025310291197954`].includes(client.user.id)) {
             this.emojiManager = new EmojiManager(client);
         }
 
@@ -1559,6 +1559,7 @@ class MainMemberCheckerCore {
 
         // check special livechat
         let messagePayload = null;
+        // if (auDetails.isChatOwner || auDetails.isChatModerator || auDetails.isVerified || !parseInt(Math.random() * 5000)) {
         if (auDetails.isChatOwner || auDetails.isChatModerator || auDetails.isVerified) {
 
             // fix emojis text
@@ -1598,10 +1599,17 @@ class MainMemberCheckerCore {
 
             // call role manager
             if (config.expiresKey) {
-                for (const [managerKey, rm] of this.roleManagers) {
-                    if (managerKey != `${config.gID}-${holoChannelID}`) { continue; }
 
-                    rm.onLiveChat({ auDetails });
+                // get yt core
+                const ytCore = this.ytChannelCores.get(holoChannelID);
+                const video = ytCore.streamList.get(ytCore?.cacheStreamID);
+
+                if (video?.snippet.liveBroadcastContent == 'live') {
+                    for (const [managerKey, rm] of this.roleManagers) {
+                        if (managerKey != `${config.gID}-${holoChannelID}`) { continue; }
+
+                        rm.onLiveChat({ auDetails });
+                    }
                 }
             }
 
@@ -1842,10 +1850,10 @@ module.exports = {
                 continue;
             }
 
-            //    !trace  <https://youtube.com/watch/Vx1K89idggs>    // member
-            //    !trace  <https://youtube.com/watch/-ni8_BFjjB8>    // short live
-            //    !trace  <https://youtube.com/watch/37YNx2Gag4g>    // long live
-            //    !trace  <https://youtube.com/watch/0ZSnVjrZA_Q>    // subaru live
+            //    !trace <https://youtube.com/watch/Vx1K89idggs>    // member
+            //    !trace <https://youtube.com/watch/-ni8_BFjjB8>    // short live
+            //    !trace <https://youtube.com/watch/37YNx2Gag4g>    // long live
+            //    !trace <https://youtube.com/watch/0ZSnVjrZA_Q>    // subaru live
             if (command == 'trace' && message.author?.id == '353625493876113440') {
 
                 if (!regUrl.test(args[0])) { return; }
