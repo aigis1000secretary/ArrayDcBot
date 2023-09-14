@@ -235,8 +235,8 @@ class AntiFilterCore {
             if (/^\[\+\] \S+$/.test(message)) {
                 // fetch messages
                 let msgs = await channel.messages.fetch({ force: true });
-                for (let msg of msgs) {
-                    if (msg.content.startsWith(`[TAF] Get user ${message.replace('[+] ', '')} identifier fail!`)) {
+                for (let [mID, msg] of msgs) {
+                    if (msg.content?.startsWith(`[TAF] Get user ${message.replace('[+] ', '')} identifier fail!`)) {
                         msg.delete().catch(() => { });
                     }
                 }
@@ -289,12 +289,14 @@ class AntiFilterCore {
                 fileDate = file.substring(0, 8);
 
                 files.push(new AttachmentBuilder(file, { name: file }));
+                console.log(`[TAF] upload ${file} ${(fs.statSync(file)?.size / 1024).toFixed(2)} KB`);
                 if (files.length >= 3) { break; }
             }
         }
 
         if (files.length > 0) {
             await msg.edit({ content: ' ', files }).catch(console.log);
+            console.log(`[TAF] uploadBlacklist done!`);
         }
 
         // if (fs.existsSync(filePath)) { fs.unlinkSync(filePath); }
