@@ -127,9 +127,9 @@ module.exports = {
 
             tllog = (tllog == console.log) ? () => { } : console.log;
 
-        } else if (command == 'getuid' && args[0]) {
+        } else if (command == 'getuid') {
 
-            if (regUrl.test(args[0])) {
+            if (args[0] && regUrl.test(args[0])) {
                 let [, username, tID] = args[0].match(regUrl);
 
                 let { uID } = await chromeDriver.getUserData({ username });
@@ -150,11 +150,31 @@ module.exports = {
 
             } else if (chromeDriver.searching) {
                 message.channel.send(`chromeDriver.searching...`).catch(() => { });
-            } else {
+            } else if (args[0]) {
                 let { uID } = await chromeDriver.getUserData({ username: args[0] });
                 if (!uID) { return; }
 
                 message.channel.send(`adduid ${args[0]} ${uID}`).catch(() => { });
+            } else {
+                // const before = '1141942369298690088';
+
+                const { channel } = message;
+                await message.delete().catch(() => { });
+
+                let msgs = await channel.messages.fetch({ before, force: true });
+                for (let [mID, msg] of msgs) {
+                    let [, username] = msg.content?.match(/^\[\+\] (\w+)$/) || [, null];
+                    if (!username) { console.log(mID, msg.content); continue; }
+
+                    let userData = await chromeDriver.getUserData({ username });
+
+                    console.log(mID, 'delete:', (!userData.uID && userData.suspended), `[+]`, username);
+
+                    if (userData.uID) { continue; }
+                    if (!userData.suspended) { continue; }
+
+                    await msg.delete().catch(() => { });
+                }
             }
 
         }
