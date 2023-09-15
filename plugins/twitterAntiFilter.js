@@ -824,6 +824,13 @@ module.exports = {
             return;
         }
         if (command == 'adduid') {
+
+            if (!args[0] || !args[1]) {
+
+                channel.send({ embeds: [new EmbedBuilder().setDescription([`!adduid <username> <userID>`, `Ex:`, `!move Mpwpwp1787259 1657108133142224896`].join('\n'))] })
+                return;
+            }
+
             let username = args[0];
             let uID = args[1];
             // !adduid Mpwpwp1787259 1657108133142224896
@@ -888,13 +895,7 @@ module.exports = {
             if (!/\d+/.test(args[0]) ||         // by tID
                 !/^\S+$/.test(args[1])) {    // target file path
 
-                channel.send({
-                    content: [
-                        '```Format: ', `<tID> <type>`, `Ex:`,
-                        `1639250471847333889 fakeuser/2K4S4_K4H4R4`,
-                        '```'
-                    ].join('\n')
-                });
+                channel.send({ embeds: [new EmbedBuilder().setDescription([`!move <tID> <type>`, `Ex:`, `!move 1639250471847333889 fakeuser/2K4S4_K4H4R4`].join('\n'))] })
                 return;
             }
 
