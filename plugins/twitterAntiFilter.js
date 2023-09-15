@@ -17,12 +17,30 @@ let imagesList = [];
 const dataPath = `./blacklist`;
 
 // resize image to 8x8
-const toCompressData = (image, imgWidth = 8) => {
+const imageToCompressData = (image, imgWidth = 8) => {
     const mainCanvas = canvas.createCanvas(imgWidth, imgWidth);
     const ctx = mainCanvas.getContext('2d');
     ctx.drawImage(image, 0, 0, imgWidth, imgWidth);
     return ctx.getImageData(0, 0, imgWidth, imgWidth);;
 };
+
+const compressImageFile = async (file) => {
+    if (!fs.existsSync(file)) { return false; }
+
+    // read image
+    let image = await canvas.loadImage(file).catch((e) => { return null; });
+    if (!image) { return false; }
+
+    const mainCanvas = canvas.createCanvas(8, 8);
+    const ctx = mainCanvas.getContext('2d');
+    ctx.drawImage(image, 0, 0, 8, 8);
+
+    const buffer = mainCanvas.toBuffer('image/png');
+    fs.unlinkSync(file);
+    fs.writeFileSync(file.replace('.jpg', '.png'), buffer);
+
+    return true;
+}
 
 const downloadImage = async (url, subUrl) => {
     // get filename
@@ -49,7 +67,7 @@ const downloadImage = async (url, subUrl) => {
         }
         return false;
     }
-    image = toCompressData(image, 8);
+    image = imageToCompressData(image, 8);
     image.channels = 4;
 
     // del twitter image
@@ -64,7 +82,7 @@ const imageComparison = async (image1) => {
     for (let file2 of imagesList) {
         let image2 = await canvas.loadImage(file2).catch((e) => { console.log(file2, e.message); return null; });
         if (!image2) { continue; }
-        image2 = toCompressData(image2, 8);
+        image2 = imageToCompressData(image2, 8);
         image2.channels = 4;
 
         // get ssim result
@@ -76,6 +94,7 @@ const imageComparison = async (image1) => {
     return false;
 }
 
+// JSON.stringify
 const replacer = (key, value) => {
     if (value instanceof Map) {
         let result = {};
@@ -247,19 +266,38 @@ class AntiFilterCore {
         }
     }
 
+    async backupImageToDiscord(imageFile) {
+        const channel = await this.client.channels.fetch('1152118664800260217');
+        if (!channel) { console.log(`unknown channel <#1152118664800260217>`); return; }
+
+        const { name } = path.parse(imageFile);
+        const zipFile = `${name}.zip`;
+        await compressing.zip.compressFile(imageFile, zipFile).catch(() => { });
+
+        // upload zip file
+        let files = [];
+        files.push(new AttachmentBuilder(zipFile, { name: zipFile }));
+        await channel.send({ content: ' ', files }).catch(console.log);
+        console.log(`[TAF] upload ${zipFile} ${(fs.statSync(zipFile)?.size / 1024).toFixed(2)} KB`);
+
+        fs.unlinkSync(zipFile);
+    }
+
     uploadTimout = null;
     // upload blacklist to discord
     async uploadBlacklist(delay = 120 * 1000) {
+        if (!this.client || !fs.existsSync(dataPath)) { return; }
+
+        // let jsonStr = JSON.stringify(spamUserList, replacer, 2).replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
+        let jsonStr = JSON.stringify(spamUserList, replacer);
+        fs.writeFileSync(`${dataPath}/blacklist.json`, jsonStr, 'utf8');
+
         if (this.uploadTimout != null) { clearTimeout(this.uploadTimout); }
         this.uploadTimout = setTimeout(async () => { this._uploadBlacklist(); this.uploadTimout = null }, delay);
     }
     async _uploadBlacklist() {
         console.log(`[TAF] uploadBlacklist`);
         if (!this.client || !fs.existsSync(dataPath)) { return; }
-
-        // let jsonStr = JSON.stringify(spamUserList, replacer, 2).replace(/\[\s+/g, '[').replace(/\s+\]/g, ']');
-        let jsonStr = JSON.stringify(spamUserList, replacer);
-        fs.writeFileSync(`${dataPath}/blacklist.json`, jsonStr, 'utf8');
 
         // if (fs.existsSync("./.env")) { return; }
 
@@ -289,7 +327,7 @@ class AntiFilterCore {
                 fileDate = file.substring(0, 8);
 
                 files.push(new AttachmentBuilder(file, { name: file }));
-                console.log(`[TAF] upload ${file} ${(fs.statSync(file)?.size / 1024).toFixed(2)} KB`);
+                console.log(`[TAF] upload ${file} ${((fs.statSync(file)?.size || 0) / 1024).toFixed(2)} KB`);
                 if (files.length >= 3) { break; }
             }
         }
@@ -827,7 +865,7 @@ module.exports = {
 
             if (!args[0] || !args[1]) {
 
-                channel.send({ embeds: [new EmbedBuilder().setDescription([`!adduid <username> <userID>`, `Ex:`, `!move Mpwpwp1787259 1657108133142224896`].join('\n'))] })
+                channel.send({ embeds: [new EmbedBuilder().setDescription([`!adduid <username> <userID>`, `Ex:`, `!move Mpwpwp1787259 1657108133142224896`].join('\n'))] });
                 return;
             }
 
@@ -887,7 +925,23 @@ module.exports = {
         }
 
         if (command == 'blimg') {
-            channel.send({ content: imagesList.join('\n') });
+            let result = '';
+
+            for (let file of imagesList) {
+
+                const size = fs.statSync(file)?.size || 0;
+                let sizeText = size > 1024 ? `${(size / 1024).toFixed(2)} KB` : `${size} B`;
+                let line = `${sizeText.padStart(10, ' ')} ${file}`;
+
+                if (result.length + line.length > 1980) {
+                    await channel.send({ content: `\`\`\`${result}\`\`\`` }).catch((e) => console.log(e.message));
+                    result = line;
+                    continue;
+                }
+
+                result += `\n${line}`;
+            }
+            await channel.send({ content: `\`\`\`${result}\`\`\`` }).catch((e) => console.log(e.message));
         }
 
         if (command == 'move') {
@@ -895,7 +949,7 @@ module.exports = {
             if (!/\d+/.test(args[0]) ||         // by tID
                 !/^\S+$/.test(args[1])) {    // target file path
 
-                channel.send({ embeds: [new EmbedBuilder().setDescription([`!move <tID> <type>`, `Ex:`, `!move 1639250471847333889 fakeuser/2K4S4_K4H4R4`].join('\n'))] })
+                channel.send({ embeds: [new EmbedBuilder().setDescription([`!move <tID> <type>`, `Ex:`, `!move 1639250471847333889 fakeuser/2K4S4_K4H4R4`].join('\n'))] });
                 return;
             }
 
@@ -905,12 +959,12 @@ module.exports = {
             if (!['guro', 'other'].includes(type) &&
                 !/^fakeuser\/[^\/]+$/.test(type)) {
 
-                channel.send({ content: `Unknown type` });
+                channel.send({ embeds: [new EmbedBuilder().setDescription(`Unknown type`)] });
                 return;
             }
 
             // find target image
-            const src = imagesList.find((img => img.includes(args[0])));
+            const src = imagesList.find((img => img.includes(tID)));
             if (src) {
                 // found target image
 
@@ -945,6 +999,46 @@ module.exports = {
                         update = true;
                     }
                     if (update) { spamUser.updateTags(oldTag, newTag); }
+                }
+            }
+
+            mainAFCore.uploadBlacklist();
+        }
+
+        if (command == 'trimimg') {
+
+            if (!/\d+/.test(args[0])) {           // by image tID
+
+                channel.send({ embeds: [new EmbedBuilder().setDescription([`!trimimg <tID>`, `Ex:`, `!trimimg 1639250471847333889`].join('\n'))] })
+                return;
+            }
+
+            message.delete().catch(() => { });
+
+            const tID = args[0];
+
+            // find target image
+            const imageFile = imagesList.find((img => img.includes(tID)));
+            if (imageFile) {
+                // found target image
+
+                await mainAFCore.backupImageToDiscord(imageFile);
+
+
+                await compressImageFile(imageFile);
+
+                const pngFile = imageFile.replace('.jpg', '.png');
+                if (pngFile != imageFile) {
+
+                    for (let [uID, spamUser] of spamUserList.userList) {
+                        let update = false;
+                        for (let [tID, SpamTweet] of spamUser.tweetList) {
+
+                            if (SpamTweet.image != imageFile) { continue; }
+
+                            SpamTweet.image = pngFile;
+                        }
+                    }
                 }
             }
 

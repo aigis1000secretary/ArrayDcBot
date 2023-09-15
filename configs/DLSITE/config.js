@@ -8,10 +8,10 @@ module.exports = {
     resonance: 'ぬる',
     plugins: (process.env.HOST_TYPE == 'debug') ? [
         // 'delall',
-        // 'twitterAntiFilter',
         'dlimg',
         'ip',
         'reboot',
+        // 'twitterAntiFilter',
         `twitterListener3`,
     ] : [
         'eval',
