@@ -69,7 +69,7 @@ const checkRss = async (client, nowMinutes) => {
                             await msg.react(EMOJI_RECYCLE).catch(() => { });
 
                             if (reg1.test(embed.footer?.text)) { await msg.react(EMOJI_ENVELOPE_WITH_ARROW).catch(() => { }); }
-                        });
+                        }).catch(console.log);
                     newRss = true;
                 } else {
                     let message = messages.find((msg) => (msg && msg.embeds && msg.embeds[0]?.url == embed.url))
@@ -478,7 +478,7 @@ app.post('/rssbot', multer().array(), async (req, res) => {
                     await msg.react(EMOJI_RECYCLE).catch(() => { });
 
                     if (reg1.test(embed.footer?.text)) { await msg.react(EMOJI_ENVELOPE_WITH_ARROW).catch(() => { }); }
-                });
+                }).catch(console.log);
             newRss = true;
         } else {
             let message = messages.find((msg) => (msg && msg.embeds && msg.embeds[0]?.url == embed.url))
