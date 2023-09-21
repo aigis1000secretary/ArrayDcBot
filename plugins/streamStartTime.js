@@ -6,6 +6,7 @@ const CLOCK_B = ['<:clockb_0:895230403164655627>', '<:clockb_1:89523044733486694
 const CLOCK_C = ['<:clockc_0:895230214026723358>', '<:clockc_1:895230244976488459>', '<:clockc_2:895230274487603220>', '<:clockc_3:895230287817084949>', '<:clockc_4:895230308239175701>', '<:clockc_5:895230324139761674>'];
 const CLOCK_D = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
 const EMOJI_SMALL_BLUE_DIAMOND = '🔹';
+const EMOJI_SMALL_ORANGE_DIAMOND = '🔸';
 const EMOJI_RECYCLE = '♻️';
 const regUrl = /(?:https?:\/\/)(?:(?:www\.|m\.)?youtube\.com|youtu\.be|holodex\.net)(?:\/?(?:watch|v|embed|shorts|live|attribution_link(?:[\?&][^\/]+=[^\/]*)*)?\/)(?:(?:watch)?(?:[\?&][^\?&\/]+=[^\?&\/]*)*[\?&]?v=)?(?:multiview\/\w{4})?([\w\-]+)/;
 
@@ -184,8 +185,8 @@ module.exports = {
             return;
         }
 
-        // EMOJI_SMALL_BLUE_DIAMOND
-        if (reaction.emoji.name == EMOJI_SMALL_BLUE_DIAMOND) {
+        // EMOJI_SMALL_ORANGE_DIAMOND
+        if (reaction.emoji.name == EMOJI_SMALL_ORANGE_DIAMOND) {
 
             const { message: rawMessage } = reaction;
             const { guild, channel, content } = rawMessage;
