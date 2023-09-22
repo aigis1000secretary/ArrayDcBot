@@ -48,10 +48,10 @@ module.exports = {      // SSRB的聚集地
     verifyThread: [
         // //                                                                                 ADMIN_ROLE_ID: '1049958100897124352',    // @人工認證通知
 
-        // // #twinkle-4-you    
+        // // #Blue Journey   
         // { VERIFT_CHANNEL_ID: '1119482232197873735', VERIFT_ROLE_ID: '1147807327538397234', ADMIN_ROLE_ID: '1049958100897124352', }, // @Blue Journey 1st
 
-        // // #twinkle-4-you    
+        // // #twinkle-4-you
         // { VERIFT_CHANNEL_ID: '1119482232197873735', VERIFT_ROLE_ID: '1138651403561226301', ADMIN_ROLE_ID: '1049958100897124352', }, // @SPLASH PARTY~2day~
         // { VERIFT_CHANNEL_ID: '1119482232197873735', VERIFT_ROLE_ID: '1138662724272935133', ADMIN_ROLE_ID: '1049958100897124352', }, // @SPLASH PARTY~sunshine~
         // { VERIFT_CHANNEL_ID: '1119482232197873735', VERIFT_ROLE_ID: '1138662844989198418', ADMIN_ROLE_ID: '1049958100897124352', }, // @SPLASH PARTY~night~
