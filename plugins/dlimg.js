@@ -13,7 +13,7 @@ const downloadFile = (url, filepath) => new Promise((resolve) => { require('requ
 
 let dilog = fs.existsSync('./.env') ? console.log : () => { };
 
-const downloadImage = async ({ channel, fastmode }) => {
+const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
 
     let before;
     let donelog = [`donwload image done.`];
@@ -83,6 +83,7 @@ const downloadImage = async ({ channel, fastmode }) => {
                     }
 
                     dilog(`mID: ${mID}, donwload image ${filename}`);
+                    --limit;
                 } else {
                     dilog(`mID: ${mID},     skip image ${filename}`);
                 }
@@ -95,6 +96,7 @@ const downloadImage = async ({ channel, fastmode }) => {
         }
 
         if (!newimg) { break; }
+        if (limit < 0) { break; }
     }
 
     dilog(donelog.join('\n'));
@@ -130,7 +132,7 @@ module.exports = {
 
             let { channel } = message;
             await message.delete().catch(console.error);
-            downloadImage({ channel, fastmode: command == 'img3' })
+            downloadImage({ channel, fastmode: command == 'img3', limit: parseInt(args[0]) || 9999 })
                 .then(() => console.log('done'));
             return;
         }
