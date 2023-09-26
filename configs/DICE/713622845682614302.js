@@ -42,16 +42,6 @@ module.exports = {      // KTG
         ADMIN_ROLE_ID: '881775866835763240',      // @&==BOT==
     },
 
-    rssbot: [
-        {
-            RSS_CHANNEL_ID: `1024630418999353386`,      // #hentai-voice-音声
-            RSS_FEEDURL: `https://hentai-share.com/category/hentai-voice-%e9%9f%b3%e5%a3%b0/feed/`
-        }, {
-            RSS_CHANNEL_ID: '1024630418999353386',      // #hentai-voice-音声
-            RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-voice/feed/`
-        }
-    ],
-
     // /*
     spamBotKicker: {
         LOG_CHANNEL_ID: '1024627281592848434',      // #_log

@@ -25,8 +25,6 @@ const checkRss = async (client, nowMinutes) => {
             // check config data
             if (!RSS_CHANNEL_ID || !RSS_FEEDURL) { continue; }
 
-            if (nowMinutes % 30 != 0 && RSS_FEEDURL.includes('hentai-share.com')) { continue; }
-
             // check discord channel
             const channel = await client.channels.fetch(RSS_CHANNEL_ID);
             if (!channel) { continue; }
@@ -351,7 +349,7 @@ module.exports = {
                 let notLastMessage = false;
 
                 let oldMessages = await channel.messages.fetch().catch(() => { });
-                for (let key of oldMessages.keys()) {
+                for (let key of oldMessages?.keys() || []) {
                     let oldMessage = oldMessages.get(key);
                     // only check bot message
                     if (oldMessage.author.id != client.user.id) { continue; }

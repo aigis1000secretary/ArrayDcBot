@@ -38,13 +38,10 @@ module.exports = {      // KTG
 
     rssbot: [
         // #hentai-voice-音声
-        // { RSS_CHANNEL_ID: `979765968727310336`, RSS_FEEDURL: `https://hentai-share.com/category/hentai-voice-%e9%9f%b3%e5%a3%b0/feed/` },
         { RSS_CHANNEL_ID: '979765968727310336', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-voice/feed/` },
         // #hentai-game
-        // { RSS_CHANNEL_ID: '979815303749967932', RSS_FEEDURL: `https://hentai-share.com/category/h-game/feed/` },
         { RSS_CHANNEL_ID: '979815303749967932', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-game/feed/` },
         // #hentai-anime
-        // { RSS_CHANNEL_ID: '979808194710880266', RSS_FEEDURL: `https://hentai-share.com/category/h-anime/feed/` },
         { RSS_CHANNEL_ID: '979808194710880266', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-animation/feed/` },
     ],
 
