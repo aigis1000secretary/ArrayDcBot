@@ -1,4 +1,6 @@
 const [EMOJI_RECYCLE, EMOJI_ENVELOPE_WITH_ARROW] = ['♻️', '📩']
+const rssIcon = 'https://www.rssboard.org/images/rss-feed-icon-96-by-96.png';
+const dlsiteIcon = 'https://media.discordapp.net/attachments/947064593329557524/1156438574997184562/RBIlIWRJ2HEHkWiTV4ng_gt_icon020.png';
 
 const { EmbedBuilder } = require('discord.js');
 // const server = require('../server');
@@ -11,7 +13,7 @@ const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms)); 
 
 // check rss and send embeds
 const checkRss = async (client, nowMinutes) => {
-    if (require('fs').existsSync("./.env")) { console.log('checkRss') }
+    if (require('fs').existsSync("./.env")) { console.log('checkRss'); }
 
     // get each guild config
     for (let gID of client.guildConfigs.keys()) {
@@ -25,72 +27,24 @@ const checkRss = async (client, nowMinutes) => {
             // check config data
             if (!RSS_CHANNEL_ID || !RSS_FEEDURL) { continue; }
 
-            // check discord channel
+            // get discord channel
             const channel = await client.channels.fetch(RSS_CHANNEL_ID);
             if (!channel) { continue; }
-            // get message log
-            let messages = await channel.messages.fetch().catch(() => { }) || [];
-            let lastPostTimestamp = 0;
-            for (let key of messages.keys()) {
-                let message = messages.get(key);
-                // only check bot message
-                if (message.author?.id != client.user.id) { continue; }
-                // only check message with embed;
-                if (!message.embeds[0]) { continue; }
-
-                // only check embed url in same host;
-                let workUrl = new URL(RSS_FEEDURL);
-                let oldUrl = new URL(message.embeds[0].url || 'https://127.0.0.1/');
-                if (workUrl.host != oldUrl.host) { continue; }
-
-                let messageTimestamp = new Date(message.embeds[0].timestamp).getTime();
-                lastPostTimestamp = Math.max(lastPostTimestamp, messageTimestamp);
-            }
 
             // get rss feed xml
             const xml = await getXML(RSS_FEEDURL);
             if (!xml) { continue; }
             const items = (await xmlTojson(xml)).item;
 
-            // set rss embed
-            const embeds = await itemsToEmbeds(items);
-            // sort
-            embeds.sort(({ timestamp: tA }, { timestamp: tB }) => ((tA == tB) ? 0 : ((tA > tB) ? 1 : -1)));
-            // send embeds
-            let newRss = false;
-            for (let embed of embeds) {
-                // check last post time
-                if (embed.timestamp > lastPostTimestamp) {
-                    // send msg
-                    channel.send({ embeds: [new EmbedBuilder(embed)] })
-                        .then(async (msg) => {
-                            await msg.react(EMOJI_RECYCLE).catch(() => { });
+            // send rss embeds
+            let newRss = await sendRssItems(client, channel, getColor(RSS_FEEDURL), items);
 
-                            if (reg1.test(embed.footer?.text)) { await msg.react(EMOJI_ENVELOPE_WITH_ARROW).catch(() => { }); }
-                        }).catch(console.log);
-                    newRss = true;
-                } else {
-                    let message = messages.find((msg) => (msg && msg.embeds && msg.embeds[0]?.url == embed.url))
-
-                    if (message) {
-                        let embed0 = message.embeds[0];
-                        if ((embed.author?.name != embed0.author?.name) ||
-                            (JSON.stringify(embed.fields) != JSON.stringify(embed0.fields)) ||
-                            (embed.image?.url != embed0.image?.url) ||
-                            (embed.timestamp != new Date(embed0.timestamp).getTime()) ||
-                            (embed.title != embed0.title)) {
-                            message.edit({ embeds: [new EmbedBuilder(embed)] })
-                                // .catch(() => { })
-                                .catch(console.log);
-                        }
-                    }
-                }
-            }
-            // check old rss
-            if (newRss) { checkLastRss(client, RSS_CHANNEL_ID, RSS_FEEDURL); }
+            // clear old rss
+            if (newRss) { checkLastRss(client, channel, getColor(RSS_FEEDURL)); }
         }
     }
 }
+
 // http decode
 const decodeEntities = (encodedString) => {
     let translate_re = /&(nbsp|amp|quot|lt|gt);/g;
@@ -101,23 +55,21 @@ const decodeEntities = (encodedString) => {
         "lt": "<",
         "gt": ">"
     };
-    return encodedString.replace(translate_re, function (match, entity) {
-        return translate[entity];
-    }).replace(/&#(\d+);/gi, function (match, numStr) {
-        let num = parseInt(numStr, 10);
-        return String.fromCharCode(num);
-    });
+    return encodedString
+        .replace(translate_re, (match, entity) => { return translate[entity]; })
+        .replace(/&#(\d+);/gi, (match, numStr) => { return String.fromCharCode(parseInt(numStr, 10)); });
 }
+const getColor = (link) => parseInt(require('crypto').createHash('md5').update(link).digest('hex').substring(0, 6), 16);
 const reg1 = /[RBV]J\d{6,}/i;
 const reg2 = new RegExp(/(Circle[：:])|(Brand[：:])(\<\/span ?\>)?([^\<]+)\</, 'i');
 const reg3 = new RegExp(/\<img[^>]*src=\"([^\"]+)\"/, 'i');
 const reg4 = new RegExp(/[_\/]([RBV]J\d{6,})[_\.]/, 'i');
 // rss feed item to discord embeds
-const itemsToEmbeds = async (items) => {
+const itemsToEmbeds = async (items, hostColor) => {
     let result = [];
 
     if (!Array.isArray(items)) {
-        console.log(items);
+        console.log(`itemsToEmbeds(`, items, ')');
         return result;
     }
 
@@ -126,11 +78,20 @@ const itemsToEmbeds = async (items) => {
         let { title, link, pubDate, category, guid, description } = item;
         let contentEncoded = '';
         try {
-            title = title[0]; link = link[0]; pubDate = pubDate[0];
-            category = category[0]; guid = guid[0]; description = description[0];
-            contentEncoded = item['content:encoded'] ? item['content:encoded'][0] : description;
+            title = title?.shift();
+            link = link?.shift();
+            pubDate = pubDate?.shift();
+            category = category?.shift();
+            guid = guid?.shift();
+            description = description?.shift();
+            contentEncoded = item['content:encoded']?.shift() || description;
 
-            link = guid._ || link;
+            title = title?.trim();
+            category = category?.trim();
+
+            link = guid?._ || link;
+
+            if (link.startsWith('dlsite-')) { link = link.replace('dlsite-', `https://www.dlsite.com/maniax/work/=/product_id/`); }
         } catch (error) {
             console.log(`[rssbot] item read error!`);
             console.log(error);
@@ -139,10 +100,10 @@ const itemsToEmbeds = async (items) => {
 
         const pubTime = Date.parse(pubDate);
         // const pubLocaleDate = new Date(pubTime).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
-        let color = parseInt(require('crypto').createHash('md5').update((new URL(link)).host).digest('hex').substring(0, 6), 16);
         let embed = {
-            color,
+            color: hostColor,
             url: link,
+            thumbnail: { url: rssIcon },
             // description: contentEncoded,
             // fields: [{ name: 'category', value: category, inline: false }],
             timestamp: pubTime,
@@ -150,11 +111,11 @@ const itemsToEmbeds = async (items) => {
 
         let match = null;
         // get title
-        if (title) { embed.title = title.replace(/\[\d{6,}]/, '').trim(); }
+        if (title) { embed.title = title; }
 
         // get Circle
         match = contentEncoded.match(reg2);
-        if (match && match[4]) { embed.author = { name: `${category ? `(${category}) ` : ''}${decodeEntities(match[4]).trim()}` }; }
+        if (match && match[4]) { embed.author = { name: ((category ? `(${category}) ` : '') + (decodeEntities(match[4])).trim()) }; }
 
         // get image
         match = contentEncoded.match(reg3);
@@ -239,16 +200,30 @@ const getXML = async (url) => {
     }
 };
 // read rss xml feed
-const xmlTojson = async (xml) => {
+const xmlTojson = (xml) => {
 
-    return await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
+
+        xml = xml.replace(/&(?!(?:apos|quot|[gl]t|amp);|#)/g, '&amp;');
 
         xml2js.parseString(xml, (err, result) => {
+
             // error
             // if (err) { reject(err); }
             if (err) {
-                console.error(err);
-                resolve({});
+                console.error(err.message);
+                if (err.message.match(/line:\s*(\d+)\s/i)) {
+                    let [, i] = err.message.match(/line:\s*(\d+)\s/i);
+                    console.log(xml.split('\n')[i - 1]);
+                    console.log(xml.split('\n')[i]);
+                    console.log(xml.split('\n')[i + 1]);
+                }
+                resolve({
+                    item: [{
+                        title: ['ERROR'], link: ['https://127.0.0.1/'],
+                        pubDate: [new Date(Date.now())], category: [], guid: [{ _: '' }], description: ['']
+                    }]
+                });
             }
 
             // done
@@ -257,15 +232,13 @@ const xmlTojson = async (xml) => {
     });
 }
 
-
 // get last rss message
-const checkLastRss = async (client, RSS_CHANNEL_ID, RSS_FEEDURL) => {
+const checkLastRss = async (client, channel, hostColor) => {
 
-    // check discord channel
-    const channel = await client.channels.fetch(RSS_CHANNEL_ID);
-    if (!channel) { return; }
     // get message log
     let messages = await channel.messages.fetch().catch(() => { });
+    // filter target messages
+    let tarMsgs = [];
     for (let key of messages.keys()) {
         let message = messages.get(key);
         // only check bot message
@@ -273,24 +246,123 @@ const checkLastRss = async (client, RSS_CHANNEL_ID, RSS_FEEDURL) => {
         // only check message with embed;
         if (!message.embeds[0]) { continue; }
 
-        // only check embed url in same host;
-        let workUrl = new URL(RSS_FEEDURL);
-        let oldUrl = new URL(message.embeds[0].url || 'https://127.0.0.1/');
-        if (workUrl.host != oldUrl.host) { continue; }
+        // only check embed is rss embed
+        if (message.embeds[0].thumbnail?.url != rssIcon) { continue; }
 
-        // get react count
-        message = await message.channel.messages.fetch({ message: message.id });
+        // only check embed url in same host by host color
+        if (message.embeds[0].color != hostColor) { continue; }
+
+        // skip error log message
+        if (message.embeds[0].url.includes('127.0.0.1')) { continue; }
+
+        // keep msg
+        message = await channel.messages.fetch({ message: message.id });
+        tarMsgs.push(message);
+    }
+
+    if (tarMsgs.length <= 0) { return; }
+
+    // // set last message object
+    // let lastMsg = { id: 0, embeds: [{ timestamp: 0 }] };
+    // // check cache
+    // const key = `${channel.id}-${hostColor}`;
+    // if (lastMsgCache.has(key) && Date.now() - lastMsgCache.get(key).cacheTime < 600000) {
+    //     // get cache
+    //     lastMsg = lastMsgCache.get(key).message;
+    // } else {
+    //     tarMsgs.sort(({ id: iA }, { id: iB }) => (iA == iB ? 0 : (iA < iB ? 1 : -1)));
+    //     tarMsgs.reverse();
+    //     // update cache
+    //     lastMsg.id = tarMsgs[0].id;
+    //     lastMsg.embeds[0].timestamp = tarMsgs[0].embeds[0].timestamp;
+    //     lastMsgCache.set(key, { message: lastMsg, cacheTime: Date.now() });
+    // }
+
+    // tarMsgs.shift();
+
+    tarMsgs.sort(({ id: iA }, { id: iB }) => (iA == iB ? 0 : (iA > iB ? 1 : -1)));
+    let lastMsg = tarMsgs.pop();
+
+    // get react count
+    for (let message of tarMsgs) {
         let reacts = message.reactions.cache.get(EMOJI_RECYCLE);
         let reactsCount = reacts ? reacts.count : 0;
 
         if (reactsCount <= 1) { continue; }
-        // delete
         if (!message.deletable) { continue; }
+
+        // delete
         setTimeout(async () => {
             await message.suppressEmbeds(true).catch(() => { });
-            await message.delete().catch(() => { });
+            // await message.delete().catch(() => { });
+            addBulkDelete(message.channel.id, message);
         }, 250);
+    };
+
+    return lastMsg;
+}
+
+// send embeds
+const sendRssItems = async (client, channel, hostColor, items) => {
+
+    // set rss embed
+    const embeds = await itemsToEmbeds(items, hostColor);
+    // sort
+    embeds.sort((eA, eB) => {
+        const tA = eA.timestamp; const cA = parseInt(eA.footer?.text.replace('RJ', ''));
+        const tB = eB.timestamp; const cB = parseInt(eB.footer?.text.replace('RJ', ''));
+        if (tA != tB) { return (tA > tB) ? 1 : -1; }
+        if (cA != cB) { return (cA > cB) ? 1 : -1; }
+        return 0;
+    });
+
+    // debug
+    if (require('fs').existsSync("./.env")) {
+        let messages = await channel.messages.fetch().catch(() => { });
+
+        for (let embed of embeds) {
+            // debug
+            console.log(embed.url);
+            let message = messages.find((msg) => (msg && msg.embeds && msg.embeds[0]) && (msg.embeds[0].url == embed.url));
+            if (message) {
+                await message.edit({ embeds: [new EmbedBuilder(embed)] })
+                    // .catch(() => { })
+                    .catch(console.log);
+                continue;
+            }
+        }
     }
+
+    // get message log
+    let message = await checkLastRss(client, channel, hostColor);
+    let lastPostTimestamp = new Date((message?.embeds || [])[0]?.timestamp || 0).getTime();
+
+    // send embeds
+    let newRss = false;
+    for (let embed of embeds) {
+        // check last post time
+        if (embed.timestamp > lastPostTimestamp) {
+            // send msg
+            channel.send({ embeds: [new EmbedBuilder(embed)] })
+                .then(async (msg) => {
+                    await msg.react(EMOJI_RECYCLE).catch(() => { });
+
+                    if (reg1.test(embed.footer?.text)) { await msg.react(EMOJI_ENVELOPE_WITH_ARROW).catch(() => { }); }
+                }).catch(console.log);
+            newRss = true;
+        }
+    }
+
+    return newRss;
+}
+
+
+let bulkDelete = new Map();
+const addBulkDelete = (cID, message) => {
+    if (!bulkDelete.has(cID)) {
+        bulkDelete.set(cID, new Set());
+    }
+    bulkDelete.get(cID).add(message);
 }
 
 let client = null;
@@ -299,6 +371,26 @@ module.exports = {
     description: "check rss every hour",
 
     async clockMethod(client, { hours, minutes, seconds }) {
+
+        if (seconds % 5 == 0 && bulkDelete.size > 0) {
+
+            for (let [cID, msgSet] of bulkDelete) {
+
+                if (msgSet.size > 0) {
+                    let _bulkDelete = Array.from(msgSet);
+                    msgSet.clear();
+                    let channel = _bulkDelete[0].channel;
+                    await channel.bulkDelete(_bulkDelete)
+                        .then(() => console.log(`Bulk deleted ${_bulkDelete.length} messages in ${channel.name}`))
+                        .catch((e) => console.log(e.message));
+                } else {
+                    bulkDelete.delete(cID);
+                }
+            }
+        }
+
+        if (require('fs').existsSync("./.env")) { return; }
+
         // check every 15 min
         if (minutes % 15 != 0 || seconds != 0) { return; }
 
@@ -324,7 +416,7 @@ module.exports = {
             // check deletable
             if (message.author.id != client.user.id || !message.deletable) { return; }
 
-            // skip not target channel
+            // skip not target channel. to-do: change rule
             if (!pluginConfig.find((cfg) => (channel.id == cfg.RSS_CHANNEL_ID))) { return; }
 
             // check message target
@@ -333,48 +425,34 @@ module.exports = {
 
             // check host
             let host = (new URL(embed.url)).host;
-            if (host == 'www.dlsite.com') {
+            if (
+                host == 'www.dlsite.com' &&
+                // embed.thumbnail == dlsiteIcon
+                embed.thumbnail?.url != rssIcon
+            ) {
                 setTimeout(async () => {
                     await message.suppressEmbeds(true).catch(() => { });
-                    await message.delete().catch(() => { });
+                    // await message.delete().catch(() => { });
+                    addBulkDelete(message.channel.id, message);
                 }, 250);
                 return;
             }
 
             // check embed type
-            let color = parseInt(require('crypto').createHash('md5').update(host).digest('hex').substring(0, 6), 16);
-            if (embed.color == color) {
+            if (embed.thumbnail?.url == rssIcon) {
                 // delete last feed later
                 // get message log
-                let notLastMessage = false;
 
-                let oldMessages = await channel.messages.fetch().catch(() => { });
-                for (let key of oldMessages?.keys() || []) {
-                    let oldMessage = oldMessages.get(key);
-                    // only check bot message
-                    if (oldMessage.author.id != client.user.id) { continue; }
-                    // only check message with embed;
-                    if (!oldMessage.embeds[0]) { continue; }
+                let lastMessage = await checkLastRss(client, channel, embed.color);
 
-                    // only check embed url in same host;
-                    let oldUrl = new URL(oldMessage.embeds[0].url || 'https://127.0.0.1/');
-                    if (host != oldUrl.host) { continue; }
-
-                    // check embed timestamp
-                    let workTimestamp = new Date(embed.timestamp).getTime();
-                    let oldTimestamp = new Date(oldMessage.embeds[0].timestamp).getTime();
-                    if (oldTimestamp > workTimestamp) {
-                        notLastMessage = true;
-                        break;
-                    }
-                }
-                if (notLastMessage) {
-                    setTimeout(async () => {
-                        await message.suppressEmbeds(true).catch(() => { });
-                        await message.delete().catch(() => { });
-                    }, 250);
-                    return;
-                }
+                // let notLastMessage = lastMessage.id != message.id;
+                // if (notLastMessage) {
+                //     setTimeout(async () => {
+                //         await message.suppressEmbeds(true).catch(() => { });
+                //         await message.delete().catch(console.log);
+                //     }, 250);
+                //     return;
+                // }
             }
         }
 
@@ -424,79 +502,31 @@ app.post('/rssbot', multer().array(), async (req, res) => {
 
     res.sendStatus(200);
 
+    // get rss feed xml
     const xml = req.body.text;
     if (!xml) { return; }
 
+    // get discod channel id
     let cID;
     const href = req.body.href;
     if (href.includes('voice') || href.includes('audio')) { cID = '979765968727310336'; }
     if (href.includes('game')) { cID = '979815303749967932'; }
     if (href.includes('anim') || href.includes('ova')) { cID = '979808194710880266'; }
+    if (href.includes('rsshub')) { cID = '1156057315829624933'; }
     if (!cID) { return; }
 
-
-
-    // check discord channel
+    // get discord channel
     const channel = await client.channels.fetch(cID);
     if (!channel) { return; }
-    // get message log
-    let messages = await channel.messages.fetch().catch(() => { }) || [];
-    let lastPostTimestamp = 0;
-    for (let key of messages.keys()) {
-        let message = messages.get(key);
-        // only check bot message
-        if (message.author?.id != client.user.id) { continue; }
-        // only check message with embed;
-        if (!message.embeds[0]) { continue; }
 
-        // only check embed url in same host;
-        let workUrl = new URL(href);
-        let oldUrl = new URL(message.embeds[0].url || 'https://127.0.0.1/');
-        if (workUrl.host != oldUrl.host) { continue; }
-
-        let messageTimestamp = new Date(message.embeds[0].timestamp).getTime();
-        lastPostTimestamp = Math.max(lastPostTimestamp, messageTimestamp);
-    }
-
-
+    // get rss feed xml
     const items = (await xmlTojson(xml)).item;
 
-    // set rss embed
-    const embeds = await itemsToEmbeds(items);
-    // sort
-    embeds.sort(({ timestamp: tA }, { timestamp: tB }) => ((tA == tB) ? 0 : ((tA > tB) ? 1 : -1)));
-    // send embeds
-    let newRss = false;
-    for (let embed of embeds) {
-        // check last post time
-        if (embed.timestamp > lastPostTimestamp) {
-            // send msg
-            channel.send({ embeds: [new EmbedBuilder(embed)] })
-                .then(async (msg) => {
-                    await msg.react(EMOJI_RECYCLE).catch(() => { });
+    // send rss embeds
+    let newRss = await sendRssItems(client, channel, getColor(href), items);
 
-                    if (reg1.test(embed.footer?.text)) { await msg.react(EMOJI_ENVELOPE_WITH_ARROW).catch(() => { }); }
-                }).catch(console.log);
-            newRss = true;
-        } else {
-            let message = messages.find((msg) => (msg && msg.embeds && msg.embeds[0]?.url == embed.url))
-
-            if (message) {
-                let embed0 = message.embeds[0];
-                if ((embed.author?.name != embed0.author?.name) ||
-                    (JSON.stringify(embed.fields) != JSON.stringify(embed0.fields)) ||
-                    (embed.image?.url != embed0.image?.url) ||
-                    (embed.timestamp != new Date(embed0.timestamp).getTime()) ||
-                    (embed.title != embed0.title)) {
-                    message.edit({ embeds: [new EmbedBuilder(embed)] })
-                        // .catch(() => { })
-                        .catch(console.log);
-                }
-            }
-        }
-    }
-    // check old rss
-    if (newRss) { checkLastRss(client, cID, href); }
+    // clear old rss
+    if (newRss) { checkLastRss(client, channel, getColor(href)); }
 
     return;
 });
