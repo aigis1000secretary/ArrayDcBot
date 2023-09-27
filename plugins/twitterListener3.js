@@ -25,14 +25,17 @@ const findLastTwitterMessage = async (channel, uID) => {
 }
 
 let tweetEmbedsCache = new Map();
-
+let sending = new Set();
 const chromeDriverSearchTweet = async ({ after, keywords, channel }) => {
+    if (sending.has(channel?.id)) { return; }
+
     chromeDriver.searchKeywords(keywords, { after })
         .then(async (searchResult) => {
             if (searchResult.size == 0) { return; }
 
             // searchResult = Map(<tID>, <tweet>)
             tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
+            sending.add(channel?.id);
 
             let tIDs = Array.from(searchResult.keys()).sort();
             for (let i = 0; i < tIDs.length; ++i) {
@@ -86,6 +89,7 @@ const chromeDriverSearchTweet = async ({ after, keywords, channel }) => {
             }
 
             tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
+            sending.delete(channel?.id);
         });
 }
 
