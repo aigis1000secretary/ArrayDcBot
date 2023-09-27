@@ -1,4 +1,5 @@
 const [EMOJI_RECYCLE] = ['♻️']
+const dlsiteIcon = 'https://media.discordapp.net/attachments/947064593329557524/1156438574997184562/RBIlIWRJ2HEHkWiTV4ng_gt_icon020.png';
 
 // const fs = require('fs');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, PermissionFlagsBits, ButtonStyle } = require('discord.js');
@@ -185,7 +186,7 @@ const createDLsitePageMessage = (result, imageIndex = 0) => {
         .setTitle(`${result.title} [${result.index}]`)
         .setURL(result.url)
         .setDescription(description)
-        .setThumbnail(result.thumb[imageIndex] || null)
+        .setThumbnail(dlsiteIcon)
         .setImage(result.thumb[imageIndex] || null);
     embed0.data.type = 'rich';
     embed0.data.url = result.url;
