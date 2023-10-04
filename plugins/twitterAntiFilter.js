@@ -665,8 +665,7 @@ const messageExecute = async (message) => {
             let { ssim, image } = result;
 
             // image in blacklist
-            console.log(`[TAF] image in blacklist. ${username} ${tID} ${ssim}`);
-            console.log(` ${image}`);
+            console.log(`[TAF] image in blacklist. ${username} ${tID} ${ssim} ${image}`);
 
             // image in blacklist but username not, add to blacklist
             if (!spamUserList.userIDList.has(username) && !spamUserList.userList.has(tID)) {
