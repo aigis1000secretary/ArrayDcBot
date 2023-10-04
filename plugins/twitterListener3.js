@@ -166,24 +166,30 @@ module.exports = {
 
                 message.channel.send(`adduid ${args[0]} ${uID}`).catch(() => { });
             } else {
-                // const before = '1141942369298690088';
 
                 const { channel } = message;
                 await message.delete().catch(() => { });
 
-                let msgs = await channel.messages.fetch({ before, force: true });
-                for (let [mID, msg] of msgs) {
-                    let [, username] = msg.content?.match(/^\[\+\] (\w+)$/) || [, null];
-                    if (!username) { console.log(mID, msg.content); continue; }
+                let before;
+                while (1) {
+                    let msgs = await channel.messages.fetch({ before, force: true });
+                    if (Array.from(msgs.keys()).find((mID) => (before == mID))) { break; };
 
-                    let userData = await chromeDriver.getUserData({ username });
+                    for (let [mID, msg] of msgs) {
+                        before = mID;
 
-                    console.log(mID, 'delete:', (!userData.uID && userData.suspended), `[+]`, username);
+                        let [, username] = msg.content?.match(/^\[\+\] ([^-\.]+)$/) || [, null];
+                        if (!username) { console.log(mID, msg.content); continue; }
 
-                    if (userData.uID) { continue; }
-                    if (!userData.suspended) { continue; }
+                        let userData = await chromeDriver.getUserData({ username });
 
-                    await msg.delete().catch(() => { });
+                        console.log(mID, 'delete:', (!userData.uID && userData.suspended), `[+]`, username);
+
+                        if (userData.uID) { continue; }
+                        if (!userData.suspended) { continue; }
+
+                        await msg.delete().catch(() => { });
+                    }
                 }
             }
 
