@@ -14,6 +14,10 @@ const regImage = /^(http[^\?]+)\?format=([^\&]+)/;
 const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
 const sleepr = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms + Math.floor(Math.random() * 100)); }); }
 
+const getDiscordSnowflake = (time) => (BigInt(time - 14200704e5) << 22n);
+const getTwitterSnowflake = (time) => (BigInt(time - 1288834974657) << 22n);
+const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 14200704e5);
+const getTimeFromTwitterSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 1288834974657);
 
 class UserData {
     dateCreated;
@@ -231,7 +235,7 @@ class ChromeDriver {
     searching = false;
     searchingTask = 0;
 
-    async searchTweet(keyword, { dataNum = 20, after = 0 }) {
+    async searchTweet(keyword, { dataNum = 20, after = 0, before = getTwitterSnowflake(Date.now()) }) {
         if (!this.isWin32) { return null; }
 
         // waiting login
@@ -326,7 +330,7 @@ class ChromeDriver {
                             // set scroll target
                             lastElement = a;
 
-                            console.log(after, '<', tID, (BigInt(after) < BigInt(tID)), isAdvertisement);
+                            console.log(after, '<', tID, '<', before, (after < BigInt(tID)), (BigInt(tID) < before), !isAdvertisement);
 
                             break;
                         }
@@ -335,7 +339,7 @@ class ChromeDriver {
 
                     // set result object
                     let tweet = { url, isAdvertisement };
-                    tweet.timestamp = parseInt(BigInt(tID) >> BigInt(22)) + 1288834974657;
+                    tweet.timestamp = getTimeFromTwitterSnowflake(tID);
 
                     // get tweet text
                     tweet.description = textEle;
@@ -394,7 +398,7 @@ class ChromeDriver {
                         tweet.media = media;
                     }
 
-                    
+
                     if (isAdvertisement) { continue; }
 
                     if (after) {
@@ -403,11 +407,13 @@ class ChromeDriver {
                             // tweet too old, normal end
                             done = true; break;
 
-                        } else {
-                            // add tweet
+                        }
+                        if (BigInt(tID) < before) {
+                            // add tweet, continue
                             searchResult.set(tID, tweet);
                             continue;
                         }
+                        continue;
 
                     } else {
                         // didn't set limit tID, check dataNum
@@ -467,7 +473,7 @@ class ChromeDriver {
 
         return searchResult;
     }
-    async searchKeywords(keywords, { dataNum, after }) {
+    async searchKeywords(keywords, { dataNum, after, before }) {
         if (!dataNum) {
             dataNum = keywords.length > 1 ? 2 : 20;
         }
@@ -475,7 +481,7 @@ class ChromeDriver {
         let keywordsResult = new Map();   // <tID>, <tweet>;
         for (let keyword of keywords) {
 
-            let searchResult = await this.searchTweet(keyword, { dataNum, after });
+            let searchResult = await this.searchTweet(keyword, { dataNum, after, before });
             if (!searchResult) { continue; }
 
             for (let [tID, tweet] of searchResult) {

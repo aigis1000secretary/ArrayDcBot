@@ -8,6 +8,11 @@ const regUrl = /https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)/;
 
 let tllog = fs.existsSync("./.env") ? console.log : () => { };
 
+const getDiscordSnowflake = (time) => (BigInt(time - 14200704e5) << 22n);
+const getTwitterSnowflake = (time) => (BigInt(time - 1288834974657) << 22n);
+const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 14200704e5);
+const getTimeFromTwitterSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 1288834974657);
+
 const { chromeDriver } = require('./webdriver.js') || require('./plugins/webdriver.js');;
 
 const findLastTwitterMessage = async (channel, uID) => {
@@ -26,10 +31,10 @@ const findLastTwitterMessage = async (channel, uID) => {
 
 let tweetEmbedsCache = new Map();
 let sending = new Set();
-const chromeDriverSearchTweet = async ({ after, keywords, channel }) => {
+const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => {
     if (sending.has(channel?.id)) { return; }
 
-    chromeDriver.searchKeywords(keywords, { after })
+    chromeDriver.searchKeywords(keywords, { after, before })
         .then(async (searchResult) => {
             if (searchResult.size == 0) { return; }
 
@@ -113,6 +118,7 @@ module.exports = {
             const cID = channel.id;
 
             // get last times tweet ID
+            const before = getTwitterSnowflake(Date.now());
             let after;
             let lastMessage = await findLastTwitterMessage(channel, client.user.id)
             let [, , tID] = lastMessage.content.match(regUrl) || [];
@@ -124,7 +130,7 @@ module.exports = {
             if (!config) { return; }
             let keywords = config.RETWEET_KEYWORD;
 
-            chromeDriverSearchTweet({ after, keywords, channel });
+            chromeDriverSearchTweet({ after, before, keywords, channel });
             setTimeout(() => message.delete().catch(() => { }), 250);
 
         } else if (command == 'tldebug') {
@@ -247,6 +253,7 @@ module.exports = {
                 const channel = await client.channels.fetch(cID);
 
                 // get last times tweet ID
+                const before = getTwitterSnowflake(Date.now());
                 let after;
                 let lastMessage = await findLastTwitterMessage(channel, client.user.id)
                 let [, , tID] = lastMessage.content.match(regUrl) || [];
@@ -255,7 +262,7 @@ module.exports = {
                 // get keywords from config
                 let keywords = config.RETWEET_KEYWORD;
 
-                chromeDriverSearchTweet({ after, keywords, channel });
+                chromeDriverSearchTweet({ after, before, keywords, channel });
             }
         }
     },
