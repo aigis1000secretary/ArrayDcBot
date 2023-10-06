@@ -30,7 +30,7 @@ const findLastTwitterMessage = async (channel, uID) => {
     return { content: '' };
 }
 
-let tweetEmbedsCache = new Map();
+// let tweetEmbedsCache = new Map();
 let sending = new Set();
 const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => {
     if (sending.has(channel?.id)) { return; }
@@ -88,7 +88,7 @@ const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => 
                     }
 
                     let payload = { content: `<${url}>`, embeds, files };
-                    tweetEmbedsCache.set(tID, payload);
+                    // tweetEmbedsCache.set(tID, payload);
                     await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
                     //*/
                 }
@@ -147,15 +147,48 @@ module.exports = {
                 let { uID } = await chromeDriver.getUserData({ username });
                 if (!uID) { return; }
 
-                if (tweetEmbedsCache.has(tID)) {
-                    message.channel.send(tweetEmbedsCache.get(tID)).catch(() => { });
+                if (EMBED_BY_DISCORD) {
+                    await message.channel.send(`https://twitter.com/${uID}/status/${tID}`).catch(() => { });
                 } else {
-                    // chromeDriver.getTweet({tID});
-                    // let payload = { content: `<${url}>`, embeds, files };
-                    // tweetEmbedsCache.set(tID, payload);
-                    // await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+                    let tweet = await chromeDriver.getTweetByTID({ tID, username });
+                    if (tweet) {
+                        let { url, timestamp, description, author, media } = tweet;
 
-                    message.channel.send(`https://twitter.com/${uID}/status/${tID}`).catch(() => { });
+                        // embed from crawler data
+                        // /*
+                        let embeds = [], files;
+                        if (author) {
+                            let embed = new EmbedBuilder()
+                                .setURL(url).setDescription(description)
+                                .setTimestamp(timestamp).setAuthor(author)
+                                // .setColor(1942002);
+                                .setColor(0);
+                            embed.data.type = 'rich';
+
+                            embed.setFooter({ text: `Twitter`, iconURL: `https://abs.twimg.com/icons/apple-touch-icon-192x192.png` });
+
+                            embeds.push(embed);
+                        }
+                        for (let i = 0; i < media.length; ++i) {
+
+                            if (!embeds[i]) {
+                                embeds[i] = new EmbedBuilder().setURL(url);
+                                embeds[i].data.type = 'rich';
+                            }
+
+                            let m = media[i];
+                            if (m.image) { embeds[i].setImage(m.image.url); }
+                            if (m.video) {
+                                embeds[i].setImage(m.video.url);
+                                files = [new AttachmentBuilder('./video.png', { name: `video.png` })];
+                                embeds[0].setThumbnail(`attachment://video.png`);
+                            }
+                        }
+
+                        let payload = { content: `<https://twitter.com/${uID}/status/${tID}>`, embeds, files };
+
+                        await message.channel.send(payload).catch(() => { });
+                    }
                 }
 
                 setTimeout(() => message.delete().catch(() => { }), 250);
@@ -197,7 +230,7 @@ module.exports = {
 
         } else if (command == 'fixembed') {
 
-            const { channel } = message;
+            const { channel, client } = message;
 
             await message.delete().catch(() => { });
 
@@ -255,9 +288,13 @@ module.exports = {
                         }
 
                         let payload = { content: `<${url}>`, embeds, files };
-                        tweetEmbedsCache.set(tID, payload);
-                        await msg.edit(payload).catch(() => { });
-                        // await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+                        // tweetEmbedsCache.set(tID, payload);
+                        if (msg.author.id == client.user.id) {
+                            await msg.edit(payload).catch(() => { });
+                        } else {
+                            await msg.delete().catch(() => { });
+                            await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+                        }
                     }
                 }
 
