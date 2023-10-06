@@ -10,6 +10,7 @@ const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const [EMOJI_LABEL] = ['🏷️']
 
 const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
+const md5 = (source) => require('crypto').createHash('md5').update(source).digest('hex');
 
 // const { twitter } = require('./twitterListener2.js');
 let imagesList = [];
@@ -244,7 +245,19 @@ class AntiFilterCore {
         }
     }
 
+    logedMsg = new Set();
+
     async logToDiscord(message, cID = CODE_CHANNEL) {
+
+        {
+            let msg = (typeof message == 'string') ? message : JSON.stringify(message);
+            let hash = md5(msg.trim());
+
+            if (this.logedMsg.has(hash)) { return; }
+
+            this.logedMsg.add(hash);
+        }
+
         if (this.channels.has(cID)) {
             const channel = this.channels.get(cID);
 
