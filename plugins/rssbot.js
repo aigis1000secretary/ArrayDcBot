@@ -61,9 +61,10 @@ const decodeEntities = (encodedString) => {
 }
 const getColor = (link) => parseInt(require('crypto').createHash('md5').update(link).digest('hex').substring(0, 6), 16);
 const reg1 = /[RBV]J\d{6,}/i;
-const reg2 = new RegExp(/(Circle[：:])|(Brand[：:])(\<\/span ?\>)?([^\<]+)\</, 'i');
-const reg3 = new RegExp(/\<img[^>]*src=\"([^\"]+)\"/, 'i');
-const reg4 = new RegExp(/[_\/]([RBV]J\d{6,})[_\.]/, 'i');
+const reg2 = /(Circle[：:])|(Brand[：:])(\<\/span ?\>)?([^\<]+)\</i;
+const reg3 = /\<img[^>]*src=\"([^\"]+)\"/i;
+const reg4 = /[_\/]([RBV]J\d{6,})[_\.]/i;
+const reg5 = /https:\/\/www\.dlsite\.com\/maniax\/fsr\/=\/work_type\/([^"]+)/i;
 // rss feed item to discord embeds
 const itemsToEmbeds = async (items, hostColor) => {
     let result = [];
@@ -75,17 +76,20 @@ const itemsToEmbeds = async (items, hostColor) => {
 
     // get feed items
     for (const item of items) {
-        let { title, link, pubDate, category, guid, description } = item;
+        let { title, link, pubDate, author, category, guid, description } = item;
         let contentEncoded = '';
         try {
+            // array first element
             title = title?.shift();
             link = link?.shift();
             pubDate = pubDate?.shift();
+            author = author?.shift();
             category = category?.shift();
             guid = guid?.shift();
             description = description?.shift();
             contentEncoded = item['content:encoded']?.shift() || description;
 
+            // trim
             title = title?.trim();
             category = category?.trim();
 
@@ -113,9 +117,38 @@ const itemsToEmbeds = async (items, hostColor) => {
         // get title
         if (title) { embed.title = title; }
 
+        // dlsite category
+        match = description.match(reg5);
+        if (match && match[1]) {
+
+            switch (match[1]) {
+
+                case 'SOU': { category = 'ボイス・ASMR'; }; break;
+
+                case 'RPG': { category = 'ロールプレイング'; }; break;
+                case 'SLN': { category = 'シミュレーション'; }; break;
+                case 'ADV': { category = 'アドベンチャー'; }; break;
+                case 'ACN': { category = 'アクション'; }; break;
+
+                case 'ICG': { category = 'CG・イラスト'; }; break;
+                case 'NRE': { category = 'ノベル'; }; break;
+                case 'MNG': { category = 'マンガ'; }; break;
+                case 'MOV': { category = '動画'; }; break;
+
+                case 'AMT': { category = '音素材'; }; break;
+                case 'IMT': { category = '画像素材'; }; break;
+                case 'MUS': { category = '音楽'; }; break;
+                case 'ET3': { category = 'その他'; }; break;
+
+                default: { category = match[1]; } break;
+            }
+
+        }
+
         // get Circle
         match = contentEncoded.match(reg2);
         if (match && match[4]) { embed.author = { name: ((category ? `(${category}) ` : '') + (decodeEntities(match[4])).trim()) }; }
+        if (author) { embed.author = { name: ((category ? `(${category}) ` : '') + (author.replace(/\<!\[CDATA/, '').replace(/\]\>/, ''))) }; }
 
         // get image
         match = contentEncoded.match(reg3);
@@ -309,10 +342,11 @@ const sendRssItems = async (client, channel, hostColor, items) => {
     const embeds = await itemsToEmbeds(items, hostColor);
     // sort
     embeds.sort((eA, eB) => {
-        const tA = eA.timestamp; const cA = parseInt(eA.footer?.text.replace('RJ', ''));
-        const tB = eB.timestamp; const cB = parseInt(eB.footer?.text.replace('RJ', ''));
+        const tA = eA.timestamp; const coA = parseInt(eA.footer?.text.replace('RJ', '')); const caA = eA.author?.name;
+        const tB = eB.timestamp; const coB = parseInt(eB.footer?.text.replace('RJ', '')); const caB = eB.author?.name;
         if (tA != tB) { return (tA > tB) ? 1 : -1; }
-        if (cA != cB) { return (cA > cB) ? 1 : -1; }
+        if (caA != caB) { return (caA > caB) ? 1 : -1; }
+        if (coA != coB) { return (coA > coB) ? 1 : -1; }
         return 0;
     });
 
