@@ -9,6 +9,8 @@ const chrome = require('selenium-webdriver/chrome');
 const configPath = `./configs`;
 const loginPath = `./configs/login.json`;
 const regUrl = /https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)/;
+const regUserUrl = /https:\/\/twitter\.com\/([a-zA-Z0-9_]+)/;
+const regOnlyUrl = /^https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)$/;
 const regImage = /^(http[^\?]+)\?format=([^\&]+)/;
 
 const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
@@ -274,7 +276,7 @@ class ChromeDriver {
             while (1) {
 
                 // get all tweet
-                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div.css-1dbjc4n > div > div > div > div`)).catch(() => []);
+                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div.css-1dbjc4n > div > div > div > div.css-1dbjc4n`)).catch(() => []);
                 // let elements = await this.driver.findElements(By.css(`div[data-testid="cellInnerDiv"]`)).catch(() => []);
 
                 // div[data-testid="cellInnerDiv"]  // main .r-14lw9ot section > .css-1dbjc4n > div.r-18u37iz > div.r-13qz1uu > div > div
@@ -289,147 +291,62 @@ class ChromeDriver {
                     const elePath = `main .r-14lw9ot section > div.css-1dbjc4n > div > div:nth-child(${i + 1}) > div > div.css-1dbjc4n`;
                     // const elePath = `div[data-testid="cellInnerDiv"]:nth-child(${i + 1})`;
 
-                    let textEle = await this.driver.wait(until.elementLocated(By.css(`${elePath} div[data-testid="tweetText"]`)), 2500).catch(() => null);
-                    let authorImage = await this.driver.wait(until.elementLocated(By.css(`${elePath} div[data-testid="Tweet-User-Avatar"] img`)), 2500).catch(() => null);
-                    let hrefs = await this.driver.findElements(By.css(`${elePath} a`)).catch(() => []);
-                    let authorHrefs = await this.driver.findElements(By.css(`${elePath} div[data-testid="User-Name"] a`)).catch(() => []);
-                    let mediaEle = await this.driver.findElements(By.css(`${elePath} div[data-testid="tweetPhoto"]`)).catch(() => []);
-
-                    // is Ad or not
-                    let isAdvertisement = await this.driver.findElements(By.css(`${elePath} .r-1s2bzr4 > div > div > span`)).catch(() => []);
-                    isAdvertisement = !!(isAdvertisement.length > 0);
-
-                    // get tweet text
-                    if (textEle) { textEle = await textEle.getText().catch(() => { return }); }
-                    // get tweet author image
-                    if (authorImage) { authorImage = await authorImage.getAttribute('src').catch(() => { return; }); }
-
-                    // check data
-                    if ((!textEle && !mediaEle.length) || !authorImage || !hrefs.length || !authorHrefs.length) {
-                        // console.log(elePath);
-                        // console.log(hrefs.length, !!textEle, authorHrefs.length, !!authorImage, mediaEle.length);
-                        // i = elements.length;
-                        continue;
-                    }
+                    let tweet = await this.getTweetBySelector(elePath);
 
 
-                    // get tweet url data
-                    let tID, username, url;
-                    for (let a of hrefs) {
-                        // get link href
-                        let href = await a.getAttribute('href').catch(() => '');
+                    // set scroll target
+                    lastElement = elements[i];
+                    /* // old version
+                    {
+                        let hrefs = await this.driver.findElements(By.css(`${elePath} a`)).catch(() => []);
+                        for (let a of hrefs) {
+                            // get link href
+                            let href = await a.getAttribute('href').catch(() => '');
 
-                        if (regUrl.test(href) && href.endsWith('/analytics')) {
-                            // get username/ tID
-                            let [, _username, _tID] = href.match(regUrl);
-
-                            username = _username;
-                            tID = _tID;
-                            url = `https://twitter.com/${_username}/status/${_tID}`;
-
-                            // set scroll target
-                            lastElement = a;
-
-                            console.log(after, '<', tID, '<', before, (after < BigInt(tID)), (BigInt(tID) < before), !isAdvertisement);
-
-                            break;
+                            if (regUrl.test(href) && href.endsWith('/analytics')) {
+                                // set scroll target
+                                lastElement = a;
+                                break;
+                            }
                         }
-                    }
-                    if (!tID) { continue; }
+                    }//*/
 
-                    // set result object
-                    let tweet = { url, isAdvertisement };
-                    tweet.timestamp = getTimeFromTwitterSnowflake(tID);
 
-                    // get tweet text
-                    tweet.description = textEle;
+                    let { tID, isAdvertisement } = tweet;
 
-                    // get tweet author
-                    for (let a of authorHrefs) {
-                        // get link href
-                        let href = await a.getAttribute('href').catch(() => '');
+                    console.log(after, '<', tID, '<', before, (after < BigInt(tID)), (BigInt(tID) < before), !isAdvertisement);
 
-                        // skip tweet link
-                        if (href.includes('/status/')) { continue; }
+                    if (!isAdvertisement) {
+                        if (after) {
 
-                        let text = await a.getText().catch(() => '');
-                        if (a == `@${username}`) { continue; }
+                            if (BigInt(tID) <= after) {
+                                // tweet too old, normal end
+                                done = true;
+                                break;
 
-                        // set username/showname
-                        tweet.author = {
-                            name: `${text} (@${username})`,
-                            url: `https://twitter.com/${username}`
-                        };
-
-                        tweet.author.iconURL = authorImage;
-                        break;
-                    }
-
-                    // get media
-                    let media = [];
-                    for (let j = 0; j < mediaEle.length; ++j) {
-                        const photoPath = `${elePath} div[data-testid="tweetPhoto"]:nth-child(${j + 1})`;
-
-                        let image = await this.driver.findElement(By.css(`${photoPath} img`)).catch(() => null);
-                        if (image) {
-                            let src = await image.getAttribute('src').catch(() => '');
-                            if (src) {
-                                if (regImage.test(src)) {
-                                    let [, url, ext] = src.match(regImage);
-                                    src = `${url}.${ext}`;
-                                }
-                                media.push({ image: { url: src } });
+                            }
+                            if (BigInt(tID) < before) {
+                                // add tweet, continue
+                                searchResult.set(tID, tweet);
+                                continue;
                             }
                             continue;
-                        }
-
-                        let video = await this.driver.findElement(By.css(`${photoPath} video`)).catch(() => null);
-                        if (video) {
-                            // medias.push({ video: { url: `https://twitter.com/i/videos/tweet/${tID}` } });
-
-                            let src = await video.getAttribute('poster').catch(() => '');
-                            if (src) {
-                                media.push({ video: { url: src } });
-                            }
-                            continue;
-                        }
-                    }
-                    if (media.length > 0) {
-                        tweet.media = media;
-                    }
-
-
-                    if (isAdvertisement) { continue; }
-
-                    if (after) {
-
-                        if (BigInt(tID) <= after) {
-                            // tweet too old, normal end
-                            done = true; break;
-
-                        }
-                        if (BigInt(tID) < before) {
-                            // add tweet, continue
-                            searchResult.set(tID, tweet);
-                            continue;
-                        }
-                        continue;
-
-                    } else {
-                        // didn't set limit tID, check dataNum
-
-                        if (searchResult.size > dataNum) {
-                            done = true; break;
 
                         } else {
-                            // add tweet
+                            // didn't set limit tID, add tweet
                             searchResult.set(tID, tweet);
+
+                            // check dataNum
+                            if (searchResult.size > dataNum) {
+                                done = true;
+                                break;
+                            }
                             continue;
                         }
                     }
                 }
 
-                // break
+                // search done, break
                 if (done) { break; }
 
                 // scroll
@@ -620,9 +537,216 @@ class ChromeDriver {
         return result;
     }
 
-    // async getTweet({ tID }) { }
+
+
+
+    async getTweetByTID({ username, tID }) {
+        if (!this.isWin32) { return null; }
+
+        // waiting login
+        while (!this.constructed) {
+            await sleepr(500);
+        }
+
+        // waiting searching...
+        while (this.searching || this.searchingTask) {
+            await sleepr(500);
+        }
+
+        // start search
+        this.searching = true;
+
+        let searchResult = new Map();   // <tID>, <tweet>;
+        {
+            console.log(`Chrome get tweet ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} ${username}/status/${tID}`);
+
+            // search page
+            let url = `https://twitter.com/${username || 'username'}/status/${tID}`;
+            // wait search page load
+            while (1) {
+                await this.driver.get(url);
+
+                let ele = await this.driver.wait(until.elementLocated(By.partialLinkText('@')), 5000).catch(() => null);
+                if (ele) { break; }
+            }
+
+
+            {
+                // get tweet
+                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div.css-1dbjc4n > div > div > div > div.css-1dbjc4n`)).catch(() => []);
+
+                // get single tweet
+                for (let i = 0; i < elements.length; ++i) {
+                    const elePath = `main .r-14lw9ot section > div.css-1dbjc4n > div > div:nth-child(${i + 1}) > div > div.css-1dbjc4n`;
+
+                    let tweet = await this.getTweetBySelector(elePath);
+
+                    if (!tweet) { continue; }
+
+                    let { tID: _tID, isAdvertisement } = tweet;
+
+                    if (!isAdvertisement) {
+                        searchResult.set(_tID, tweet);
+
+                        if (tID == _tID) { break; }
+                    }
+                }
+            }
+        }
+
+        await this.driver.get('https://twitter.com/notifications');
+        this.searching = false;
+
+        return searchResult.has(tID) ? searchResult.get(tID) : null;
+    }
 
     mainUserDB = new Map();  // <username>, <UserData>
+
+
+
+    // API
+    tweetCache = new Map();   // <tID>, <tweet>;
+    async getTweetBySelector(elePath) {
+
+        // const elePath = `main .r-14lw9ot section > div.css-1dbjc4n > div > div > div > div.css-1dbjc4n`;
+        // const elePath = `main .r-14lw9ot section > div.css-1dbjc4n > div > div:nth-child(${i + 1}) > div > div.css-1dbjc4n`;
+        // const elePath = `div[data-testid="cellInnerDiv"]:nth-child(${i + 1})`;
+        
+        let [
+            textEle,
+            authorImage,
+            authorHrefs,
+            mediaEle,
+            hrefs
+        ] = await Promise.all([
+            this.driver.wait(until.elementLocated(By.css(`${elePath} article > div > div > div > div > div > div[data-testid="tweetText"]`)), 2500).catch(() => null),
+            this.driver.wait(until.elementLocated(By.css(`${elePath} article > div > div > div > div > div[data-testid="Tweet-User-Avatar"] img`)), 2500).catch(() => null),
+            this.driver.findElements(By.css(`${elePath} article > div > div > div > div > div > div > div > div > div[data-testid="User-Name"] a`)).catch(() => []),
+            this.driver.findElements(By.css(`${elePath} article > div > div > div > div > div > div.r-9aw3ui div[data-testid="tweetPhoto"]`)).catch(() => []),
+            this.driver.findElements(By.css(`${elePath} a`)).catch(() => [])
+        ])
+
+
+        // is Ad or not
+        let isAdvertisement = await this.driver.findElements(By.css(`${elePath} > div[data-testid="placementTracking"]`)).catch(() => []);
+        isAdvertisement = !!(isAdvertisement.length > 0);
+
+        // get tweet text
+        if (textEle) { textEle = await textEle.getText().catch(() => null); }
+        // get tweet author image
+        if (authorImage) { authorImage = await authorImage.getAttribute('src').catch(() => null); }
+
+        // check data
+        if ((!textEle && !mediaEle.length) || !authorImage || !hrefs.length || !authorHrefs.length) {
+            // console.log(elePath);
+            // console.log(hrefs.length, !!textEle, authorHrefs.length, !!authorImage, mediaEle.length);
+            // i = elements.length;
+            return null;
+        }
+
+
+
+
+        // set result object
+        let tweet = {
+            isAdvertisement,
+            description: textEle    // get tweet text
+        };
+
+
+        // get tweet author
+        let username, tID, url;
+        for (let a of authorHrefs) {
+            // get link href
+            let href = await a.getAttribute('href').catch(() => '');
+
+            if (!href.includes('/status/') && regUserUrl.test(href)) {
+
+                // get showname
+                let text = await a.getText().catch(() => '');
+                if (text.startsWith('@')) { continue; }
+
+                // get username
+                let [, _username] = href.match(regUserUrl);
+                username = _username;
+
+                // set username/showname
+                tweet.author = {
+                    name: `${text} (@${username})`,
+                    url: `https://twitter.com/${username}`,
+                    iconURL: authorImage
+                };
+            } else if (href.includes('/status/')) {
+
+                // get username, tID
+                let [, _username, _tID] = href.match(regOnlyUrl);
+                username = _username;
+                tID = _tID;
+                url = `https://twitter.com/${_username}/status/${_tID}`;
+            }
+        }
+
+        // get tweet url data
+        if (!tID || !url) {
+            for (let a of hrefs) {
+                // get link href
+                let href = await a.getAttribute('href').catch(() => '');
+
+                if (regOnlyUrl.test(href) || (regUrl.test(href) && href.endsWith('/analytics'))) {
+                    // get username/ tID
+                    let [, _username, _tID] = href.match(regOnlyUrl);
+                    username = _username;
+                    tID = _tID;
+                    url = `https://twitter.com/${_username}/status/${_tID}`;
+
+                    break;
+                }
+            }
+        }
+        if (!tID) { return null; } // shouldn't here
+
+        // set data
+        tweet.tID = tID;
+        tweet.username = username;
+        tweet.url = url;
+        tweet.timestamp = getTimeFromTwitterSnowflake(tID);
+
+
+        // get media
+        let media = [];
+        for (let j = 0; j < mediaEle.length; ++j) {
+            const photoPath = `${elePath} article > div > div > div > div > div > div.r-9aw3ui div[data-testid="tweetPhoto"]:nth-child(${j + 1})`;
+
+            let image = await this.driver.findElement(By.css(`${photoPath} img`)).catch(() => null);
+            if (image) {
+                let src = await image.getAttribute('src').catch(() => '');
+                if (src) {
+                    if (regImage.test(src)) {
+                        let [, url, ext] = src.match(regImage);
+                        src = `${url}.${ext}`;
+                    }
+                    media.push({ image: { url: src } });
+                }
+                continue;
+            }
+
+            let video = await this.driver.findElement(By.css(`${photoPath} video`)).catch(() => null);
+            if (video) {
+                // medias.push({ video: { url: `https://twitter.com/i/videos/tweet/${tID}` } });
+
+                let src = await video.getAttribute('poster').catch(() => '');
+                if (src) {
+                    media.push({ video: { url: src } });
+                }
+                continue;
+            }
+        }
+        tweet.media = media;
+
+        this.tweetCache.set(tID, tweet);
+        return tweet;
+    }
+
 
     async close() {
         if (!this.isWin32) { return null; }
