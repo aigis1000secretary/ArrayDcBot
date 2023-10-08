@@ -293,9 +293,10 @@ class ChromeDriver {
 
                     let tweet = await this.getTweetBySelector(elePath);
 
+                    if (!tweet) { continue; }
 
                     // set scroll target
-                    lastElement = elements[i];
+                    lastElement = tweet.lastElement;
                     /* // old version
                     {
                         let hrefs = await this.driver.findElements(By.css(`${elePath} a`)).catch(() => []);
@@ -357,6 +358,7 @@ class ChromeDriver {
                         .sendKeys(Key.DOWN)
                         .perform()
                         .catch(console.log);
+
                     await sleep(500); continue;
 
                 } else {
@@ -379,6 +381,8 @@ class ChromeDriver {
                         await this.scrollToElement(lastElement);
                         console.log('scrollToElement')
                     }
+
+                    await sleep(500); continue;
                 }
             }
         }
@@ -566,7 +570,20 @@ class ChromeDriver {
             while (1) {
                 await this.driver.get(url);
 
-                let ele = await this.driver.wait(until.elementLocated(By.partialLinkText('@')), 5000).catch(() => null);
+                let ele = await Promise.race([
+                    this.driver.wait(until.elementLocated(By.css(`div[data-testid="error-detail"]`)), 2500).catch(() => null),
+                    this.driver.wait(until.elementLocated(By.partialLinkText('@')), 2500).catch(() => null)
+                ]);
+                if (ele === null) { continue; }
+
+                ele = await this.driver.findElement(By.css(`div[data-testid="error-detail"]`)).catch(() => null);
+                if (ele) {
+                    await this.driver.get('https://twitter.com/settings');
+                    this.searching = false;
+                    return null;
+                }
+
+                ele = await this.driver.findElement(By.partialLinkText('@')).catch(() => null);
                 if (ele) { break; }
             }
 
@@ -594,7 +611,7 @@ class ChromeDriver {
             }
         }
 
-        await this.driver.get('https://twitter.com/notifications');
+        await this.driver.get('https://twitter.com/settings');
         this.searching = false;
 
         return searchResult.has(tID) ? searchResult.get(tID) : null;
@@ -611,7 +628,7 @@ class ChromeDriver {
         // const elePath = `main .r-14lw9ot section > div.css-1dbjc4n > div > div > div > div.css-1dbjc4n`;
         // const elePath = `main .r-14lw9ot section > div.css-1dbjc4n > div > div:nth-child(${i + 1}) > div > div.css-1dbjc4n`;
         // const elePath = `div[data-testid="cellInnerDiv"]:nth-child(${i + 1})`;
-        
+
         let [
             textEle,
             authorImage,
@@ -628,8 +645,8 @@ class ChromeDriver {
 
 
         // is Ad or not
-        let isAdvertisement = await this.driver.findElements(By.css(`${elePath} > div[data-testid="placementTracking"]`)).catch(() => []);
-        isAdvertisement = !!(isAdvertisement.length > 0);
+        let placementTracking = await this.driver.findElements(By.css(`${elePath} > div[data-testid="placementTracking"]`)).catch(() => []);
+        let isAdvertisement = !!(placementTracking.length > 0);
 
         // get tweet text
         if (textEle) { textEle = await textEle.getText().catch(() => null); }
@@ -650,7 +667,7 @@ class ChromeDriver {
         // set result object
         let tweet = {
             isAdvertisement,
-            description: textEle    // get tweet text
+            description: `${textEle}`    // get tweet text
         };
 
 
@@ -674,7 +691,7 @@ class ChromeDriver {
                 tweet.author = {
                     name: `${text} (@${username})`,
                     url: `https://twitter.com/${username}`,
-                    iconURL: authorImage
+                    iconURL: `${authorImage}`
                 };
             } else if (href.includes('/status/')) {
 
@@ -687,19 +704,22 @@ class ChromeDriver {
         }
 
         // get tweet url data
-        if (!tID || !url) {
-            for (let a of hrefs) {
-                // get link href
-                let href = await a.getAttribute('href').catch(() => '');
+        for (let a of hrefs) {
+            // get link href
+            let href = await a.getAttribute('href').catch(() => '');
+            if (!regUrl.test(href)) { continue; }
 
-                if (regOnlyUrl.test(href) || (regUrl.test(href) && href.endsWith('/analytics'))) {
+            if (href.endsWith('/analytics')) {
+                tweet.lastElement = a;
+            }
+
+            if (!tID || !url) {
+                if (regOnlyUrl.test(href) || href.endsWith('/analytics')) {
                     // get username/ tID
-                    let [, _username, _tID] = href.match(regOnlyUrl);
+                    let [, _username, _tID] = href.match(regUrl);
                     username = _username;
                     tID = _tID;
                     url = `https://twitter.com/${_username}/status/${_tID}`;
-
-                    break;
                 }
             }
         }
@@ -707,17 +727,16 @@ class ChromeDriver {
 
         // set data
         tweet.tID = tID;
-        tweet.username = username;
-        tweet.url = url;
+        tweet.username = `${username}`;
+        tweet.url = `${url}`;
         tweet.timestamp = getTimeFromTwitterSnowflake(tID);
 
 
         // get media
-        let media = [];
-        for (let j = 0; j < mediaEle.length; ++j) {
-            const photoPath = `${elePath} article > div > div > div > div > div > div.r-9aw3ui div[data-testid="tweetPhoto"]:nth-child(${j + 1})`;
+        tweet.media = [];
+        for (const ele of mediaEle) {
 
-            let image = await this.driver.findElement(By.css(`${photoPath} img`)).catch(() => null);
+            let image = await ele.findElement(By.css(`img`)).catch(() => null);
             if (image) {
                 let src = await image.getAttribute('src').catch(() => '');
                 if (src) {
@@ -725,23 +744,24 @@ class ChromeDriver {
                         let [, url, ext] = src.match(regImage);
                         src = `${url}.${ext}`;
                     }
-                    media.push({ image: { url: src } });
+                    tweet.media.push({ image: { url: `${src}` } });
                 }
                 continue;
             }
 
-            let video = await this.driver.findElement(By.css(`${photoPath} video`)).catch(() => null);
+            let video = await ele.findElement(By.css(`video`)).catch(() => null);
             if (video) {
                 // medias.push({ video: { url: `https://twitter.com/i/videos/tweet/${tID}` } });
 
                 let src = await video.getAttribute('poster').catch(() => '');
                 if (src) {
-                    media.push({ video: { url: src } });
+                    tweet.media.push({ video: { url: `${src}` } });
                 }
                 continue;
             }
+
+            console.log(`media read error!`)
         }
-        tweet.media = media;
 
         this.tweetCache.set(tID, tweet);
         return tweet;

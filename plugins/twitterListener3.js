@@ -5,10 +5,11 @@ const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 // const
 const [EMOJI_RECYCLE] = ['♻️']
 const regUrl = /https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)/;
+
 const EMBED_BY_DISCORD = false;
+const DISABLE_CLOCK_METHOD = false;
 
 let tllog = fs.existsSync("./.env") ? console.log : () => { };
-
 const getDiscordSnowflake = (time) => (BigInt(time - 14200704e5) << 22n);
 const getTwitterSnowflake = (time) => (BigInt(time - 1288834974657) << 22n);
 const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 14200704e5);
@@ -58,7 +59,7 @@ const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => 
                 } else {
                     // embed from crawler data
                     // /*
-                    let embeds = [], files;
+                    let embeds = [];
                     if (author) {
                         let embed = new EmbedBuilder()
                             .setURL(url).setDescription(description)
@@ -82,12 +83,11 @@ const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => 
                         if (m.image) { embeds[i].setImage(m.image.url); }
                         if (m.video) {
                             embeds[i].setImage(m.video.url);
-                            files = [new AttachmentBuilder('./video.png', { name: `video.png` })];
-                            embeds[0].setThumbnail(`attachment://video.png`);
+                            embeds[0].setThumbnail(`https://media.discordapp.net/attachments/947064593329557524/1160521922828832859/video.png`);
                         }
                     }
 
-                    let payload = { content: `<${url}>`, embeds, files };
+                    let payload = { content: `<${url}>`, embeds, files: [] };
                     // tweetEmbedsCache.set(tID, payload);
                     await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
                     //*/
@@ -156,7 +156,7 @@ module.exports = {
 
                         // embed from crawler data
                         // /*
-                        let embeds = [], files;
+                        let embeds = [];
                         if (author) {
                             let embed = new EmbedBuilder()
                                 .setURL(url).setDescription(description)
@@ -180,12 +180,11 @@ module.exports = {
                             if (m.image) { embeds[i].setImage(m.image.url); }
                             if (m.video) {
                                 embeds[i].setImage(m.video.url);
-                                files = [new AttachmentBuilder('./video.png', { name: `video.png` })];
-                                embeds[0].setThumbnail(`attachment://video.png`);
+                                embeds[0].setThumbnail(`https://media.discordapp.net/attachments/947064593329557524/1160521922828832859/video.png`);
                             }
                         }
 
-                        let payload = { content: `<https://twitter.com/${uID}/status/${tID}>`, embeds, files };
+                        let payload = { content: `<https://twitter.com/${uID}/status/${tID}>`, embeds, files: [] };
 
                         await message.channel.send(payload).catch(() => { });
                     }
@@ -241,11 +240,13 @@ module.exports = {
 
                 for (let [mID, msg] of msgs) {
                     before = mID;
+                    console.log(mID, msg.content)
 
                     const { content, embeds } = msg;
                     if (!content || !content.match(regUrl)) { continue; }   // skip not tweet url msg
-                    if (content.startsWith('<') || content.endsWith('>')) { continue; } // skip non-embed msg
-                    if (embeds && embeds[0]) { continue; }  // skip msg with embed
+                    // if (content.startsWith('<') || content.endsWith('>')) { continue; } // skip non-embed msg
+                    // if (embeds && embeds[0]) { continue; }  // skip msg with embed
+                    if (embeds && embeds[0] && !!embeds[0].color) { continue; }  // skip msg with embed
 
                     // get username & tID
                     let [, username, tID] = content.match(regUrl) || [null, null];
@@ -258,7 +259,7 @@ module.exports = {
 
                         // embed from crawler data
                         // /*
-                        let embeds = [], files;
+                        let embeds = []
                         if (author) {
                             let embed = new EmbedBuilder()
                                 .setURL(url).setDescription(description)
@@ -282,15 +283,14 @@ module.exports = {
                             if (m.image) { embeds[i].setImage(m.image.url); }
                             if (m.video) {
                                 embeds[i].setImage(m.video.url);
-                                files = [new AttachmentBuilder('./video.png', { name: `video.png` })];
-                                embeds[0].setThumbnail(`attachment://video.png`);
+                                embeds[0].setThumbnail(`https://media.discordapp.net/attachments/947064593329557524/1160521922828832859/video.png`);
                             }
                         }
 
-                        let payload = { content: `<${url}>`, embeds, files };
+                        let payload = { content: `<${url}>`, embeds, files: [] };
                         // tweetEmbedsCache.set(tID, payload);
                         if (msg.author.id == client.user.id) {
-                            await msg.edit(payload).catch(() => { });
+                            await msg.edit(payload).catch((e) => console.error(e));
                         } else {
                             await msg.delete().catch(() => { });
                             await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
@@ -350,7 +350,7 @@ module.exports = {
 
         if (!chromeDriver.isWin32) { return; }
 
-        // if (true) { return; }
+        if (DISABLE_CLOCK_METHOD) { return; }
 
         // update tweet at time
 
