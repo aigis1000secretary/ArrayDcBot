@@ -61,16 +61,24 @@ const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => 
                     // /*
                     let embeds = [];
                     if (author) {
-                        let embed = new EmbedBuilder()
-                            .setURL(url).setDescription(description)
-                            .setTimestamp(timestamp).setAuthor(author)
-                            // .setColor(1942002);
-                            .setColor(0);
-                        embed.data.type = 'rich';
+                        try {
+                            let embed = new EmbedBuilder()
+                                .setURL(url).setDescription(description)
+                                .setTimestamp(timestamp).setAuthor(author)
+                                // .setColor(1942002);
+                                .setColor(0);
+                            embed.data.type = 'rich';
 
-                        embed.setFooter({ text: `Twitter`, iconURL: `https://abs.twimg.com/icons/apple-touch-icon-192x192.png` });
+                            embed.setFooter({ text: `Twitter`, iconURL: `https://abs.twimg.com/icons/apple-touch-icon-192x192.png` });
 
-                        embeds.push(embed);
+                            embeds.push(embed);
+                        } catch(e) {
+                            console.log(`/plugins/twitterListener3.js:65:42`, e.message);
+                            console.log('url', url);
+                            console.log('description', description);
+                            console.log('timestamp', timestamp);
+                            console.log('author', author);
+                        }
                     }
                     for (let i = 0; i < media.length; ++i) {
 

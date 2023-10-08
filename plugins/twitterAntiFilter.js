@@ -705,16 +705,21 @@ const messageExecute = async (message) => {
             message.delete().catch(() => { });
             if (!image.includes('fakeuser')) {
                 // log
-                const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
-                    .setTitle(`推特過濾器:`)
-                    .addFields([
-                        { name: `Content:`, value: content },
-                        { name: `Channel:`, value: message.url },
-                        { name: `Username:`, value: authorName },
-                        { name: `uID:`, value: uID },
-                        { name: `Image:`, value: image },
-                    ]);
-                mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOG1_CHANNEL)
+                try {
+                    let fields = []
+                    if (content) { fields.push({ name: `Content:`, value: content }) }
+                    if (message.url) { fields.push({ name: `Channel:`, value: message.url }) }
+                    if (authorName) { fields.push({ name: `Username:`, value: authorName }) }
+                    if (uID) { fields.push({ name: `uID:`, value: uID }) }
+                    if (image) { fields.push({ name: `Image:`, value: image }) }
+
+                    const logEmbed = new EmbedBuilder().setColor(0xDD5E53).setTimestamp()
+                        .setTitle(`推特過濾器:`)
+                        .addFields(fields);
+                    mainAFCore.logToDiscord({ embeds: [logEmbed] }, LOG1_CHANNEL)
+                } catch (e) {
+                    console.log(`/plugins/twitterAntiFilter.js:710:22`, e.message);
+                }
             }
 
         } else {
