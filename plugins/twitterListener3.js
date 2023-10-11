@@ -36,13 +36,13 @@ let sending = new Set();
 const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => {
     if (sending.has(channel?.id)) { return; }
 
+    sending.add(channel?.id);
     chromeDriver.searchKeywords(keywords, { after, before })
         .then(async (searchResult) => {
             if (searchResult.size == 0) { return; }
 
             // searchResult = Map(<tID>, <tweet>)
             tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
-            sending.add(channel?.id);
 
             let tIDs = Array.from(searchResult.keys()).sort();
             for (let i = 0; i < tIDs.length; ++i) {
