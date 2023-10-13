@@ -241,14 +241,9 @@ class ChromeDriver {
         if (!this.isWin32) { return null; }
 
         // waiting login
-        while (!this.constructed) {
-            await sleepr(500);
-        }
-
+        while (!this.constructed) { await sleepr(1500); }
         // waiting searching...
-        while (this.searching || this.searchingTask) {
-            await sleepr(500);
-        }
+        while (this.searching || this.searchingTask) { await sleepr(1500); }
 
         // start search
         this.searching = true;
@@ -425,9 +420,7 @@ class ChromeDriver {
         if (!this.isWin32) { return {}; }
 
         // waiting login
-        while (!this.constructed) {
-            await sleepr(500);
-        }
+        while (!this.constructed) { await sleepr(1500); }
 
 
         // check db get username
@@ -448,9 +441,7 @@ class ChromeDriver {
         ++this.searchingTask;
 
         // waiting searching...
-        while (this.searching) {
-            await sleepr(500);
-        }
+        while (this.searching) { await sleepr(370); }
 
 
         // check db, maybe other search done when waiting
@@ -548,14 +539,9 @@ class ChromeDriver {
         if (!this.isWin32) { return null; }
 
         // waiting login
-        while (!this.constructed) {
-            await sleepr(500);
-        }
-
+        while (!this.constructed) { await sleepr(1500); }
         // waiting searching...
-        while (this.searching || this.searchingTask) {
-            await sleepr(500);
-        }
+        while (this.searching || this.searchingTask) { await sleepr(370); }
 
         // start search
         this.searching = true;
