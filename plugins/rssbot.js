@@ -129,17 +129,23 @@ const itemsToEmbeds = async (items, hostColor) => {
                 case 'SLN': { category = 'シミュレーション'; }; break;
                 case 'ADV': { category = 'アドベンチャー'; }; break;
                 case 'ACN': { category = 'アクション'; }; break;
+                case 'STG': { category = 'シューティング'; }; break;
+                case 'PZL': { category = 'パズル'; }; break;
+                case 'ETC': { category = 'その他ゲーム'; }; break;
 
                 case 'ICG': { category = 'CG・イラスト'; }; break;
                 case 'NRE': { category = 'ノベル'; }; break;
+                case 'DNV': { category = 'デジタルノベル'; }; break;
                 case 'MNG': { category = 'マンガ'; }; break;
+                case 'VCM': { category = 'ボイスコミック'; }; break;
                 case 'MOV': { category = '動画'; }; break;
 
                 case 'AMT': { category = '音素材'; }; break;
                 case 'IMT': { category = '画像素材'; }; break;
                 case 'MUS': { category = '音楽'; }; break;
+                case 'TOL': { category = 'ツール/アクセサリ'; }; break;
                 case 'ET3': { category = 'その他'; }; break;
-
+                
                 default: { category = match[1]; } break;
             }
 
