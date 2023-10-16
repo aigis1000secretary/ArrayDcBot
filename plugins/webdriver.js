@@ -256,10 +256,11 @@ class ChromeDriver {
             let _keyword = querystring.escape(keyword);
             let searchUrl = `https://twitter.com/search?q=${_keyword}&src=typed_query&f=live`;
             // wait search page load
-            while (1) {
+            for (let d = 5; d > 0; ++d) {
                 await this.driver.get(searchUrl);
 
-                let ele = await this.driver.wait(until.elementLocated(By.partialLinkText('@')), 5000).catch(() => null);
+                let delay = Math.min(d, 30) * 1000;
+                let ele = await this.driver.wait(until.elementLocated(By.partialLinkText('@')), delay).catch(() => null);
                 if (ele) { break; }
             }
 
