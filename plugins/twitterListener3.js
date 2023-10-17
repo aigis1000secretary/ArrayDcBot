@@ -72,7 +72,7 @@ const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => 
                             embed.setFooter({ text: `Twitter`, iconURL: `https://abs.twimg.com/icons/apple-touch-icon-192x192.png` });
 
                             embeds.push(embed);
-                        } catch(e) {
+                        } catch (e) {
                             console.log(`/plugins/twitterListener3.js:65:42`, e.message);
                             console.log('url', url);
                             console.log('description', description);
@@ -149,90 +149,109 @@ module.exports = {
 
         } else if (command == 'getuid') {
 
-            if (args[0] && regUrl.test(args[0])) {
-                let [, username, tID] = args[0].match(regUrl);
+            if (chromeDriver.searching) {
+                message.channel.send(`[TL3] chromeDriver.searching...`)
+                    .then((msg) => setTimeout(() => msg.delete().catch(() => { }), 1000)).catch(() => { });
+            }
 
-                let { uID } = await chromeDriver.getUserData({ username });
-                if (!uID) { return; }
+            if (args[0]) {
 
-                if (EMBED_BY_DISCORD) {
-                    await message.channel.send(`https://twitter.com/${uID}/status/${tID}`).catch(() => { });
-                } else {
-                    let tweet = await chromeDriver.getTweetByTID({ tID, username });
-                    if (tweet) {
-                        let { url, timestamp, description, author, media } = tweet;
+                if (regUrl.test(args[0])) {
+                    // !getuid https://twitter.com/<username>/status/<tID>
 
-                        // embed from crawler data
-                        // /*
-                        let embeds = [];
-                        if (author) {
-                            let embed = new EmbedBuilder()
-                                .setURL(url).setDescription(description)
-                                .setTimestamp(timestamp).setAuthor(author)
-                                // .setColor(1942002);
-                                .setColor(0);
-                            embed.data.type = 'rich';
+                    let [, username, tID] = args[0].match(regUrl);
 
-                            embed.setFooter({ text: `Twitter`, iconURL: `https://abs.twimg.com/icons/apple-touch-icon-192x192.png` });
+                    let { uID } = await chromeDriver.getUserData({ username });
+                    if (!uID) { message.channel.send(`[TL3] getudi fail`).catch(() => { }); return; }
 
-                            embeds.push(embed);
-                        }
-                        for (let i = 0; i < media.length; ++i) {
+                    // reply
+                    if (EMBED_BY_DISCORD) {
+                        await message.channel.send(`https://twitter.com/${uID}/status/${tID}`).catch(() => { });
+                    } else {
+                        let tweet = await chromeDriver.getTweetByTID({ tID, username });
+                        if (tweet) {
+                            let { url, timestamp, description, author, media } = tweet;
 
-                            if (!embeds[i]) {
-                                embeds[i] = new EmbedBuilder().setURL(url);
-                                embeds[i].data.type = 'rich';
+                            // embed from crawler data
+                            // /*
+                            let embeds = [];
+                            if (author) {
+                                let embed = new EmbedBuilder()
+                                    .setURL(url).setDescription(description)
+                                    .setTimestamp(timestamp).setAuthor(author)
+                                    // .setColor(1942002);
+                                    .setColor(0);
+                                embed.data.type = 'rich';
+
+                                embed.setFooter({ text: `Twitter`, iconURL: `https://abs.twimg.com/icons/apple-touch-icon-192x192.png` });
+
+                                embeds.push(embed);
+                            }
+                            for (let i = 0; i < media.length; ++i) {
+
+                                if (!embeds[i]) {
+                                    embeds[i] = new EmbedBuilder().setURL(url);
+                                    embeds[i].data.type = 'rich';
+                                }
+
+                                let m = media[i];
+                                if (m.image) { embeds[i].setImage(m.image.url); }
+                                if (m.video) {
+                                    embeds[i].setImage(m.video.url);
+                                    embeds[0].setThumbnail(`https://media.discordapp.net/attachments/947064593329557524/1160521922828832859/video.png`);
+                                }
                             }
 
-                            let m = media[i];
-                            if (m.image) { embeds[i].setImage(m.image.url); }
-                            if (m.video) {
-                                embeds[i].setImage(m.video.url);
-                                embeds[0].setThumbnail(`https://media.discordapp.net/attachments/947064593329557524/1160521922828832859/video.png`);
-                            }
+                            let payload = { content: `<https://twitter.com/${uID}/status/${tID}>`, embeds, files: [] };
+
+                            await message.channel.send(payload).catch(console.error);
                         }
-
-                        let payload = { content: `<https://twitter.com/${uID}/status/${tID}>`, embeds, files: [] };
-
-                        await message.channel.send(payload).catch(() => { });
                     }
+                    return;
+
+                } else {
+                    // !getuid <username>
+
+                    let { uID } = await chromeDriver.getUserData({ username: args[0] });
+                    if (uID) {
+                        message.channel.send(`adduid ${args[0]} ${uID}`).catch(() => { });
+                    } else {
+                        message.channel.send(`[TL3] getudi fail`).catch(() => { });
+                    }
+                    return;
                 }
 
-                setTimeout(() => message.delete().catch(() => { }), 250);
-
-            } else if (chromeDriver.searching) {
-                message.channel.send(`chromeDriver.searching...`).catch(() => { });
-            } else if (args[0]) {
-                let { uID } = await chromeDriver.getUserData({ username: args[0] });
-                if (!uID) { return; }
-
-                message.channel.send(`adduid ${args[0]} ${uID}`).catch(() => { });
             } else {
 
                 const { channel } = message;
-                await message.delete().catch(() => { });
 
-                let before;
-                while (1) {
-                    let msgs = await channel.messages.fetch({ before, force: true });
-                    if (Array.from(msgs.keys()).find((mID) => (before == mID))) { break; };
+                if (channel.id == '872122458545725451') {
 
-                    for (let [mID, msg] of msgs) {
-                        before = mID;
+                    await message.delete().catch(() => { });
 
-                        let [, username] = msg.content?.match(/^\[\+\] ([^-\.]+)$/) || [, null];
-                        if (!username) { console.log(mID, msg.content); continue; }
+                    let before;
+                    while (1) {
+                        let msgs = await channel.messages.fetch({ before, force: true });
+                        if (Array.from(msgs.keys()).find((mID) => (before == mID))) { break; };
 
-                        let userData = await chromeDriver.getUserData({ username });
+                        for (let [mID, msg] of msgs) {
+                            before = mID;
 
-                        console.log(mID, 'delete:', (!userData.uID && userData.suspended), `[+]`, username);
+                            let [, username] = msg.content?.match(/^\[\+\] ([^-\.]+)$/) || [, null];
+                            if (!username) { console.log(mID, msg.content); continue; }
 
-                        if (userData.uID) { continue; }
-                        if (!userData.suspended) { continue; }
+                            let userData = await chromeDriver.getUserData({ username });
 
-                        await msg.delete().catch(() => { });
+                            console.log(mID, 'delete:', (!userData.uID && userData.suspended), `[+]`, username);
+
+                            if (userData.uID) { continue; }
+                            if (!userData.suspended) { continue; }
+
+                            await msg.delete().catch(() => { });
+                        }
                     }
                 }
+                return;
             }
 
         } else if (command == 'fixembed') {
