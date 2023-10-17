@@ -107,7 +107,7 @@ const replacer = (key, value) => {
 }
 
 // [, username, , tID]
-const regUrl = /https?:\/\/twitter\.com(?:\/([^\/]+)(?:\/status\/(\d*))?)?/i;
+const regUrl = /https?:\/\/twitter\.com(?:\/([^\/]+)(?:\/status\/(\d+))?)?/i;
 const regUsername = /\(@([A-Za-z0-9_]+)\)$/;
 const CODE_CHANNEL = '872122458545725451';
 const LOG1_CHANNEL = '713623232070156309';
@@ -1056,7 +1056,7 @@ module.exports = {
                             SpamTweet.image = pngFile;
                         }
                     }
-                    
+
                     for (let i = 0; i < imagesList.length; ++i) {
                         if (imagesList[i] == imageFile) {
                             imagesList[i] = pngFile;
@@ -1121,19 +1121,38 @@ module.exports = {
         // get display username
         const [, authorName] = (author?.name)?.match(regUsername) || [, null];
         // get username, tweetID
-        let uID;
-        let [, username, tID] = (content.match(regUrl) || [, null, null]);
+        let uID, username;
+        const [, urlUsername, tID] = (content.match(regUrl) || [, null, null]);
 
 
-        if (authorName) { username = authorName; }
-        // get real username, get uID from crawler db
-        if (spamUserList.userIDList.has(username)) {
-            uID = spamUserList.userIDList.get(username);
-        }
-        if (!uID && /^\d+$/.test(username) && [message.client.user.id, '353625493876113440'].includes(message.author?.id)) {
-            uID = username;
+        if (authorName) {
+            // found username from embed
             username = authorName;
+
+            // get real username, get uID from crawler db
+            if (spamUserList.userIDList.has(username)) {
+                uID = spamUserList.userIDList.get(username);
+            }
+            // can't get uid from IDList, urlUsername match \d+, msg author is this bot
+            if (!uID && /^\d+$/.test(username) && [message.client.user.id, '353625493876113440'].includes(message.author?.id)) {
+                uID = urlUsername;
+                username = authorName;
+            } else { /* got uid, got username */ }
+        } else {
+            // can't found embed, check url
+            username = urlUsername;
+            if (!/^\d+$/.test(username) && spamUserList.userIDList.has(username)) {
+                // username is not uid, and found uid from ID List
+                uID = spamUserList.userIDList.get(username);
+            } else {
+                // no username-uid, error
+                // shouldn't here
+                console.log(`[TAF] #EMOJI_LABEL get uid error`);
+                reaction.users.remove(user).catch((e) => console.log(`[TAF] reac.remove error,`, e.message));
+                return;
+            }
         }
+
 
         // set username to blacklist
         if (!spamUserList.userIDList.has(username) && !spamUserList.userList.has(tID)) {
