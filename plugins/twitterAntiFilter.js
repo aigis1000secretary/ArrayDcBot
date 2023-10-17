@@ -1056,6 +1056,12 @@ module.exports = {
                             SpamTweet.image = pngFile;
                         }
                     }
+                    
+                    for (let i = 0; i < imagesList.length; ++i) {
+                        if (imagesList[i] == imageFile) {
+                            imagesList[i] = pngFile;
+                        }
+                    }
                 }
             }
 
