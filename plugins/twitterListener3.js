@@ -124,9 +124,9 @@ module.exports = {
 
         if (!chromeDriver.isWin32) { return; }
 
-        if (command == 'tl3') {
+        const { channel, client } = message;
 
-            let { client, channel } = message;
+        if (command == 'tl3') {
 
             // get channel id
             const cID = channel.id;
@@ -150,7 +150,7 @@ module.exports = {
         } else if (command == 'getuid') {
 
             if (chromeDriver.searching) {
-                message.channel.send(`[TL3] chromeDriver.searching...`)
+                channel.send(`[TL3] chromeDriver.searching...`)
                     .then((msg) => setTimeout(() => msg.delete().catch(() => { }), 1000)).catch(() => { });
             }
 
@@ -162,11 +162,11 @@ module.exports = {
                     let [, username, tID] = args[0].match(regUrl);
 
                     let { uID } = await chromeDriver.getUserData({ username });
-                    if (!uID) { message.channel.send(`[TL3] getudi fail`).catch(() => { }); return; }
+                    if (!uID) { channel.send(`[TL3] getudi fail`).catch(() => { }); return; }
 
                     // reply
                     if (EMBED_BY_DISCORD) {
-                        await message.channel.send(`https://twitter.com/${uID}/status/${tID}`).catch(() => { });
+                        await channel.send(`https://twitter.com/${uID}/status/${tID}`).catch(() => { });
                     } else {
                         let tweet = await chromeDriver.getTweetByTID({ tID, username });
                         if (tweet) {
@@ -204,9 +204,12 @@ module.exports = {
 
                             let payload = { content: `<https://twitter.com/${uID}/status/${tID}>`, embeds, files: [] };
 
-                            await message.channel.send(payload).catch(console.error);
+                            await channel.send(payload).catch(console.error);
                         }
                     }
+
+                    if (message.author.id == client.user.id) { await message.delete().catch(() => { }); }
+
                     return;
 
                 } else {
@@ -214,16 +217,14 @@ module.exports = {
 
                     let { uID } = await chromeDriver.getUserData({ username: args[0] });
                     if (uID) {
-                        message.channel.send(`adduid ${args[0]} ${uID}`).catch(() => { });
+                        channel.send(`adduid ${args[0]} ${uID}`).catch(() => { });
                     } else {
-                        message.channel.send(`[TL3] getudi fail`).catch(() => { });
+                        channel.send(`[TL3] getudi fail`).catch(() => { });
                     }
                     return;
                 }
 
             } else {
-
-                const { channel } = message;
 
                 if (channel.id == '872122458545725451') {
 
@@ -255,8 +256,6 @@ module.exports = {
             }
 
         } else if (command == 'fixembed') {
-
-            const { channel, client } = message;
 
             await message.delete().catch(() => { });
 
