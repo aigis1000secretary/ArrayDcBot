@@ -7,7 +7,7 @@ module.exports = {
     clientSecret: null,
     resonance: 'ぬる',
     plugins: (process.env.HOST_TYPE == 'debug') ? [
-        'delall',
+        // 'delall',
         'dlimg',
         // 'dlsitebot',
         'ip',

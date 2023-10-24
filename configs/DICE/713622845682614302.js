@@ -60,6 +60,7 @@ module.exports = {      // KTG
     dlsitebot: {},
     ping: {},
     reboot: {},
+    rssbot: [],
     streamStartTime: {},
     // uptimer: {},
 }
