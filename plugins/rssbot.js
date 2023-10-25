@@ -37,10 +37,7 @@ const checkRss = async (client, nowMinutes) => {
             const items = (await xmlTojson(xml)).item;
 
             // send rss embeds
-            let newRss = await sendRssItems(client, channel, getColor(RSS_FEEDURL), items);
-
-            // clear old rss
-            if (newRss) { checkLastRss(client, channel, getColor(RSS_FEEDURL)); }
+            await sendRssItems(client, channel, getColor(RSS_FEEDURL), items);
         }
     }
 }
@@ -59,7 +56,7 @@ const decodeEntities = (encodedString) => {
         .replace(translate_re, (match, entity) => { return translate[entity]; })
         .replace(/&#(\d+);/gi, (match, numStr) => { return String.fromCharCode(parseInt(numStr, 10)); });
 }
-const getColor = (link) => parseInt(require('crypto').createHash('md5').update(link).digest('hex').substring(0, 6), 16);
+const getColor = (link) => parseInt(require('crypto').createHash('md5').update(link.replace(/\/*$/, '\/')).digest('hex').substring(0, 6), 16);
 const reg1 = /[RBV]J\d{6,}/i;
 const reg2 = /(Circle[：:])|(Brand[：:])(\<\/span ?\>)?([^\<]+)\</i;
 const reg3 = /\<img[^>]*src=\"([^\"]+)\"/i;
@@ -277,9 +274,10 @@ const checkLastRss = async (client, channel, hostColor) => {
     // get message log
     let messages = await channel.messages.fetch().catch(() => { });
     // filter target messages
-    let tarMsgs = [];
+    let tarMsgIDs = [];
     for (let key of messages.keys()) {
         let message = messages.get(key);
+
         // only check bot message
         if (message.author?.id != client.user.id) { continue; }
         // only check message with embed;
@@ -295,11 +293,10 @@ const checkLastRss = async (client, channel, hostColor) => {
         if (message.embeds[0].url.includes('127.0.0.1')) { continue; }
 
         // keep msg
-        message = await channel.messages.fetch({ message: message.id });
-        tarMsgs.push(message);
+        tarMsgIDs.push(BigInt(message.id));
     }
 
-    if (tarMsgs.length <= 0) { return; }
+    if (tarMsgIDs.length <= 0) { return; }
 
     // // set last message object
     // let lastMsg = { id: 0, embeds: [{ timestamp: 0 }] };
@@ -319,11 +316,12 @@ const checkLastRss = async (client, channel, hostColor) => {
 
     // tarMsgs.shift();
 
-    tarMsgs.sort(({ id: iA }, { id: iB }) => (iA == iB ? 0 : (iA > iB ? 1 : -1)));
-    let lastMsg = tarMsgs.pop();
+    tarMsgIDs.sort((a, b) => a > b || -(a < b));
+    let lastMsgID = tarMsgIDs.pop().toString();
 
     // get react count
-    for (let message of tarMsgs) {
+    for (let mID of tarMsgIDs) {
+        let message = await channel.messages.fetch({ message: mID.toString() });
         let reacts = message.reactions.cache.get(EMOJI_RECYCLE);
         let reactsCount = reacts ? reacts.count : 0;
 
@@ -334,11 +332,11 @@ const checkLastRss = async (client, channel, hostColor) => {
         setTimeout(async () => {
             await message.suppressEmbeds(true).catch(() => { });
             // await message.delete().catch(() => { });
-            addBulkDelete(message.channel.id, message);
+            addBulkDelete(channel.id, message);
         }, 250);
     };
 
-    return lastMsg;
+    return await channel.messages.fetch({ message: lastMsgID });;
 }
 
 // send embeds
@@ -350,15 +348,15 @@ const sendRssItems = async (client, channel, hostColor, items) => {
     embeds.sort((eA, eB) => {
         const tA = eA.timestamp; const coA = parseInt(eA.footer?.text.replace('RJ', '')); const caA = eA.author?.name;
         const tB = eB.timestamp; const coB = parseInt(eB.footer?.text.replace('RJ', '')); const caB = eB.author?.name;
-        if (tA != tB) { return (tA > tB) ? 1 : -1; }
-        if (caA != caB) { return (caA > caB) ? 1 : -1; }
-        if (coA != coB) { return (coA > coB) ? 1 : -1; }
+        if (tA != tB) { return (tA > tB) ? 1 : -1; }    // sort by time
+        if (caA != caB) { return (caA > caB) ? 1 : -1; }    // sort by type (for dl)
+        if (coA != coB) { return (coA > coB) ? 1 : -1; }    // sort by rjid
         return 0;
     });
 
     // debug
     if (require('fs').existsSync("./.env")) {
-        let messages = await channel.messages.fetch().catch(() => { });
+        let messages = await channel.messages.fetch().catch(() => { }) || [];
 
         for (let embed of embeds) {
             // debug
@@ -374,8 +372,8 @@ const sendRssItems = async (client, channel, hostColor, items) => {
     }
 
     // get message log
-    let message = await checkLastRss(client, channel, hostColor);
-    let lastPostTimestamp = new Date((message?.embeds || [])[0]?.timestamp || 0).getTime();
+    let lastMessage = await checkLastRss(client, channel, hostColor);
+    let lastPostTimestamp = new Date((lastMessage?.embeds || [])[0]?.timestamp || 0).getTime();
 
     // send embeds
     let newRss = false;
@@ -412,7 +410,7 @@ module.exports = {
 
     async clockMethod(client, { hours, minutes, seconds }) {
 
-        if (seconds % 5 == 0 && bulkDelete.size > 0) {
+        if (seconds % 15 == 0 && bulkDelete.size > 0) {
 
             for (let [cID, msgSet] of bulkDelete) {
 
@@ -423,8 +421,8 @@ module.exports = {
                     await channel.bulkDelete(_bulkDelete)
                         .then(() => console.log(`Bulk deleted ${_bulkDelete.length} messages in ${channel.name}`))
                         .catch((e) => console.log(e.message));
-                } else {
-                    bulkDelete.delete(cID);
+                // } else {
+                //     bulkDelete.delete(cID);
                 }
             }
         }
@@ -563,10 +561,7 @@ app.post('/rssbot', multer().array(), async (req, res) => {
     const items = (await xmlTojson(xml)).item;
 
     // send rss embeds
-    let newRss = await sendRssItems(client, channel, getColor(href), items);
-
-    // clear old rss
-    if (newRss) { checkLastRss(client, channel, getColor(href)); }
+    await sendRssItems(client, channel, getColor(href), items);
 
     return;
 });
