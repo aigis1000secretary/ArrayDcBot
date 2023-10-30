@@ -954,7 +954,7 @@ class YoutubeCore {
                 console.log(`getVideoLists error:`, this.holoChannelID);
                 if (_videos.reason == 'quotaExceeded') {
                     console.log(`{ code: 403, message: 'quotaExceeded', reason: 'quotaExceeded',`)
-                    console.log(`  variabale: { channelId: 'UCUKD-uaobj9jiqB-VXt71mA', eventType: 'live', } }`)
+                    console.log(`  variabale: { channelId: '${this.holoChannelID}', eventType: 'live', } }`)
                 } else {
                     console.log(_videos)
                 }
@@ -966,7 +966,7 @@ class YoutubeCore {
 
                 // update liveBroadcastContent
                 if (this.streamList.has(vID)) {
-                    video.memberOnly = this.streamList.get(vID)?.memberOnly;
+                    video.memberOnly = (this.streamList.get(vID))?.memberOnly;
                 }
 
                 // cache video data
@@ -1026,7 +1026,7 @@ class YoutubeCore {
 
             // update liveBroadcastContent
             if (this.streamList.has(vID)) {
-                videoStatus.memberOnly = this.streamList.get(vID)?.memberOnly;
+                videoStatus.memberOnly = (this.streamList.get(vID))?.memberOnly;
             }
 
             // cache video data
@@ -1687,7 +1687,7 @@ class MainMemberCheckerCore {
                             }
                         }
 
-                        _video.memberOnly = ytCore.streamList.get(vID)?.memberOnly;
+                        _video.memberOnly = (ytCore.streamList.get(vID))?.memberOnly;
                         ytCore.streamList.set(vID, _video);
                     }
 
@@ -1802,7 +1802,7 @@ module.exports = {
 
                         if (ytCore.streamList.has(vID)) {
                             // update liveBroadcastContent
-                            video.memberOnly = ytCore.streamList.get(vID)?.memberOnly;
+                            video.memberOnly = (ytCore.streamList.get(vID))?.memberOnly;
                         }
                         // cache video data
                         ytCore.streamList.set(vID, video);
