@@ -16,6 +16,7 @@ module.exports = {
         'memberChecker4',
         'memberCounter',
         'messageLogger',
+        'permissionSwitch',
         // 'ping',
         'reactionRole',
         'reactionVote',

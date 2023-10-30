@@ -20,6 +20,10 @@ module.exports = {      // SSRB的聚集地
         },
     ],
 
+    permissionSwitch: [
+        { CHANNEL_ID: '775100135515750470', ADMIN_ROLE_ID: '766316861427023882', TARGET_ROLE_ID: '777779439122776064' }
+    ],
+
     twitterListener3: [
         // #ssrb們站起來-art
         { RETWEET_CHANNEL_ID: '771351460097032193', RETWEET_DELCOUNT: 5, RETWEET_KEYWORD: ['#ししらーと'] },
