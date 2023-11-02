@@ -9,7 +9,7 @@ module.exports = {      // KTG
             RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: [
                 '#アイギスお絵かき', '#アイギス10周年アートコン',
                 'filter:links (from:Aigis1000)', '(from:aigis2014)',
-                'filter:links (from:Aigis_PhotoMemo)',
+                'filter:links (from:AtedayoAigis)', 'filter:links (from:Aigis_PhotoMemo)',
                 'filter:links (from:akagi_huyu)', 'filter:links (from:inoshishi4)',
                 'filter:links (from:koyaki93874607)', 'filter:links (from:nemui_)',
                 'filter:links (from:sighaz)', 'filter:links (from:yomerinne)',
