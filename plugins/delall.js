@@ -12,6 +12,7 @@ const workspaceChannelIDs = [
     '1009645372831977482',  // #_bot-test
     '1054284227375542333',  // #sao
     '1113369067177381918',  // #sao2
+    '1169461312657567765',  // #dlimg
     '1156057315829624933',  // #dl
     '713623232070156309',   // #_log
     '1008565763260551188',  // #⚫_stream
@@ -61,7 +62,7 @@ const deleteAllMessage = async ({ channel, author }) => {
                 if (!['713624995372466179', '928492714482343997', '920485085935984641'].includes(msg.author.id)) { delFlag = true; }
             }
 
-            else if (['1054284227375542333', '1113369067177381918', '1156057315829624933'].includes(cID)) {
+            else if (['1054284227375542333', '1113369067177381918', '1156057315829624933', '1169461312657567765'].includes(cID)) {
                 // skip last message in #sao / #sao2
                 delFlag = (before || i > 0);
                 // before == true => not first times fetch;
@@ -111,7 +112,7 @@ module.exports = {
         if (command == 'delall' || (command == 'delall2' && require('fs').existsSync("./.env"))) {
 
             let { channel, author } = message;
-            await message.delete().catch(console.error);
+            await message.delete().catch((e) => console.log(e.message));
             deleteAllMessage({ channel, author });
             return;
         }

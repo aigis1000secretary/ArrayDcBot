@@ -12,7 +12,7 @@ module.exports = {
         // 'dlsitebot',
         'ip',
         // `ping`,
-        'reboot',
+        // 'reboot',
         // 'rssbot',
         // 'twitterAntiFilter',
         `twitterListener3`,

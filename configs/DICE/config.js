@@ -8,6 +8,8 @@ module.exports = {
     resonance: 'ダイ',
     plugins: (process.env.HOST_TYPE == 'debug') ? [
         'memberChecker4',
+        // 'twitterListener3',
+        // 'dlimg',
         'delall',
         // 'rssbot', 'dlsitebot',
     ] : [

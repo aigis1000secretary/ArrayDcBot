@@ -37,6 +37,19 @@ module.exports = {      // KTG
         //     holoChannelID: 'UCZlDXzGoo7d44bwdNObFacg',   // kanata
         // }
     ],
+
+    // manual bulk download img
+    // twitterListener3: [
+    //     // #dl
+    //     {
+    //         RETWEET_CHANNEL_ID: '1169461312657567765', RETWEET_KEYWORD: [
+    //             '(from:AtedayoAigis) until:2021-03-18 filter:links'
+    //         ],
+    //     },
+    // ],
+
+
+
     reportThread: {
         REPORT_CHANNEL_ID: '1024627536862400582',      // #_report
         ADMIN_ROLE_ID: '881775866835763240',      // @&==BOT==
@@ -57,6 +70,7 @@ module.exports = {      // KTG
     reactionRole: { RULE_CHANNEL_ID: '1024628143232925706' },      // #_role
 
     delall: {},
+    dlimg: {},
     dlsitebot: {},
     ping: {},
     reboot: {},

@@ -15,6 +15,9 @@ const getTwitterSnowflake = (time) => (BigInt(time - 1288834974657) << 22n);
 const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 14200704e5);
 const getTimeFromTwitterSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 1288834974657);
 
+// tl3-dlimg
+// const downloadFile = (url, filepath) => new Promise((resolve) => { require('request')(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); })
+
 const { chromeDriver } = require('./webdriver.js') || require('./plugins/webdriver.js');;
 
 const findLastTwitterMessage = async (channel, uID) => {
@@ -33,11 +36,11 @@ const findLastTwitterMessage = async (channel, uID) => {
 
 // let tweetEmbedsCache = new Map();
 let sending = new Set();
-const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => {
+const chromeDriverSearchTweet = async ({ dataNum, after, before, keywords, channel }) => {
     if (sending.has(channel?.id)) { return; }
 
     sending.add(channel?.id);
-    chromeDriver.searchKeywords(keywords, { after, before })
+    chromeDriver.searchKeywords(keywords, { dataNum, after, before })
         .then(async (searchResult) => {
             if (searchResult.size == 0) { return; }
 
@@ -59,6 +62,9 @@ const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => 
                 } else {
                     // embed from crawler data
                     // /*
+                    // tl3-dlimg
+                    // let images = [];
+
                     let embeds = [];
                     if (author) {
                         try {
@@ -88,7 +94,11 @@ const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => 
                         }
 
                         let m = media[i];
-                        if (m.image) { embeds[i].setImage(m.image.url); }
+                        if (m.image) {
+                            embeds[i].setImage(m.image.url);
+                            // tl3-dlimg
+                            // images.push(m.image.url);
+                        }
                         if (m.video) {
                             embeds[i].setImage(m.video.url);
                             embeds[0].setThumbnail(`https://media.discordapp.net/attachments/947064593329557524/1160521922828832859/video.png`);
@@ -97,6 +107,52 @@ const chromeDriverSearchTweet = async ({ after, before, keywords, channel }) => 
 
                     let payload = { content: `<${url}>`, embeds, files: [] };
                     // tweetEmbedsCache.set(tID, payload);
+
+                    /*
+                    // tl3-dlimg
+                    if (images.length > 0) {
+
+                        const username = author.url.replace('https://twitter.com/', '');
+                        const nowDate = (new Date(timestamp).toLocaleString('en-ZA'))
+                            .replace(/[\/:]/g, '').replace(', ', '_');
+
+                        let j = 0, lastTID = '';
+                        for (const image of images) {
+                            if (lastTID != tID) {
+                                j = 1;
+                                lastTID = tID;
+                            } else {
+                                ++j;
+                            }
+
+                            const [, ext] = image.match(/([^\.]+)$/) || [, null];
+                            if (!image || !ext) { continue; }
+                            let dlImage = image.replace(`.${ext}`, `?format=${ext}&name=orig`);
+
+                            let folderPath = `./image/${username}`;
+                            let filename = `${username}-${tID}-${nowDate}-img${j}.${ext}`
+                            let filePath = `${folderPath}/${filename}`;
+
+                            // set folder
+                            if (!fs.existsSync(folderPath)) { fs.mkdirSync(folderPath, { recursive: true }); }
+
+                            // download
+                            if (!fs.existsSync(filePath)) {
+
+                                await downloadFile(dlImage, filePath);
+                                if (!fs.statSync(filePath)?.size) {
+                                    fs.unlinkSync(filePath);
+                                    await downloadFile(image, filePath);
+                                }
+
+                                console.log(`donwload image ${filename}`);
+                            } else {
+                                console.log(`    skip image ${filename}`);
+                            }
+                        }
+                        contniue;
+                    }//*/
+
                     await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
                     //*/
                 }
@@ -145,6 +201,7 @@ module.exports = {
             let keywords = config.RETWEET_KEYWORD;
 
             chromeDriverSearchTweet({ after, before, keywords, channel });
+            // chromeDriverSearchTweet({ dataNum: 1000, after, before, keywords, channel });
             setTimeout(() => message.delete().catch(() => { }), 250);
 
         } else if (command == 'getuid') {
@@ -318,8 +375,8 @@ module.exports = {
                         if (msg.author.id == client.user.id) {
                             await msg.edit(payload).catch((e) => console.error(e));
                         } else {
-                            await msg.delete().catch(() => { });
                             await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+                            await msg.delete().catch(() => { });
                         }
                     }
                 }
