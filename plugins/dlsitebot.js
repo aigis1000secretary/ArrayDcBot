@@ -1,4 +1,4 @@
-const [EMOJI_RECYCLE] = ['♻️']
+const [EMOJI_RECYCLE, EMOJI_ENVELOPE_WITH_ARROW] = ['♻️', '📩'];
 const dlsiteIcon = 'https://media.discordapp.net/attachments/947064593329557524/1156438574997184562/RBIlIWRJ2HEHkWiTV4ng_gt_icon020.png';
 
 // const fs = require('fs');
@@ -154,7 +154,7 @@ const getDLsitePage = async (index) => {
     }
 }
 
-const createDLsitePageMessage = (result, imageIndex = 0) => {
+const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
 
     // build result embed
     let description = '';
@@ -188,8 +188,8 @@ const createDLsitePageMessage = (result, imageIndex = 0) => {
         .setDescription(description)
         .setThumbnail(dlsiteIcon)
         .setImage(result.thumb[imageIndex] || null);
-    embed0.data.type = 'rich';
-    embed0.data.url = result.url;
+    // embed0.data.type = 'rich';
+    // embed0.data.url = result.url;
 
     let embeds = [embed0];
     for (let i = 1; i < 4; ++i) {
@@ -197,8 +197,11 @@ const createDLsitePageMessage = (result, imageIndex = 0) => {
         if (ii >= result.thumb.length) { break; }
 
         const embed = new EmbedBuilder().setImage(result.thumb[ii]);
-        embed.data.type = 'rich';
-        embed.data.url = result.url;
+
+        // embed0.data.type = 'rich';
+        // embed0.data.url = result.url;
+        if (rich) { embed.setURL(result.url); }
+
         embeds.push(embed);
     }
 
@@ -296,13 +299,14 @@ module.exports = {
         // mute reply
         interaction.reply({ content: ' ' }).catch(() => { });
 
+
         // get RJ index
         const embed = message.embeds[0];
         let [, index] = embed.url.match(indexReg);
-
         // download dlsite page
         let result = await getDLsitePage(index.toUpperCase());
         if (!result) { return false; }
+
 
         // get image index
         const btn = message.components[0].components.find(btn => btn.customId.startsWith('dlThumbNum'));
@@ -316,10 +320,13 @@ module.exports = {
         }
         imageIndex = Math.min(Math.max(imageIndex, 0), imageLength - 1);
 
+
+        const rich = !(message.reactions.cache.get(EMOJI_ENVELOPE_WITH_ARROW)?.count);
+
         // create Message Payload
-        let messagePayload = createDLsitePageMessage(result, imageIndex);
+        let messagePayload = createDLsitePageMessage(result, imageIndex, rich);
         // edit message
         message.edit(messagePayload).catch(console.log);
-        return false;
+        return true;
     }
 }
