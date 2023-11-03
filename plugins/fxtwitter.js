@@ -8,6 +8,13 @@ module.exports = {
     name: 'fxtwitter',
     description: "emoji it to fxtwitter!",
 
+    execute(message, pluginConfig, command, args, lines) {
+        const { content } = message;
+        if (!regUrl.test(content)) { return; }
+
+        message.react(EMOJI_SMALL_BLUE_DIAMOND).catch(() => { });  // EMOJI_SMALL_BLUE_DIAMOND
+    },
+
     async messageReactionAdd(reaction, user, pluginConfig) {
 
         if (user.bot) { return false; }
