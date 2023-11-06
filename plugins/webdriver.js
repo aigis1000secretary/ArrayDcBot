@@ -723,6 +723,17 @@ class ChromeDriver {
         tweet.media = [];
         for (const ele of mediaEle) {
 
+            let video = await ele.findElement(By.css(`video`)).catch(() => null);
+            if (video) {
+                // medias.push({ video: { url: `https://twitter.com/i/videos/tweet/${tID}` } });
+
+                let src = await video.getAttribute('poster').catch(() => '');
+                if (src) {
+                    tweet.media.push({ video: { url: `${src}` } });
+                }
+                continue;
+            }
+
             let image = await ele.findElement(By.css(`img`)).catch(() => null);
             if (image) {
                 let src = await image.getAttribute('src').catch(() => '');
@@ -732,17 +743,6 @@ class ChromeDriver {
                         src = `${url}.${ext}`;
                     }
                     tweet.media.push({ image: { url: `${src}` } });
-                }
-                continue;
-            }
-
-            let video = await ele.findElement(By.css(`video`)).catch(() => null);
-            if (video) {
-                // medias.push({ video: { url: `https://twitter.com/i/videos/tweet/${tID}` } });
-
-                let src = await video.getAttribute('poster').catch(() => '');
-                if (src) {
-                    tweet.media.push({ video: { url: `${src}` } });
                 }
                 continue;
             }

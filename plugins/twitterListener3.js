@@ -370,18 +370,22 @@ module.exports = {
                             }
                         }
 
-                        let payload = { content: `<${url}>`, embeds, files: [] };
+                        let payload = { content: `<${url}>`, embeds, files: [], allowedMentions: { repliedUser: false } };
                         // tweetEmbedsCache.set(tID, payload);
                         if (msg.author.id == client.user.id) {
                             await msg.edit(payload).catch((e) => console.error(e));
                         } else {
-                            await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
-                            await msg.delete().catch(() => { });
+                            // await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+                            // await msg.delete().catch(() => { });
+
+                            await msg.reply(payload).catch(() => { });
                         }
                     }
                 }
 
                 if (Date.now() - getTimeFromDiscordSnowflake(before) > 86400000 * 7) { break; } // only check last 1 week
+
+                if (args[0] != 'all') { break; }
             }
 
             console.log('fixembed done!')
