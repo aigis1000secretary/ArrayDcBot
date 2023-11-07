@@ -128,6 +128,8 @@ const itemsToEmbeds = async (items, hostColor) => {
                 case 'ACN': { category = 'アクション'; }; break;
                 case 'STG': { category = 'シューティング'; }; break;
                 case 'PZL': { category = 'パズル'; }; break;
+                case 'QIZ': { category = 'クイズ'; }; break;
+                case 'TBL': { category = 'テーブル'; }; break;
                 case 'ETC': { category = 'その他ゲーム'; }; break;
 
                 case 'ICG': { category = 'CG・イラスト'; }; break;
