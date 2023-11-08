@@ -1855,8 +1855,26 @@ module.exports = {
                     if (status != 'upcoming') { continue; }
 
                     ytCore.cacheFreechatID = vID;
-                    await ytCore.traceStreamChat({ vID });
+                    ytCore.traceStreamChat({ vID });
                 }
+
+                (async (message) => {
+
+                    const dID = message.author.id;
+                    const member = guild.members.cache.get(dID);
+                    const roleIDs = Array.from(member.roles.cache.keys());
+                    await sleep(1500);
+                    const newRoleIDs = [];
+
+                    for (const value of member.roles.cache.keys()) {
+                        if (!roleIDs.includes(value)) { newRoleIDs.push(value); }
+                    }
+
+                    if (newRoleIDs.length > 0) {
+                        message.react('✅').catch(() => { });
+                    }
+
+                })(message);
 
                 continue;
             }
