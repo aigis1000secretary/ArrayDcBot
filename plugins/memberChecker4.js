@@ -614,11 +614,10 @@ class RoleManager {
         await this.guild.members.fetch({ force: true }).catch(console.log);
 
         pgData = (await Pg.listUserData())?.rows || [];
-        mclog(`[MC4] Pg.listUserData`);
-        for (const pgUser of pgData) {
+        mclog(`[MC4] Pg.listUserData[${pgData.size}]`);
+        for (const [dID, pgUser] of pgData) {
             // pgUser = { discord_id: '244255110572670987', youtube_id: 'UCgUpDIQ7Cq4kJETqZhGk7Kg', ssrb_expires: '0', kzmi_expires: '0' }
 
-            let dID = pgUser.discord_id;
             let userExpires = pgUser[this.expiresKey];
             if (userExpires == 0) { continue; }
 
@@ -705,23 +704,31 @@ class RoleManager {
 
             if (isSpecalUser) {
                 mclog(`[MC4] User <${auDetails.displayName}> in guild <${this.guild}>, Update Expires <${this.expiresKey}>!`);
-                await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Aqua).setDescription(`認證成功, 延展期限: ${dcUser.user.tag} ${dcUser.toString()}`));
+                const embedLog = `認證成功, 延展期限`
+                    + ((sponsorLevel === undefined) ? ': ' : `(Lv.${sponsorLevel}): `)
+                    + `${dcUser.user.tag} ${dcUser.toString()}`;
+                await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Aqua).setDescription(embedLog));
             }
             if (!isSpecalUser) {
                 mclog(`[MC4] User <${auDetails.displayName}> in guild <${this.guild}>, Add Role!`);
-                await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Blue).setDescription(`認證成功, 新增身分組(${this.memberRole}): ${dcUser.user.tag} ${dcUser.toString()}`));
+                const embedLog = `認證成功, 新增身分組`
+                    + ((sponsorLevel === undefined) ? `(${this.memberRole}): ` : `(${this.memberRole} Lv.${sponsorLevel}): `)
+                    + `${dcUser.user.tag} ${dcUser.toString()}`;
+                await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Blue).setDescription(embedLog));
                 dcUser.roles.add(this.memberRole).catch(console.error);
             }
             // update level role
-            for (const i in this.memberLevel) {
-                let role = this.memberLevel[i];
-                let isThisLevel = (i == sponsorLevel);
-                // is this level & has role / NOT this level & NOT has role : skip
-                if (isThisLevel == dcUser.roles.cache.has(role.id)) { continue; }
-                if (isThisLevel) {
-                    dcUser.roles.add(role).catch(() => { });
-                } else {
-                    dcUser.roles.remove(role).catch(() => { });
+            if (sponsorLevel !== undefined) {
+                for (const i in this.memberLevel) {
+                    let role = this.memberLevel[i];
+                    let isThisLevel = (i == sponsorLevel);
+                    // is this level & has role / NOT this level & NOT has role : skip
+                    if (isThisLevel == dcUser.roles.cache.has(role.id)) { continue; }
+                    if (isThisLevel) {
+                        dcUser.roles.add(role).catch(() => { });
+                    } else {
+                        dcUser.roles.remove(role).catch(() => { });
+                    }
                 }
             }
         }
@@ -1036,6 +1043,7 @@ class YoutubeCore {
 
     // working video
     cacheStreamID = null;
+    cacheFreechatID = null;
     cacheStreamMemberOnly = () => { return this.streamList.get(this.cacheStreamID)?.memberOnly || false; }
 
     interval = null;
@@ -1602,13 +1610,15 @@ class MainMemberCheckerCore {
 
                 // get yt core
                 const ytCore = this.ytChannelCores.get(holoChannelID);
-                const video = ytCore.streamList.get(ytCore?.cacheStreamID);
+                if (ytCore) {
+                    const video = ytCore.streamList.get(ytCore.cacheStreamID || ytCore.cacheFreechatID);
 
-                if (video?.snippet.liveBroadcastContent == 'live') {
-                    for (const [managerKey, rm] of this.roleManagers) {
-                        if (managerKey != `${config.gID}-${holoChannelID}`) { continue; }
+                    if (video?.snippet.liveBroadcastContent == 'live' || video?.snippet.liveBroadcastContent == 'upcoming') {
+                        for (const [managerKey, rm] of this.roleManagers) {
+                            if (managerKey != `${config.gID}-${holoChannelID}`) { continue; }
 
-                        rm.onLiveChat({ auDetails });
+                            rm.onLiveChat({ auDetails });
+                        }
                     }
                 }
             }
@@ -1731,7 +1741,7 @@ let mainMcCore = new MainMemberCheckerCore();
 
 
 module.exports = {
-    name: 'member checker v3',
+    name: 'member checker v4',
     description: "check who is SSRB",
 
     async execute(message, pluginConfig, command, args, lines) {
@@ -1844,7 +1854,8 @@ module.exports = {
                     // get video data
                     if (status != 'upcoming') { continue; }
 
-                    ytCore.traceStreamChat({ vID });
+                    ytCore.cacheFreechatID = vID;
+                    await ytCore.traceStreamChat({ vID });
                 }
 
                 continue;

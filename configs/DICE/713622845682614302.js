@@ -13,6 +13,10 @@ module.exports = {      // KTG
             expiresKey: 'ssrb_expires',
             logChannelID: '1024627281592848434',         // #⁠_bot-test
             memberRoleID: '1009001004454383656',          // @&TEST1
+            memberLevelID: [
+                `1150843451726905375`, `1150843463420612800`, `1150843475324047401`, `1150843481095413760`,
+                `1150843488125059143`, `1150843493254713404`, `1150843498598236240`, `1150843504738713762`
+            ],
         },
         {
             holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
