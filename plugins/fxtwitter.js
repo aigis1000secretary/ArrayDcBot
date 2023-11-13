@@ -9,10 +9,11 @@ module.exports = {
     description: "emoji it to fxtwitter!",
 
     execute(message, pluginConfig, command, args, lines) {
-        const { content } = message;
+        const { content, author } = message;
         if (!regUrl.test(content)) { return; }
 
-        message.react(EMOJI_SMALL_BLUE_DIAMOND).catch(() => { });  // EMOJI_SMALL_BLUE_DIAMOND
+        if (author.bot) { return; }
+        message.react(EMOJI_SMALL_BLUE_DIAMOND).catch(() => { });  // EMOJI_SMALL_BLUE_DIAMOND 
     },
 
     async messageReactionAdd(reaction, user, pluginConfig) {
