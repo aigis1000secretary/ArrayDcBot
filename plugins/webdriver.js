@@ -133,7 +133,7 @@ class ChromeDriver {
         console.log('Chrome driver login...');
 
         const loginBar = `input[autocomplete='username']`;
-        const userBtn = 'a.css-4rbku5.css-18t94o4.css-1dbjc4n.r-sdzlij.r-1phboty.r-rs99b7.r-1waj6vr.r-1loqt21.r-19yznuf.r-64el8z.r-1ny4l3l.r-o7ynqc.r-6416eg.r-lrvibr > div.css-901oao.r-1awozwy.r-6koalj.r-18u37iz.r-16y2uox.r-37j5jr.r-a023e6.r-b88u0q.r-1777fci.r-rjixqe.r-bcqeeo.r-q4m81j.r-qvutc0';
+        const userBtn = 'div > div > div > div.css-175oi2r.r-usiww2.r-1awozwy > div > div > div > div > div.r-1p0dtai.r-1pi2tsx.r-u8s1d.r-1d2f490.r-ipm5af.r-13qz1uu > div > div.r-1p0dtai.r-1pi2tsx.r-u8s1d.r-1d2f490.r-ipm5af.r-13qz1uu > div > div > div > div';
 
         // home page
         await this.driver.get('https://twitter.com/i/flow/login');
@@ -272,7 +272,7 @@ class ChromeDriver {
             while (1) {
 
                 // get all tweet
-                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div.css-1dbjc4n > div > div > div > div.css-1dbjc4n`)).catch(() => []);
+                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div > div > div > div > div`)).catch(() => []);
                 // let elements = await this.driver.findElements(By.css(`div[data-testid="cellInnerDiv"]`)).catch(() => []);
 
                 // div[data-testid="cellInnerDiv"]  // main .r-14lw9ot section > .css-1dbjc4n > div.r-18u37iz > div.r-13qz1uu > div > div
@@ -284,7 +284,7 @@ class ChromeDriver {
 
                 // get single tweet
                 for (let i = 0; i < elements.length; ++i) {
-                    const elePath = `main .r-14lw9ot section > div.css-1dbjc4n > div > div:nth-child(${i + 1}) > div > div.css-1dbjc4n`;
+                    const elePath = `main .r-14lw9ot section > div > div > div:nth-child(${i + 1}) > div > div`;
                     // const elePath = `div[data-testid="cellInnerDiv"]:nth-child(${i + 1})`;
 
                     let tweet = await this.getTweetBySelector(elePath);
@@ -475,7 +475,7 @@ class ChromeDriver {
             }
 
             // get data object
-            const suspendedText = 'div.css-1dbjc4n.r-aqfbo4.r-16y2uox > div.css-1dbjc4n.r-1oszu61.r-1niwhzg.r-18u37iz.r-16y2uox.r-1wtj0ep.r-2llsf.r-13qz1uu > div.css-1dbjc4n.r-14lw9ot.r-jxzhtn.r-1ljd8xs.r-13l2t4g.r-1phboty.r-16y2uox.r-1jgb5lz.r-11wrixw.r-61z16t.r-1ye8kvj.r-13qz1uu.r-184en5c:first-child > div.css-1dbjc4n > div.css-1dbjc4n:last-child > div.css-1dbjc4n.r-16y2uox > div.css-1dbjc4n.r-1jgb5lz.r-1ye8kvj.r-13qz1uu > div.css-1dbjc4n.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div.css-1dbjc4n > div.css-901oao.r-18jsvk2.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0';
+            const suspendedText = 'div.r-aqfbo4.r-16y2uox > div.r-1oszu61.r-1niwhzg.r-18u37iz.r-16y2uox.r-1wtj0ep.r-2llsf.r-13qz1uu > div.r-14lw9ot.r-jxzhtn.r-1ljd8xs.r-13l2t4g.r-1phboty.r-16y2uox.r-1jgb5lz.r-11wrixw.r-61z16t.r-1ye8kvj.r-13qz1uu.r-184en5c:first-child > div > div:last-child > div.r-16y2uox > div.r-1jgb5lz.r-1ye8kvj.r-13qz1uu > div.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div > div.css-901oao.r-18jsvk2.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0';
             const userDataScript = 'script[type="application/ld+json"]';
             const userProfileLock = 'svg.r-og9te1 > g';
             // wait page load
@@ -577,11 +577,11 @@ class ChromeDriver {
 
             {
                 // get tweet
-                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div.css-1dbjc4n > div > div > div > div.css-1dbjc4n`)).catch(() => []);
+                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div > div > div > div > div`)).catch(() => []);
 
                 // get single tweet
                 for (let i = 0; i < elements.length; ++i) {
-                    const elePath = `main .r-14lw9ot section > div.css-1dbjc4n > div > div:nth-child(${i + 1}) > div > div.css-1dbjc4n`;
+                    const elePath = `main .r-14lw9ot section > div > div > div:nth-child(${i + 1}) > div > div`;
 
                     let tweet = await this.getTweetBySelector(elePath);
 
