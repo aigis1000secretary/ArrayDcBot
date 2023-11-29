@@ -397,7 +397,8 @@ const sendRssItems = async (client, channel, hostColor, items) => {
 }
 
 
-let bulkDelete = new Map();
+let bulkDelete = new Map(); // [cID, new Set()]
+let bulkDeleteSize = new Map(); // [cID, size]
 const addBulkDelete = (cID, message) => {
     if (!bulkDelete.has(cID)) {
         bulkDelete.set(cID, new Set());
@@ -416,15 +417,24 @@ module.exports = {
 
             for (let [cID, msgSet] of bulkDelete) {
 
-                if (msgSet.size > 0) {
-                    let _bulkDelete = Array.from(msgSet);
-                    msgSet.clear();
-                    let channel = _bulkDelete[0].channel;
-                    await channel.bulkDelete(_bulkDelete)
-                        .then(() => console.log(`Bulk deleted ${_bulkDelete.length} messages in ${channel.name}`))
-                        .catch((e) => console.log(e.message));
-                // } else {
-                //     bulkDelete.delete(cID);
+                const size = bulkDeleteSize.get(cID);
+                if (size == msgSet.size) {
+
+                    if (msgSet.size > 0) {
+                        let _bulkDelete = Array.from(msgSet);
+                        
+                        msgSet.clear();
+                        bulkDeleteSize.set(cID, 0);
+
+                        let channel = _bulkDelete[0].channel;
+                        await channel.bulkDelete(_bulkDelete)
+                            .then(() => console.log(`Bulk deleted ${_bulkDelete.length} messages in ${channel.name}`))
+                            .catch((e) => console.log(e.message));
+                        // } else {
+                        //     bulkDelete.delete(cID);
+                    }
+                } else {
+                    bulkDeleteSize.set(cID, msgSet.size);
                 }
             }
         }
