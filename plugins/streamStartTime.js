@@ -161,7 +161,7 @@ module.exports = {
         if (user.bot) { return; }
 
         // skip other emoji
-        if (reaction.emoji.toString() != EMOJI_SMALL_BLUE_DIAMOND &&
+        if (reaction.emoji.toString() != EMOJI_SMALL_ORANGE_DIAMOND &&
             reaction.emoji.toString() != EMOJI_RECYCLE) { return; }
 
         // get msg data
