@@ -74,6 +74,7 @@ module.exports.terminate = async () => {
     for (const bot of [
         'SSRB',
         'POKOBE',
+        'OTOSE',
         'DLSITE',
         // 'DICE'
     ]) {
