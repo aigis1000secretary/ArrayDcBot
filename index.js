@@ -84,7 +84,7 @@ module.exports.terminate = async () => {
             let botJs = require(`./bot.js`);
 
             let client = await botJs.init(configPath);
-            clients.push(client);
+            if (client) { clients.push(client); }
         }
     }
 

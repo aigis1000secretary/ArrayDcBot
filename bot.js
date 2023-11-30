@@ -56,6 +56,12 @@ module.exports = {
             }
         }
 
+        // check bot token
+        if (!client.mainConfig.discordToken) {
+            console.log(`[Discord] bot init fail: undefined token`);
+            return null;
+        }
+
         const getCommandLineArgs = function (msg) {
             let args = null, command = null;
             if (this.perfix.test(msg)) {
