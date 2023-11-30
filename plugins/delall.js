@@ -25,6 +25,8 @@ const workspaceChannelIDs = [
     '1110077306053070920',  // #⚫_stream2
     '1110077379994472540',  // #⚫_member2
 ]
+// const botIDs = require(`../index.js`).getBotIDs();
+const botIDs = ['713624995372466179', '928492714482343997', '920485085935984641', '1179344721047474207'];
 
 const deleteAllMessage = async ({ channel, author }) => {
 
@@ -51,7 +53,7 @@ const deleteAllMessage = async ({ channel, author }) => {
                 // delete old log in DEBUG_CHANNEL_ID
                 if (Date.now() - msg.createdTimestamp > 90000000) { delFlag = true; }
                 // del not-arraydcbot log in DEBUG_CHANNEL_ID
-                if (!['713624995372466179', '928492714482343997', '920485085935984641'].includes(msg.author.id)) { delFlag = true; }
+                if (!botIDs.includes(msg.author.id)) { delFlag = true; }
 
                 if (msg.content.includes('🛠️') && Date.now() - msg.createdTimestamp > 28800000) { delFlag = true; }
                 if (msg.content.includes('🏗️')) { delFlag = true; }
@@ -59,7 +61,7 @@ const deleteAllMessage = async ({ channel, author }) => {
 
             else if (['977860525830586379'].includes(cID)) {
                 // delete not-arraydcbot log in #_aigis_retweet
-                if (!['713624995372466179', '928492714482343997', '920485085935984641'].includes(msg.author.id)) { delFlag = true; }
+                if (!botIDs.includes(msg.author.id)) { delFlag = true; }
             }
 
             else if (['1054284227375542333', '1113369067177381918', '1156057315829624933', '1169461312657567765'].includes(cID)) {
