@@ -503,7 +503,7 @@ class crypto {
 class EmojiManager {
 
     guild = null;
-    guildEmojis = null; // [eID, _emoji]
+    guildEmojis = new Map(); // [eID, _emoji]
 
     constructor(client) { if (!client) { return; } this.init(client); };
     async init(client) {
@@ -703,14 +703,14 @@ class RoleManager {
             await Pg.updateExpires(dID, this.expiresKey);
 
             if (isSpecalUser) {
-                mclog(`[MC4] User <${auDetails.displayName}> in guild <${this.guild}>, Update Expires <${this.expiresKey}>!`);
+                mclog(`[MC4] Guild <${this.guild}>, found User <${auDetails.displayName}>, Update Expires <${this.expiresKey}>!`);
                 const embedLog = `認證成功, 延展期限`
                     + ((sponsorLevel === undefined) ? ': ' : `(Lv.${sponsorLevel}): `)
                     + `${dcUser.user.tag} ${dcUser.toString()}`;
                 await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Aqua).setDescription(embedLog));
             }
             if (!isSpecalUser) {
-                mclog(`[MC4] User <${auDetails.displayName}> in guild <${this.guild}>, Add Role!`);
+                mclog(`[MC4] Guild <${this.guild}>, found User <${auDetails.displayName}>, Add Role!`);
                 const embedLog = `認證成功, 新增身分組`
                     + ((sponsorLevel === undefined) ? `(${this.memberRole}): ` : `(${this.memberRole} Lv.${sponsorLevel}): `)
                     + `${dcUser.user.tag} ${dcUser.toString()}`;
@@ -736,12 +736,12 @@ class RoleManager {
             if (pgUser[this.expiresKey] != 0) { Pg.updateExpires(dID, this.expiresKey, 0); }
 
             if (isSpecalUser) {
-                mclog(`[MC4] User <${auDetails.displayName}> in guild <${this.guild}>, Remove role!`);
+                mclog(`[MC4] Guild <${this.guild}>, found User <${auDetails.displayName}>, Remove role!`);
                 await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Red).setDescription(`非會員, 刪除身分組(${this.memberRole}): ${dcUser.user.tag} ${dcUser.toString()}`));
                 dcUser.roles.remove(this.memberRole).catch(console.log);
             }
             // if (!isSpecalUser) {
-            //     mclog(`[MC4] User <${auDetails.displayName}> in guild <${this.guild}>.`);
+            //     mclog(`[MC4] Guild <${this.guild}>, found User <${auDetails.displayName}>.`);
             //     this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Orange).setDescription(`${pgUser[this.expiresKey] > 0 ? '申請無效, 清除申請' : '申請無效'}: ${dcUser.user.tag} ${dcUser.toString()}`));
             // }
             // remove level role
@@ -1532,7 +1532,7 @@ class MainMemberCheckerCore {
 
             this.roleManagers.set(managerKey, rm);
 
-            // await Pg.initColumn(pluginConfig.expiresKey);
+            await Pg.initColumn(pluginConfig.expiresKey);
         }
 
         // guild manager
@@ -1613,7 +1613,7 @@ class MainMemberCheckerCore {
                 if (ytCore) {
                     const video = ytCore.streamList.get(ytCore.cacheStreamID || ytCore.cacheFreechatID);
 
-                    if (video?.snippet.liveBroadcastContent == 'live' || video?.snippet.liveBroadcastContent == 'upcoming') {
+                    if ((debug ? ['live', 'upcoming', 'none'] : ['live', 'upcoming']).includes(video?.snippet.liveBroadcastContent)) {
                         for (const [managerKey, rm] of this.roleManagers) {
                             if (managerKey != `${config.gID}-${holoChannelID}`) { continue; }
 
