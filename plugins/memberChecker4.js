@@ -646,14 +646,14 @@ class RoleManager {
                         dcUser.roles.remove(role).catch((e) => { console.log('[MC4]', e.message) });
                     }
                 }
-                else { mclog(`[MC4] User <@${dcUser.user.tag}> in guild without role <${this.memberRole.name}>.`); }
+                else { mclog(`[MC4] In guild without role <${this.memberRole.name}>, User <@${dcUser.user.tag}>.`); }
             } else {
                 if (!isSpecalUser) {
                     mclog(`[MC4] User <@${dID}> without role, Add role!`);
                     this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Blue).setDescription(`確認期限, 恢復身分組(${this.memberRole}): ${dcUser.user.tag} ${dcUser.toString()}`));
                     dcUser.roles.add(this.memberRole).catch(console.log);
                 }
-                else { mclog(`[MC4] User <@${dcUser.user.tag}> in guild with role <${this.memberRole.name}>.`); }
+                else { mclog(`[MC4] In guild with role <${this.memberRole.name}>, User <@${dcUser.user.tag}>.`); }
             }
         }
     }
@@ -2102,14 +2102,14 @@ app.all('/callback', async (req, res) => {
         }
 
         // get result
-        let userData = await Pg.getDataByDiscordID(dID);
+        let userData = Pg.dataCache.get(dID);
         let html = [`User: ${username}`,];
         for (let cID of cIDs.split(',')) {
             html.push(`Youtube channel: https://www.youtube.com/channel/${cID}`);
         }
         for (let key of Object.keys(userData)) {
             if (!key.includes('_expires')) { continue; }
-            if (parseInt(userData[key]) == 0) {
+            if (parseInt(userData[key]) != 0) {
                 html.push(`${key} in time: ${new Date(parseInt(userData[key])).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
             } else {
                 html.push(`${key} in time: waiting Authorize`);
