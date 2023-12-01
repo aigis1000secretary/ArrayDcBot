@@ -638,7 +638,7 @@ class RoleManager {
 
                 if (isSpecalUser) {
                     mclog(`[MC4] User <@${dID}> expired, Remove role!`);
-                    this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Red).setDescription(`認證過期, 刪除身分組(${this.memberRole}): ${dcUser.user.tag} ${dcUser.toString()}`));
+                    this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Red).setDescription(`認證過期, 刪除身分組(${this.memberRole}): @${dcUser.user.tag} ${dcUser.toString()}`));
                     dcUser.roles.remove(this.memberRole).catch((e) => { console.log('[MC4]', e.message) });
                     // remove level role
                     for (const role of this.memberLevel) {
@@ -650,7 +650,7 @@ class RoleManager {
             } else {
                 if (!isSpecalUser) {
                     mclog(`[MC4] User <@${dID}> without role, Add role!`);
-                    this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Blue).setDescription(`確認期限, 恢復身分組(${this.memberRole}): ${dcUser.user.tag} ${dcUser.toString()}`));
+                    this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Blue).setDescription(`確認期限, 恢復身分組(${this.memberRole}): @${dcUser.user.tag} ${dcUser.toString()}`));
                     dcUser.roles.add(this.memberRole).catch(console.log);
                 }
                 else { mclog(`[MC4] In guild with role <${this.memberRole.name}>, User <@${dcUser.user.tag}>.`); }
@@ -706,15 +706,15 @@ class RoleManager {
             if (isSpecalUser) {
                 mclog(`[MC4] Guild <${this.guild}>, found User <${auDetails.displayName}>, Update Expires <${this.expiresKey}>!`);
                 const embedLog = `認證成功, 延展期限`
-                    + ((sponsorLevel === undefined) ? ': ' : `(Lv.${sponsorLevel}): `)
-                    + `${dcUser.user.tag} ${dcUser.toString()}`;
+                    + ((sponsorLevel <= 0) ? ': ' : `(Lv.${sponsorLevel}): `)
+                    + `@${dcUser.user.tag} ${dcUser.toString()}`;
                 await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Aqua).setDescription(embedLog));
             }
             if (!isSpecalUser) {
                 mclog(`[MC4] Guild <${this.guild}>, found User <${auDetails.displayName}>, Add Role!`);
                 const embedLog = `認證成功, 新增身分組`
-                    + ((sponsorLevel === undefined) ? `(${this.memberRole}): ` : `(${this.memberRole} Lv.${sponsorLevel}): `)
-                    + `${dcUser.user.tag} ${dcUser.toString()}`;
+                    + ((sponsorLevel <= 0) ? `(${this.memberRole}): ` : `(${this.memberRole} Lv.${sponsorLevel}): `)
+                    + `@${dcUser.user.tag} ${dcUser.toString()}`;
                 await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Blue).setDescription(embedLog));
                 dcUser.roles.add(this.memberRole).catch(console.error);
             }
@@ -738,12 +738,12 @@ class RoleManager {
 
             if (isSpecalUser) {
                 mclog(`[MC4] Guild <${this.guild}>, found User <${auDetails.displayName}>, Remove role!`);
-                await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Red).setDescription(`非會員, 刪除身分組(${this.memberRole}): ${dcUser.user.tag} ${dcUser.toString()}`));
+                await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Red).setDescription(`非會員, 刪除身分組(${this.memberRole}): @${dcUser.user.tag} ${dcUser.toString()}`));
                 dcUser.roles.remove(this.memberRole).catch(console.log);
             }
             // if (!isSpecalUser) {
             //     mclog(`[MC4] Guild <${this.guild}>, found User <${auDetails.displayName}>.`);
-            //     this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Orange).setDescription(`${pgUser[this.expiresKey] > 0 ? '申請無效, 清除申請' : '申請無效'}: ${dcUser.user.tag} ${dcUser.toString()}`));
+            //     this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Orange).setDescription(`${pgUser[this.expiresKey] > 0 ? '申請無效, 清除申請' : '申請無效'}: @${dcUser.user.tag} ${dcUser.toString()}`));
             // }
             // remove level role
             for (const role of this.memberLevel) {
@@ -2119,7 +2119,7 @@ app.all('/callback', async (req, res) => {
 
         for (rCore of rCores) {
             // log
-            rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.Green).setDescription(`申請完成: ${username}@${tag} <@${dID}>`));
+            rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.Green).setDescription(`申請完成: @${username}#${tag} <@${dID}>`));
         }
         return;
     } catch (e) {
