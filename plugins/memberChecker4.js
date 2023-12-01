@@ -302,6 +302,7 @@ class Pg {
         if (res) {
             for (const pgUser of res.rows) {
                 pgUser.discord_id = pgUser.discord_id.trim();
+                pgUser.youtube_id = pgUser.youtube_id.trim();
                 this.dataCache.set(pgUser.discord_id, pgUser);
             }
         }
@@ -335,7 +336,7 @@ class Pg {
         const sql = [
             `CREATE TABLE user_connections (`,
             `discord_id char(19) PRIMARY KEY,`,
-            `youtube_id char(24) NOT NULL,`,
+            `youtube_id char(80) NOT NULL,`,
             `);`
         ].join(' ');
         const res = await pool.query(sql).catch((error) => { console.log(error.message) });
@@ -402,7 +403,7 @@ class Pg {
         // return res;
     };
     static async getDataByYoutubeID(youtubeID) {
-        return { rows: Array.from(this.dataCache.values()).filter((pgUser) => (pgUser.youtube_id == youtubeID)) };
+        return { rows: Array.from(this.dataCache.values()).filter((pgUser) => (pgUser.youtube_id.includes(youtubeID))) };
 
         // const sql = [
         //     `SELECT * FROM user_connections`,
@@ -2058,7 +2059,7 @@ app.all('/callback', async (req, res) => {
         let identify = await get({ url: `${API_ENDPOINT}/users/@me`, headers, json: true })
         let connections = await get({ url: `${API_ENDPOINT}/users/@me/connections`, headers, json: true })
         // get user data
-        let cID = null;         // YT channel ID
+        let cIDs = [];          // YT channel ID list
         let dID = null;         // Discord user ID
         let username = null;    // Discord user name
         let tag = null;         // Discord user tag number
@@ -2073,13 +2074,13 @@ app.all('/callback', async (req, res) => {
         if (connections.body && Array.isArray(connections.body)) {
             for (const connect of connections.body) {
                 if (connect.type != 'youtube') { continue; }
-                cID = connect.id;
-                break;
+                cIDs.push(connect.id);
+                if (cIDs.length >= 3) { break; }
             }
         }
 
         // didn't found youtube cID
-        if (cID == null) {
+        if (cIDs.length <= 0) {
             let html = [
                 `User: ${username}`,
                 `Youtube channel: ERROR! Can't found connect data!`,
@@ -2088,26 +2089,31 @@ app.all('/callback', async (req, res) => {
 
             res.send(html);
             return;
+        } else {
+            cIDs = cIDs.join(',').substring(0, 80);
         }
 
         // check database
         pgData = (await Pg.getDataByDiscordID(dID))?.rows || [];
         if (pgData.length <= 0) {
-            await Pg.creatData(dID, cID);
-        } else if (pgData[0].youtube_id != cID) {
-            await Pg.updateYoutubeID(dID, cID);
+            await Pg.creatData(dID, cIDs);
+        } else if (pgData[0].youtube_id != cIDs) {
+            await Pg.updateYoutubeID(dID, cIDs);
         }
 
         // get result
         let userData = await Pg.getDataByDiscordID(dID);
-        let html = [
-            `User: ${username}`,
-            `Youtube channel: https://www.youtube.com/channel/${cID}`,
-        ];
-        if (parseInt(userData[rCore.expiresKey]) == 0) {
-            html.push(`expires in time: ${new Date(parseInt(userData[rCore.expiresKey])).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
-        } else {
-            html.push(`expires in time: waiting Authorize`);
+        let html = [`User: ${username}`,];
+        for (let cID of cIDs.split(',')) {
+            html.push(`Youtube channel: https://www.youtube.com/channel/${cID}`);
+        }
+        for (let key of Object.keys(userData)) {
+            if (!key.includes('_expires')) { continue; }
+            if (parseInt(userData[key]) == 0) {
+                html.push(`${key} in time: ${new Date(parseInt(userData[key])).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
+            } else {
+                html.push(`${key} in time: waiting Authorize`);
+            }
         }
         res.send(html.join('<br>'));
 
