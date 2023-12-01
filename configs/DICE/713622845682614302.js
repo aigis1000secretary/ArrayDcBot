@@ -7,8 +7,8 @@ module.exports = {      // KTG
         {
             holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB
 
-            streamChannelID: '1024627739023650827',      // #⚫_stream
-            memberChannelID: '1024627744681771108',      // #⚫_member
+            streamChannelID: '1024627739023650827',      // #_stream
+            memberChannelID: '1024627744681771108',      // #_member
 
             expiresKey: 'ssrb_expires',
             logChannelID: '1024627281592848434',         // #⁠_bot-test
@@ -21,12 +21,22 @@ module.exports = {      // KTG
         {
             holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
 
-            streamChannelID: '1110077306053070920',      // #直播配信討論區
-            memberChannelID: '1110077379994472540',      // #會限配信討論區
+            streamChannelID: '1024627739023650827',      // #_stream
+            memberChannelID: '1024627744681771108',      // #_member
 
             expiresKey: 'kzmi_expires',
             logChannelID: '1024627281592848434',         // #⁠_bot-test
             memberRoleID: '1110090223821520906',          // @&TEST2
+        },
+        {
+            holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
+
+            streamChannelID: '1024627739023650827',      // #_stream
+            memberChannelID: '1024627744681771108',      // #_member
+
+            expiresKey: 'otos_expires',
+            logChannelID: '1024627281592848434',         // #⁠_bot-test
+            memberRoleID: '1179351663925022850',          // @&TEST3
         },
         // {
         //     holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB

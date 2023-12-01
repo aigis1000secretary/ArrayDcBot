@@ -12,7 +12,7 @@ module.exports = {      // KTG
 
             expiresKey: 'ssrb_expires',
             logChannelID: '1009645372831977482',         // #⁠_bot-test
-            memberRoleID: '1009001004454383656',          // @&TEST1
+            memberRoleID: '927501058484371487',          // @&SSRB
         },
         // {
         //     holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB

@@ -12,7 +12,7 @@ module.exports = {      // KTG
 
             expiresKey: 'kzmi_expires',
             logChannelID: '1009645372831977482',         // #⁠_bot-test
-            memberRoleID: '1110090223821520906',          // @&TEST2
+            memberRoleID: '928092487044710441',          // @&KMZT
         },
     ],
 }

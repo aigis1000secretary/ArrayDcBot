@@ -12,7 +12,7 @@ module.exports = {      // KTG
 
             expiresKey: 'otos_expires',
             logChannelID: '1009645372831977482',         // #⁠_bot-test
-            memberRoleID: '1179351663925022850',          // @&TEST3
+            memberRoleID: '1179973929289400440',          // @&OTOS
         },
     ],
 }

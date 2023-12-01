@@ -314,10 +314,10 @@ class Pg {
             await this.creatColumn(expiresKey);
         }
 
-        // update cache
-        for (const key of this.dataCache.keys()) {
-            this.dataCache.get(key)[expiresKey] = '0';
-        }
+        // // update cache
+        // for (const key of this.dataCache.keys()) {
+        //     this.dataCache.get(key)[expiresKey] = '0';
+        // }
     };
 
     // table api
@@ -638,11 +638,11 @@ class RoleManager {
                 if (isSpecalUser) {
                     mclog(`[MC4] User <@${dID}> expired, Remove role!`);
                     this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Red).setDescription(`認證過期, 刪除身分組(${this.memberRole}): ${dcUser.user.tag} ${dcUser.toString()}`));
-                    dcUser.roles.remove(this.memberRole).catch(console.log);
+                    dcUser.roles.remove(this.memberRole).catch((e) => { console.log('[MC4]', e.message) });
                     // remove level role
                     for (const role of this.memberLevel) {
                         if (!dcUser.roles.cache.has(role.id)) { continue; }
-                        dcUser.roles.remove(role).catch(() => { });
+                        dcUser.roles.remove(role).catch((e) => { console.log('[MC4]', e.message) });
                     }
                 }
                 else { mclog(`[MC4] User <@${dcUser.user.tag}> in guild without role <${this.memberRole.name}>.`); }
