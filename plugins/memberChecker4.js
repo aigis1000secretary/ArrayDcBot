@@ -961,7 +961,7 @@ class YoutubeCore {
             // check result
             if (!Array.isArray(_videos)) {
                 console.log(`getVideoLists error:`, this.holoChannelID);
-                if (_videos.reason == 'quotaExceeded') {
+                if (_videos?.reason == 'quotaExceeded') {
                     console.log(`{ code: 403, message: 'quotaExceeded', reason: 'quotaExceeded',`)
                     console.log(`  variabale: { channelId: '${this.holoChannelID}', eventType: 'live', } }`)
                 } else {
@@ -1697,6 +1697,7 @@ class MainMemberCheckerCore {
                             if (ytCore.streamList.has(vID)) {
                                 ytCore.streamList.delete(vID);
                             }
+                            continue;
                         }
 
                         _video.memberOnly = (ytCore.streamList.get(vID))?.memberOnly;
