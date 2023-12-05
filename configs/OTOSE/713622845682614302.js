@@ -5,7 +5,7 @@ module.exports = {      // KTG
 
     memberChecker4: [
         {
-            holoChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // kazama
+            holoChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // otonose
 
             streamChannelID: '1179351465765122058',      // #⚫_stream3
             memberChannelID: '1179351515299852329',      // #⚫_member3

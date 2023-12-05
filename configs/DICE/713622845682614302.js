@@ -29,7 +29,7 @@ module.exports = {      // KTG
             memberRoleID: '1110090223821520906',          // @&TEST2
         },
         {
-            holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
+            holoChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // otonose,
 
             streamChannelID: '1024627739023650827',      // #_stream
             memberChannelID: '1024627744681771108',      // #_member
@@ -38,18 +38,6 @@ module.exports = {      // KTG
             logChannelID: '1024627281592848434',         // #⁠_bot-test
             memberRoleID: '1179351663925022850',          // @&TEST3
         },
-        // {
-        //     holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB
-        //     holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama
-        //     holoChannelID: 'UCc88OV45ICgHbn3ZqLLb52w',   // Fuma
-        //     holoChannelID: 'UCmbs8T6MWqUHP1tIQvSgKrg',   // Kronii
-        //     holoChannelID: 'UC-hM6YJuNYVAmUWxeIr9FeA',   // mikp
-        //     holoChannelID: 'UCFTLzh12_nrtzqBPsTCqenA',   // aki
-        //     holoChannelID: 'UCs9_O1tRPMQTHQ-N_L6FU2g',   // rui
-        //     holoChannelID: 'UC1uv2Oq6kNxgATlCiez59hw',   // towa
-        //     holoChannelID: 'UCFKOVgVbGmX65RxO3EtH3iw',   // lamy
-        //     holoChannelID: 'UCZlDXzGoo7d44bwdNObFacg',   // kanata
-        // }
     ],
 
     // manual bulk download img
