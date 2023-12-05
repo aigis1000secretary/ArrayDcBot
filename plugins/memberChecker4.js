@@ -1686,6 +1686,7 @@ class MainMemberCheckerCore {
                         // skip freechat
                         let startTime = video.liveStreamingDetails?.scheduledStartTime || 0;
                         if (startTime && Date.parse(startTime) > Date.now()) { continue; }
+                        if (Date.now() > (Date.parse(startTime) + 43200000)) { continue; }  // skip upcoming video after 12hr
 
                         // now on live time, recheck stream if status is upcoming
                         // get REALLY video data from API
