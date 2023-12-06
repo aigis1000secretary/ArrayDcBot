@@ -61,6 +61,15 @@ module.exports.terminate = async () => {
     process.exit(1);
 };
 
+module.exports.getBotIDs = () => {
+    let botIDs = [];
+    for (let client of clients) {
+        botIDs.push(client.user.id);
+    }
+    return botIDs;
+};
+
+
 (async () => {
 
     // defind host

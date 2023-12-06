@@ -10,23 +10,27 @@ const workspaceChannelIDs = [
     DEBUG_CHANNEL_ID,
     '977860525830586379',   // #_aigis_retweet
     '1009645372831977482',  // #_bot-test
+
     '1054284227375542333',  // #sao
     '1113369067177381918',  // #sao2
-    '1169461312657567765',  // #dlimg
-    '1156057315829624933',  // #dl
+    '1156057315829624933',  // #dls
+    '1169461312657567765',  // #dlimg   // for DICE
+
+    // delall
     '713623232070156309',   // #_log
     '1008565763260551188',  // #⚫_stream
     '1010005672152281218',  // #⚫_member
 
-    // for DICE
+    // delall, for DICE
     '1024627281592848434',  // #⁠_bot-test
     '1024627739023650827',  // #⚫_stream
     '1024627744681771108',  // #⚫_member 
     '1110077306053070920',  // #⚫_stream2
     '1110077379994472540',  // #⚫_member2
 ]
-// const botIDs = require(`../index.js`).getBotIDs();
-const botIDs = ['713624995372466179', '928492714482343997', '920485085935984641', '1179344721047474207'];
+
+const botIDs = new Set(['713624995372466179', '928492714482343997', '1179344721047474207', '920485085935984641']);
+for (let botID of require(`../index.js`).getBotIDs()) { botIDs.add(botID); }
 
 const deleteAllMessage = async ({ channel, author }) => {
 
@@ -50,30 +54,29 @@ const deleteAllMessage = async ({ channel, author }) => {
             let delFlag = false;
 
             if ([DEBUG_CHANNEL_ID].includes(cID)) {
-                // delete old log in DEBUG_CHANNEL_ID
-                if (Date.now() - msg.createdTimestamp > 90000000) { delFlag = true; }
-                // del not-arraydcbot log in DEBUG_CHANNEL_ID
-                if (!botIDs.includes(msg.author.id)) { delFlag = true; }
-
-                if (msg.content.includes('🛠️') && Date.now() - msg.createdTimestamp > 28800000) { delFlag = true; }
+                if (!botIDs.has(msg.author.id)) { delFlag = true; }                                                     // del not-arraydcbot log
+                if (Date.now() - msg.createdTimestamp > 90000000) { delFlag = true; }                                   // delete old log (after 25hr)
+                if (msg.content.includes('🛠️') && Date.now() - msg.createdTimestamp > 28800000) { delFlag = true; }     // delete old log (after 8hr)
                 if (msg.content.includes('🏗️')) { delFlag = true; }
             }
 
+            // #_aigis_retweet
             else if (['977860525830586379'].includes(cID)) {
-                // delete not-arraydcbot log in #_aigis_retweet
-                if (!botIDs.includes(msg.author.id)) { delFlag = true; }
+                if (!botIDs.has(msg.author.id)) { delFlag = true; }                                                     // del not-arraydcbot log
             }
 
+            // #_bot-test
+            else if (['1009645372831977482'].includes(cID)) {
+                if (Date.now() - msg.createdTimestamp > 90000) { delFlag = true; }                                      // delete old log (after 1.5min)
+            }
+
+            // #sao / #sao2 / #dls / #dlimg
             else if (['1054284227375542333', '1113369067177381918', '1156057315829624933', '1169461312657567765'].includes(cID)) {
-                // skip last message in #sao / #sao2
-                delFlag = (before || i > 0);
-                // before == true => not first times fetch;
-                // i > 0          => not last message;
+                delFlag = (before || i > 0);                                                                            // skip last message    (before == true => not first fetch; ) || (i > 0          => not last message;)
             }
 
             else {
-                // del all log in other channel
-                delFlag = true;
+                delFlag = true;                                                                                         // del all log in other channel
             };
 
 
