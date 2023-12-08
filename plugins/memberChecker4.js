@@ -1261,6 +1261,43 @@ class YoutubeCore {
                             this.streamList.get(vID).memberOnly = true;
                         }
                     }
+
+                } else if (error.toString().includes('Private video')) {
+
+                    // clear file pool
+                    if (this.livechatRawPool.has(vID)) {
+                        const { filename } = this.livechatRawPool.get(vID);
+                        try { fs.unlinkSync(filename); } catch (e) { console.log(e.message); }
+                        this.livechatRawPool.delete(vID);
+                    }
+
+                    // disable working video id
+                    this.cacheStreamID = null;
+
+                    // delete video data
+                    this.streamList.delete(vID);
+
+                    if (this.getVideoList == null) {
+
+                        for (let mKey of mainMcCore.guildManagers.keys()) {
+                            let [, gID, cID] = mKey.match(/^(\d+)-(.+)$/) || [, null, null];
+                            if (!gID || !cID) { continue; }     // unknown mkey
+
+                            if (this.holoChannelID == cID) {
+                                mainMcCore.guildManagers.delete(mKey);
+                                mainMcCore.configs = mainMcCore.configs.filter((config) => (config.gID != gID || config.holoChannelID != cID));
+                            }
+                        }
+
+                        // delete youtube core
+                        mainMcCore.ytChannelCores.delete(this.holoChannelID);
+                    }
+
+                    if (this.interval) { clearTimeout(this.interval); }
+
+                    // log
+                    console.log(`[ytDlpWrap] Private video [${vID}]`);
+
                 } else {
                     console.error(error);
                 }
@@ -1298,7 +1335,7 @@ class YoutubeCore {
                 if (this.interval) { clearTimeout(this.interval); }
 
                 // log
-                console.log(`ytDlpWrap all done [${vID}]`);
+                console.log(`[ytDlpWrap] all done [${vID}]`);
             }); //*/
 
         // get chat data
