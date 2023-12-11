@@ -19,11 +19,11 @@ const getDLsitePage = async (index) => {
         // request
         req = await get({ url });
         // retry
-        if (req.body && req.statusCode != 200) {
+        if (!req || (req.body && req.statusCode != 200)) {
             url = url.replace('announce', 'work')
             req = await get({ url });
         };
-        if (!req.body || req.statusCode != 200) return null;
+        if (!req?.body || req.statusCode != 200) return null;
         // fs.writeFileSync(`./${index}.html`, req.body);  // save data
 
         let result = { index, url };
@@ -122,7 +122,7 @@ const getDLsitePage = async (index) => {
         // check price again from maker page
         url = result.makerUrl.replace('=/', '=/per_page/100/');
         req = await get({ url });
-        if (req.body && req.statusCode == 200) {
+        if (req?.body && req.statusCode == 200) {
             // let [, mIndex] = url.match(/(RG\d{5})/);
             // fs.writeFileSync(`./${mIndex}.html`, req.body);  // save data
 
