@@ -9,11 +9,22 @@ module.exports = {
     description: "emoji it to fxtwitter!",
 
     execute(message, pluginConfig, command, args, lines) {
-        const { content, author } = message;
-        if (!regUrl.test(content)) { return; }
+        const { content, author, components } = message;
 
-        if (author.bot) { return; }
-        message.react(EMOJI_SMALL_BLUE_DIAMOND).catch(() => { });  // EMOJI_SMALL_BLUE_DIAMOND 
+        if (author.bot) {
+            const url = (message.components || [])[0]?.components[0].url
+            if (!regUrl.test(url)) { return; }
+
+            message.reply({ content: url.replace('twitter', 'fxtwitter') }).catch(() => { });
+            return;
+
+        } else {
+            if (!regUrl.test(content)) { return; }
+
+            message.react(EMOJI_SMALL_BLUE_DIAMOND).catch(() => { });  // EMOJI_SMALL_BLUE_DIAMOND
+            return;
+        }
+
     },
 
     async messageReactionAdd(reaction, user, pluginConfig) {
@@ -30,7 +41,7 @@ module.exports = {
             if (!regUrl.test(content)) { return; }
             const [, , userID, tweetID] = content.match(regUrl);
 
-            const fxUrl = `https://vxtwitter.com/${userID}/status/${tweetID}`;
+            const fxUrl = `https://fxtwitter.com/${userID}/status/${tweetID}`;
 
             // reply new embed
             await message
@@ -47,7 +58,7 @@ module.exports = {
             if (message.author.id != client.user.id || !message.deletable) { return; }
 
             // check message target
-            if (!content.startsWith(`https://vxtwitter.com/`)) { return; }
+            if (!content.startsWith(`https://fxtwitter.com/`)) { return; }
 
             setTimeout(() => message.delete().catch(() => { }), 250);
         }

@@ -12,8 +12,8 @@ module.exports = {      // KTG
                 'filter:links (from:AtedayoAigis)', 'filter:links (from:Aigis_PhotoMemo)',
                 'filter:links (from:akagi_huyu)', 'filter:links (from:inoshishi4)',
                 'filter:links (from:koyaki93874607)', 'filter:links (from:nemui_)',
-                'filter:links (from:sighaz)', 'filter:links (from:yomerinne)',
-                'filter:links (from:yuasa_akira)',
+                'filter:links (from:sighaz)', 'filter:links (from:tami_na2)',
+                'filter:links (from:yomerinne)', 'filter:links (from:yuasa_akira)',
                 // 'filter:links (from:BadhabhCath)',
                 // 'filter:links (from:Applesyrup14g)', // uID: 2545528232 ｱｲｷﾞｽ/邦ﾛｯｸ🤘⚠RT多め⚠ 🎨https://t.co/EKvrlujZVS ✏https://t.co/mfCSWb1Y7W 日常と雑多☞＠sakananoniboshi
             ],
