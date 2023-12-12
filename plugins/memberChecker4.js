@@ -1136,7 +1136,7 @@ class YoutubeCore {
 
                 // get video & set member only flag
                 if (this.streamList.has(vID)) {
-                    this.streamList.get(vID).memberOnly = true;
+                    this.streamList.get(vID).memberOnly = 1;
                 }
 
                 // finish catch loop, 
@@ -1256,9 +1256,14 @@ class YoutubeCore {
                     if (!memberOnly) {
                         // retry with cookie
                         this.traceStreamChatByYtdlp({ vID, memberOnly: true });
-                        // get video & set member only flag
+                        // get video & set member-only flag
                         if (this.streamList.has(vID)) {
-                            this.streamList.get(vID).memberOnly = true;
+                            this.streamList.get(vID).memberOnly = 1;
+                        }
+                    } else {
+                        // get video & update member-only flag
+                        if (this.streamList.has(vID)) {
+                            this.streamList.get(vID).memberOnly = 2;
                         }
                     }
 
@@ -1309,13 +1314,19 @@ class YoutubeCore {
                     try { fs.unlinkSync(filename); } catch (e) { console.log(e.message); }
                     this.livechatRawPool.delete(vID);
                 }
+                // clear livechat interval
+                if (this.interval) { clearTimeout(this.interval); }
 
                 // disable working video id
                 this.cacheStreamID = null;
 
-                // delete video data
-                this.streamList.delete(vID);
+                // delete video data if normal end
+                if (this.streamList.has(vID) && this.streamList.get(vID).memberOnly != 2) {
+                    // if memberOnly == 2, it's member only video but withour membership
+                    this.streamList.delete(vID);
+                }
 
+                // for trace temporary ytCore
                 if (this.getVideoList == null) {
 
                     for (let mKey of mainMcCore.guildManagers.keys()) {
@@ -1332,13 +1343,11 @@ class YoutubeCore {
                     mainMcCore.ytChannelCores.delete(this.holoChannelID);
                 }
 
-                if (this.interval) { clearTimeout(this.interval); }
-
                 // log
                 console.log(`[ytDlpWrap] all done [${vID}]`);
             }); //*/
 
-        // get chat data
+        // get livechat data
         this.interval = setTimeout(() => this.readStreamChatFile(), 1000);
     }
     async readStreamChatFile(calledTimes = 0) {
