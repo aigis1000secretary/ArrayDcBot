@@ -172,7 +172,7 @@ class youtubeVideo {
             data.snippet.thumbnails?.high ||
             data.snippet.thumbnails?.medium ||
             data.snippet.thumbnails?.default ||
-            { url }).url
+            { url }).url.replace('_live.', '.');
 
         return true;
     }
