@@ -475,7 +475,7 @@ class ChromeDriver {
             }
 
             // get data object
-            const suspendedText = 'div.r-aqfbo4.r-16y2uox > div.r-1oszu61.r-1niwhzg.r-18u37iz.r-16y2uox.r-1wtj0ep.r-2llsf.r-13qz1uu > div.r-14lw9ot.r-jxzhtn.r-1ljd8xs.r-13l2t4g.r-1phboty.r-16y2uox.r-1jgb5lz.r-11wrixw.r-61z16t.r-1ye8kvj.r-13qz1uu.r-184en5c:first-child > div > div:last-child > div.r-16y2uox > div.r-1jgb5lz.r-1ye8kvj.r-13qz1uu > div.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div > div.css-901oao.r-18jsvk2.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.css-901oao.css-16my406.r-poiln3.r-bcqeeo.r-qvutc0';
+            const suspendedText = 'div > div.r-18u37iz.r-13qz1uu > div.r-14lw9ot.r-1jgb5lz.r-13qz1uu:first-child > div > div:last-child > div > div.r-1jgb5lz.r-13qz1uu > div.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div > div.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.r-poiln3.r-bcqeeo.r-qvutc0';
             const userDataScript = 'script[type="application/ld+json"]';
             const userProfileLock = 'svg.r-og9te1 > g';
             // wait page load
@@ -490,7 +490,7 @@ class ChromeDriver {
 
             // read profile data
             ele = await this.driver.findElement(By.css(userDataScript)).catch(() => null);
-            if (ele) {
+            if (ele) {  
                 let innerHTML = await ele.getAttribute('innerHTML').catch(() => '{}') || '{}';
                 innerHTML = JSON.parse(innerHTML);
 

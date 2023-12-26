@@ -288,25 +288,34 @@ module.exports = {
                     await message.delete().catch(() => { });
 
                     let before;
+                    let usernames = [];
                     while (1) {
                         let msgs = await channel.messages.fetch({ before, force: true });
-                        if (Array.from(msgs.keys()).find((mID) => (before == mID))) { break; };
+                        if (msgs.size <= 0) { break; };
 
                         for (let [mID, msg] of msgs) {
                             before = mID;
 
-                            let [, username] = msg.content?.match(/^\[\+\] ([^-\.]+)$/) || [, null];
+                            if (!msg.content) { continue; }
+                            if (msg.content.includes('\n')) { continue; }
+
+                            let [, username] = msg.content.match(/^\[\+\] ([^-\.]+)$/) || [, null];
                             if (!username) { console.log(mID, msg.content); continue; }
 
-                            let userData = await chromeDriver.getUserData({ username });
-
-                            console.log(mID, 'delete:', (!userData.uID && userData.suspended), `[+]`, username);
-
-                            if (userData.uID) { continue; }
-                            if (!userData.suspended) { continue; }
-
-                            await msg.delete().catch(() => { });
+                            usernames.push({ username, mID, msg });
                         }
+                    }
+                    usernames.reverse();
+                    for (let { username, mID, msg } of usernames) {
+
+                        let userData = await chromeDriver.getUserData({ username });
+
+                        console.log(mID, 'delete:', (!userData.uID && userData.suspended), `[+]`, username);
+
+                        if (userData.uID) { continue; }
+                        if (!userData.suspended) { continue; }
+
+                        await msg.delete().catch(() => { });
                     }
                 }
                 return;
@@ -319,7 +328,7 @@ module.exports = {
             let before;
             while (1) {
                 let msgs = await channel.messages.fetch({ before, force: true });
-                if (msgs.size <= 0 || Array.from(msgs.keys()).find((mID) => (before == mID))) { break; };
+                if (msgs.size <= 0) { break; };
 
                 for (let [mID, msg] of msgs) {
                     before = mID;
