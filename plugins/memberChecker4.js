@@ -660,7 +660,7 @@ class RoleManager {
 
     memberCache = new Map();
     // method for outside call
-    async onLiveChat({ auDetails }) {
+    async onLiveChat({ auDetails }) {   // rm.onLiveChat
 
         // get user cID
         let youtubeID = auDetails.channelId;
@@ -843,6 +843,8 @@ class GuildManager {
 
     setingName = new Set();
     async changeChannelName(onLive = [false, false]) {
+        if (debug) { return; }  // don't change channel name in debug mode
+
         let streamChannelIDs = [this.streamChannelID, this.memberChannelID];
 
         for (let i = 0; i < 2; ++i) {
@@ -885,7 +887,7 @@ class GuildManager {
 
     liveChatCache = new Set();
     // method for outside call
-    async onLiveChat({ auDetails, message, superchat, vID, isMemberOnly }) {
+    async onLiveChat({ auDetails, message, superchat, vID, isMemberOnly }) {    // gm.onLiveChat
 
         // get Date
         const now = new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' });
@@ -1358,6 +1360,9 @@ class YoutubeCore {
             // check file exist
             if (!fs.existsSync(`${filename}.part`)) { continue; }
 
+            // test livechat file for debug, don't forgot change start time in filename
+            if (fs.existsSync(`${filename}.test.part`)) { filename = `${filename}.test`; }
+
             // file read stream
             let fileStream = fs.createReadStream(`${filename}.part`, 'utf8');
             const rl = require('readline').createInterface({
@@ -1539,7 +1544,7 @@ class MainMemberCheckerCore {
         this.interval = setTimeout(this.timeoutMethod, 2000);
 
         // clear livechat files (only work when local)
-        const livechatFiles = fs.readdirSync('.').filter(file => file.includes('.live_chat.'));
+        const livechatFiles = fs.readdirSync('.').filter(file => (file.includes('.live_chat.') && !file.endsWith('.test.part')));
         for (const file of livechatFiles) { fs.unlinkSync(file); }
 
         this.initialization = 2;
@@ -1824,9 +1829,23 @@ module.exports = {
                 }
 
                 let data = ((await Pg.getDataByDiscordID(dID.trim()))?.rows || [])[0];
-                console.log(data);
+                if (data) {
+                    channel.send({ content: `\`\`\`js\n${dID}\n${JSON.stringify(data, null, 2)}\`\`\`` });
+                    return;
+                }
 
-                channel.send({ content: `\`\`\`js\n${dID}\n${JSON.stringify(data, null, 2)}\`\`\`` });
+                data = (await Pg.getDataByYoutubeID(dID.trim()))?.rows || [];
+                if (data.length > 0) {
+                    let content = ["```", dID];
+                    for (let d of data) {
+                        content.push(JSON.stringify(d, null, 2));
+                    }
+                    content.push("```");
+                    channel.send({ content: content.join('\n') });
+                    return;
+                }
+
+                channel.send({ content: "```js\n" + dID + `\nResult: 0` + "```" });
                 return;
             }
 
@@ -1870,8 +1889,9 @@ module.exports = {
                         rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`手動新增直播清單`).setFooter({ text: holoChannelID }));
                     }
                     continue;
-                }
-                if (isLogChannel) {
+
+                } else if (isLogChannel) {
+
                     if (ytCore.getVideoList == null) { continue; }
                     await ytCore.getVideoList();
                     rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`更新直播清單`).setFooter({ text: holoChannelID }));
