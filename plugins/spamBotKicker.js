@@ -4,7 +4,7 @@ const fs = require('fs');
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 
 // regex
-const regexToken = /([A-Za-z0-9_\-]{24,}\.[A-Za-z0-9_\-]{6,}\.[A-Za-z0-9_\-]{27,})/;
+const regexToken = /(mfa\.[\w-]{84}|[\w-]{24}\.[\w-]{6}\.[\w-]{27})/;
 const regexMentions = /(@here|@everyone)/i;
 const regexInviteUrl = /(https?:\/\/)?discord.gg\/\S+/;
 const blacklist = ['GrastonBerry', '_CMRA_', 'sui1911', '_fromCanadaorg', 'CannabisEDCA', 'cannabisORGca', 'CannabisCDN', 'gochidesu459'];
@@ -24,8 +24,8 @@ const spamChecker = [
         // result
         const [, token] = match;
         return {
-            content: content.replace(regexToken, `<Bot Token: ${token.length}>`),
-            reason: `<Bot Token: ${token.length}>`,
+            content: content.replace(regexToken, `<Bot Token: String[${token.length}]>`),
+            reason: `Discord Bot Token`,
             delete: true, kick: false, forceDel: true,
         }
     },
@@ -190,8 +190,22 @@ module.exports = {
         let punish = null;
         for (let checker of spamChecker) {
             let result = checker({ message, config: pluginConfig });
-            punish = punish || result;
-            if (punish) { break; }
+            if (!result) { continue; }
+
+            punish = punish || {
+                content: message.content,
+                reason: []
+            };
+
+            if (result.reason == 'Discord Bot Token') {
+                punish.content = result.content
+            }
+
+            punish.reason.push(result.reason)
+
+            for (let key of ['delete', 'kick', 'forceDel', 'silent']) {
+                punish[key] = punish[key] || result[key];
+            }
         }
         // check result
         if (!punish) { return; }
@@ -228,7 +242,7 @@ module.exports = {
                 })
                 .setTitle(`洗頻訊息:`).setDescription(punish.content)
                 .addFields([
-                    { name: `Reason:`, value: `${punish.reason}` },
+                    { name: `Reason:`, value: punish.reason.join('\n') },
                     { name: `Channel:`, value: message.url },
                     { name: `Roles:`, value: roleLog.join('\n') || 'null' }
                 ])
@@ -280,13 +294,15 @@ module.exports = {
                 if (PERMISSION_ROLE_ID && punish.kick) { punishText.push('刪除身分組'); }
 
                 // log
+                let fields = [{ name: `自動刪除:`, value: punish.reason.join('\n') }];
+                if (punishText.length > 0) { fields.push({ name: `處置:`, value: punishText.join(', ') }); }
                 let embed = new EmbedBuilder()
                     .setColor('#FFFF00')
                     .setAuthor({
                         name: `${author.username} ${author.toString()}`,
                         iconURL: author.displayAvatarURL({ format: 'png', size: 256 })
                     })
-                    .setDescription(`自動刪除: ${punish.reason}${punishText.length > 0 ? `\n處置: ${punishText.join(', ')}` : ''}`);
+                    .addFields(fields);
                 channel.send({ embeds: [embed] });
             } else {
                 console.log('[SBK] Missing Permissions: MANAGE_MESSAGES');
