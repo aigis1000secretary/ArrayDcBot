@@ -1228,7 +1228,7 @@ class YoutubeCore {
                 ) {
                     // get data json filename
                     let [, filename] = eventData.match(/Destination:\s*([\S\s]+\.live_chat\.json)/);
-                    console.log(filename)
+                    console.log(`[ytDlpWrap] ${filename}`);
 
                     // set file pool
                     if (!this.livechatRawPool.has(vID)) {
@@ -1346,7 +1346,7 @@ class YoutubeCore {
                 }
 
                 // log
-                console.log(`[ytDlpWrap] all done [${vID}]`);
+                console.log(`[ytDlpWrap] All done [${vID}]`);
             }); //*/
 
         // get livechat data
@@ -1666,7 +1666,9 @@ class MainMemberCheckerCore {
                 if (ytCore) {
                     const video = ytCore.streamList.get(ytCore.cacheStreamID || ytCore.cacheFreechatID);
 
-                    if ((debug ? ['live', 'upcoming', 'none'] : ['live', 'upcoming']).includes(video?.snippet.liveBroadcastContent)) {
+                    if (['live', 'upcoming'].includes(video?.snippet.liveBroadcastContent) ||
+                        (debug && video?.snippet.liveBroadcastContent == 'none')
+                    ) {
                         for (const [managerKey, rm] of this.roleManagers) {
                             if (managerKey != `${config.gID}-${holoChannelID}`) { continue; }
 
@@ -1967,6 +1969,9 @@ module.exports = {
 
                 let newChannelID = video?.snippet?.channelId;
                 if (!video?.snippet) { return; }
+
+                // trace archive
+                if (!debug && video.snippet.liveBroadcastContent == 'none') { console.log(`[MC4] Trace archive ${vID}, skip rm.onLiveChat method.`); }
 
                 if (mainMcCore.ytChannelCores.has(newChannelID)) {
                     // set real youtube core
