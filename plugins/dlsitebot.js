@@ -139,10 +139,10 @@ const getDLsitePage = async (index) => {
 
         return result;
     } catch (e) {
-        console.log(`statusCode = ${req.statusCode}`);
+        console.log(`statusCode = ${req?.statusCode}`);
         console.log(e);
 
-        if (req.body) {
+        if (req?.body) {
             let html = req.body;
             let [, title] = (temp = html.match(/\<title\>(.*)\<\/title\>/)) ? temp : [, null];
             if (title) {

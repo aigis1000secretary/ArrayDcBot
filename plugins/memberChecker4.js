@@ -420,15 +420,17 @@ class Pg {
         ].join(' ');
         const res = await pool.query(sql).catch((error) => { console.log(error.message) });
 
-        {
+        if (res) {
             const sql = [
                 `SELECT * FROM user_connections`,
                 `WHERE discord_id='${discordID}';`
             ].join(' ');
-            const res = await pool.query(sql).catch((error) => { console.log(error.message) });
-            if (res) { for (const row of res.rows) { row.discord_id = row.discord_id.trim(); } }
-            this.dataCache.set(discordID, res.rows[0]);
-            return res;
+            const res2 = await pool.query(sql).catch((error) => { console.log(error.message) });
+            if (res2) {
+                for (const row of res2.rows) { row.discord_id = row.discord_id.trim(); }
+                this.dataCache.set(discordID, res2.rows[0]);
+            }
+            return res2;
         }
 
         return res;
