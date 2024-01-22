@@ -336,7 +336,7 @@ class Pg {
         const sql = [
             `CREATE TABLE user_connections (`,
             `discord_id char(19) PRIMARY KEY,`,
-            `youtube_id char(80) NOT NULL,`,
+            `youtube_id char(80) NOT NULL`,
             `);`
         ].join(' ');
         const res = await pool.query(sql).catch((error) => { console.log(error.message) });
