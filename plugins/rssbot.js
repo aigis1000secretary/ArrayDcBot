@@ -144,7 +144,7 @@ const itemsToEmbeds = async (items, hostColor) => {
                 case 'MUS': { category = '音楽'; }; break;
                 case 'TOL': { category = 'ツール/アクセサリ'; }; break;
                 case 'ET3': { category = 'その他'; }; break;
-                
+
                 default: { category = match[1]; } break;
             }
 
@@ -298,25 +298,7 @@ const checkLastRss = async (client, channel, hostColor) => {
         tarMsgIDs.push(BigInt(message.id));
     }
 
-    if (tarMsgIDs.length <= 0) { return; }
-
-    // // set last message object
-    // let lastMsg = { id: 0, embeds: [{ timestamp: 0 }] };
-    // // check cache
-    // const key = `${channel.id}-${hostColor}`;
-    // if (lastMsgCache.has(key) && Date.now() - lastMsgCache.get(key).cacheTime < 600000) {
-    //     // get cache
-    //     lastMsg = lastMsgCache.get(key).message;
-    // } else {
-    //     tarMsgs.sort(({ id: iA }, { id: iB }) => (iA == iB ? 0 : (iA < iB ? 1 : -1)));
-    //     tarMsgs.reverse();
-    //     // update cache
-    //     lastMsg.id = tarMsgs[0].id;
-    //     lastMsg.embeds[0].timestamp = tarMsgs[0].embeds[0].timestamp;
-    //     lastMsgCache.set(key, { message: lastMsg, cacheTime: Date.now() });
-    // }
-
-    // tarMsgs.shift();
+    if (tarMsgIDs.length <= 0) { return null; }
 
     tarMsgIDs.sort((a, b) => a > b || -(a < b));
     let lastMsgID = tarMsgIDs.pop().toString();
@@ -325,7 +307,7 @@ const checkLastRss = async (client, channel, hostColor) => {
     for (let mID of tarMsgIDs) {
         let message = await channel.messages.fetch({ message: mID.toString() });
         let reacts = message.reactions.cache.get(EMOJI_RECYCLE);
-        let reactsCount = reacts ? reacts.count : 0;
+        let reactsCount = reacts?.count || 0;
 
         if (reactsCount <= 1) { continue; }
         if (!message.deletable) { continue; }
@@ -338,7 +320,7 @@ const checkLastRss = async (client, channel, hostColor) => {
         }, 250);
     };
 
-    return await channel.messages.fetch({ message: lastMsgID });;
+    return await channel.messages.fetch({ message: lastMsgID });
 }
 
 // send embeds
@@ -422,7 +404,7 @@ module.exports = {
 
                     if (msgSet.size > 0) {
                         let _bulkDelete = Array.from(msgSet);
-                        
+
                         msgSet.clear();
                         bulkDeleteSize.set(cID, 0);
 
@@ -526,15 +508,74 @@ module.exports = {
         // get config
         const { client } = message;
         if (!command) { return false; }
-
-        if ('rss' != command) { return; }
         if (message.author?.id != '353625493876113440') { return; }
 
-        await message.delete().catch(() => { });
+        if ('rss' == command) {
 
-        checkRss(client);
+            await message.delete().catch(() => { });
+            checkRss(client);
+            return true;
 
-        return true;
+        } else if (EMOJI_RECYCLE == command) {
+
+            await message.delete().catch(() => { });
+
+            // get message log
+            let msgs = await message.channel.messages.fetch().catch(() => { });
+            // filter target messages
+            let hexColors = [];
+            let tarMsgIDs = {};
+            for (let key of msgs.keys()) {
+                let msg = msgs.get(key);
+
+                // only check bot message
+                if (!msg.deletable) { continue; }
+                if (msg.author?.id != client.user.id) { continue; }
+                // skip msg without embed
+                let embed = (msg.embeds || [])[0];
+                if (embed) {
+                    // skip msg without rss data
+                    if (embed.thumbnail?.url != rssIcon) { continue; }
+
+                    // skip error log message
+                    if (embed.url.includes('127.0.0.1')) { continue; }
+                    if (embed.url.includes('www.dlsite.com')) { continue; }
+                }
+
+                // skip msg without recycle emoji
+                let reacts = msg.reactions.cache.get(EMOJI_RECYCLE);
+                let reactsCount = reacts?.count || 0;
+                if (reactsCount < 1) { continue; }
+
+                let color = embed?.color || 0;
+                if (!hexColors.includes(color)) { hexColors.push(color); }
+                if (!tarMsgIDs[color]) { tarMsgIDs[color] = []; }
+
+                // keep msg
+                tarMsgIDs[color].push(BigInt(msg.id));
+            }
+
+            for (let color of hexColors) {
+                tarMsgIDs[color].sort((a, b) => a > b || -(a < b));
+                let lastMsgID = tarMsgIDs[color].pop();
+
+                // get react count
+                for (let mID of tarMsgIDs[color]) {
+                    let msg = await message.channel.messages.fetch({ message: mID.toString() });
+
+                    // delete
+                    setTimeout(async () => {
+                        await msg.suppressEmbeds(true).catch(() => { });
+                        // await message.delete().catch(() => { });
+                        addBulkDelete(message.channel.id, msg);
+                    }, 250);
+                };
+            }
+
+            return true;
+
+        }
+        return false;
     },
 
     setup(_client) { client = _client; }

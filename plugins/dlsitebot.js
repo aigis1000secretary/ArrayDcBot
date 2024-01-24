@@ -200,8 +200,9 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
 
         // embed0.data.type = 'rich';
         // embed0.data.url = result.url;
+        embed.setColor('#010d85')
         if (rich) { embed.setURL(result.url); }
-
+        
         embeds.push(embed);
     }
 
@@ -257,7 +258,8 @@ module.exports = {
 
         // keep message space
         let embed = new EmbedBuilder().setDescription('Loading...');
-        let replyMsg = await message.channel.send({ embeds: [embed] }).catch(console.log);
+        let replyMsg = message.author.bot ?
+            message : await message.channel.send({ embeds: [embed] }).catch(console.log);
 
         // download dlsite page
         let result = await getDLsitePage(index.toUpperCase());
@@ -273,8 +275,6 @@ module.exports = {
         await replyMsg.edit(messagePayload).catch(console.log);
         if (message.author.bot) {
             replyMsg.react(EMOJI_RECYCLE).catch(() => { });
-            message.delete().catch(() => { });
-            return true;
         }
 
         // check manager permissions
