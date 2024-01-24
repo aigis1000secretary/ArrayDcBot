@@ -91,6 +91,7 @@ module.exports = {      // SSRB的聚集地
 
     fxtwitter: {},
     hook: {},
+    search: {},
     streamStartTime: {},
     superChat: {},
     twitterAntiFilter: {},

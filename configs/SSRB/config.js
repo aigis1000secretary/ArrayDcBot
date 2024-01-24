@@ -23,6 +23,7 @@ module.exports = {
         // 'reboot',
         'reportThread',
         // 'rssbot',
+        'search',
         'spamBotKicker',
         'streamStartTime',
         'superChat',
