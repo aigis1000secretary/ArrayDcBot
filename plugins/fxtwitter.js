@@ -19,10 +19,12 @@ module.exports = {
             return;
 
         } else {
+            /*
             if (!regUrl.test(content)) { return; }
 
             message.react(EMOJI_SMALL_BLUE_DIAMOND).catch(() => { });  // EMOJI_SMALL_BLUE_DIAMOND
             return;
+            //*/
         }
 
     },
