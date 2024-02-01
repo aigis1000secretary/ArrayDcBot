@@ -36,21 +36,23 @@ const spamChecker = [
         const gID = guild.id;
         let spamMessage = [];
 
-        const spamFilter = (count, sec) => {
+        const spamFilter = (count, sec, blurMode = false) => {
             let tempMessage = guildMessagesCache[client.user.id][gID].filter(
                 (msg) => (
-                    msg.author.id == author.id && msg.content == content &&
-                    (Math.abs(msg.createdTimestamp - createdTimestamp) < (sec * 1000))
+                    msg.author.id == author.id &&   // same author
+                    (msg.content == content || blurMode) && // same message
+                    (Math.abs(msg.createdTimestamp - createdTimestamp) < (sec * 1000))  // in time
                 ));
 
-            if (tempMessage.length >= count) { return true; }
+            if (tempMessage.length >= count) { return true; }   // is spam
             return false;
         }
 
         // 3 same message in 20.000 sec
         // 6 same message in 60.000 sec
-        if (!spamFilter(3, 20) &&
-            !spamFilter(6, 60)) { return null; }
+        // 10 message in 3.000 sec
+        const judge = [spamFilter(3, 20), spamFilter(6, 60), spamFilter(10, 3, true)];
+        if (!(judge[0] || judge[1] || judge[2])) { return null; }
 
         // additional delete
         // filter target messages, pick all same message in 5 min
@@ -80,9 +82,9 @@ const spamChecker = [
         // result
         return {
             content,
-            reason: `高頻率訊息`,
+            reason: `洗頻訊息`,
             // delete: true, kick: true, forceDel: true,
-            delete: true, kick: false, forceDel: true, silent: true,  // test run
+            delete: true, kick: judge[2], forceDel: true, silent: !judge[2],  // test run
         }
     },
 
@@ -100,7 +102,7 @@ const spamChecker = [
         const [, reason] = match;
         return {
             content,
-            reason,
+            reason, // everyone
             delete: true, kick: true, forceDel: false,
         }
     },
