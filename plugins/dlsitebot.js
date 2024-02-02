@@ -202,7 +202,7 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
         // embed0.data.url = result.url;
         embed.setColor('#010d85')
         if (rich) { embed.setURL(result.url); }
-        
+
         embeds.push(embed);
     }
 
@@ -228,7 +228,7 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
                 .setCustomId("dlThumbLast").setLabel(">|")
             );
 
-    return { embeds, components: [actionRow] };
+    return { content: ' ', embeds, components: [actionRow] };
 }
 
 
@@ -273,16 +273,18 @@ module.exports = {
         // create Message Payload
         let messagePayload = createDLsitePageMessage(result);
         await replyMsg.edit(messagePayload).catch(console.log);
+        
         if (message.author.bot) {
             replyMsg.react(EMOJI_RECYCLE).catch(() => { });
-        }
 
-        // check manager permissions
-        if (!permissions.has(PermissionFlagsBits.ManageMessages)) {
-            console.log('Missing Permissions: MANAGE_MESSAGES');
-            return true;
         } else {
-            message.suppressEmbeds(true).catch(() => { });
+            // check manager permissions
+            if (!permissions.has(PermissionFlagsBits.ManageMessages)) {
+                console.log('Missing Permissions: MANAGE_MESSAGES');
+                return true;
+            } else {
+                message.suppressEmbeds(true).catch(() => { });
+            }
         }
 
         return true;
