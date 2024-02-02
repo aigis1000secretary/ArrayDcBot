@@ -605,6 +605,22 @@ class RoleManager {
         }
 
         await this.checkExpiresUser();
+
+        // /*
+        {
+            const roles = [this.memberRole].concat(this.memberLevel);
+            for (let [dID, guildMember] of this.memberRole.members) {
+
+                let pgData = (await Pg.getDataByDiscordID(dID))?.rows || [];
+
+                if (pgData.length <= 0) {
+                    console.log(dID.toString().padStart(20, ' '), guildMember.user.tag.toString().padStart(40, ' '));
+
+                    // user with role but not in database, remove role
+                    await guildMember.roles.remove(roles).catch((e) => { console.log('[MC4]', e.message) });
+                }
+            }
+        }//*/
     }
 
     // method for init
