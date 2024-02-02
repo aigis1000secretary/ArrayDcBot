@@ -859,47 +859,43 @@ class GuildManager {
     }
 
 
-    setingName = new Set();
-    async changeChannelName(onLive = [false, false]) {
+    settingChannel = new Set();
+    async changeChannelName(cID, onLive = false) {
         if (debug) { return; }  // don't change channel name in debug mode
 
-        let streamChannelIDs = [this.streamChannelID, this.memberChannelID];
+        if (this.settingChannel.has(cID)) { return; }
 
-        for (let i = 0; i < 2; ++i) {
-            const channel = await this.client.channels.fetch(streamChannelIDs[i]);
-            if (this.setingName.has(channel.id)) { continue; }
+        const channel = await this.client.channels.fetch(cID);
+        // skip unset channel
+        if (!/^[🔴⚫]/.test(channel.name)) { return; }
 
-            // skip unset channel
-            if (!/^[🔴⚫]/.test(channel.name)) { continue; }
+        // check channel permissions
+        let permissions = channel.permissionsFor(channel.guild.members.me);
+        if (!permissions.has(PermissionFlagsBits.ManageChannels)) {
+            mclog(`[MC4] Missing Permissions: MANAGE_CHANNELS in <#${cID}>`);
+            return;
+        }
 
-            // check channel permissions
-            let permissions = channel.permissionsFor(channel.guild.members.me);
-            if (!permissions.has(PermissionFlagsBits.ManageChannels)) {
-                mclog('[MC4] Missing Permissions: MANAGE_CHANNELS');
-                continue;
-            }
+        let channelStatus = (onLive ? '🔴' : '⚫');
+        let channelName = `${channelStatus}${channel.name.replace(/^[🔴⚫]+/, '')}`;
 
-            let channelStatus = (onLive[i] ? '🔴' : '⚫');
-            let channelName = `${channelStatus}${channel.name.replace(/^[🔴⚫]+/, '')}`;
+        if (channel.name != channelName) {
+            // setting
+            this.settingChannel.add(channel.id);
+            console.log(`<#${channel.id}> set name to ${channelName}`);
 
-            if (channel.name != channelName) {
-
-                this.setingName.add(channel.id);
-                console.log(`<#${channel.id}> set name to ${channelName}`);
-
-                channel.setName(channelName)
-                    .then((newChannel) => {
-                        console.log(`<#${channel.id}> now name is ${newChannel.name}`);
-                        this.setingName.delete(channel.id);
-                    })
-                    .catch((error) => {
-                        console.log(this.client);
-                        console.log(channel);
-                        console.log(permissions.has(PermissionFlagsBits.ManageChannels));
-                        console.log(error);
-                        this.setingName.delete(channel.id);
-                    });
-            }
+            channel.setName(channelName)
+                .then((newChannel) => {
+                    console.log(`<#${channel.id}> now name is ${newChannel.name}`);
+                    this.settingChannel.delete(channel.id);
+                })
+                .catch((error) => {
+                    console.log(this.client);
+                    console.log(channel);
+                    console.log(permissions.has(PermissionFlagsBits.ManageChannels));
+                    console.log(error);
+                    this.settingChannel.delete(channel.id);
+                });
         }
     }
 
@@ -1785,21 +1781,28 @@ class MainMemberCheckerCore {
             }
 
             // check channel name
+            let channelStatus = new Map();
             for (const [managerKey, gm] of this.guildManagers) {
 
-                let onLive = [false, false];
+                // register channel
+                if (!channelStatus.has(gm.streamChannelID)) { channelStatus.set(gm.streamChannelID, { onLive: false, gm }); }
+                if (!channelStatus.has(gm.memberChannelID)) { channelStatus.set(gm.memberChannelID, { onLive: false, gm }); }
 
+                // get live status
                 const holoChannelID = managerKey.replace(/^\d+-/, '');
                 const ytCore = this.ytChannelCores.get(holoChannelID);
-                if (!ytCore) { continue; }
-
                 let video = ytCore.streamList.get(ytCore.cacheStreamID) || null;
-                if (!video) { } else {
+                if (video) {
                     // onLive
-                    onLive = [!video.memberOnly, video.memberOnly];
+                    if (!video.memberOnly) {
+                        { channelStatus.get(gm.streamChannelID).onLive = true; }
+                    } else {
+                        { channelStatus.get(gm.memberChannelID).onLive = true; }
+                    }
                 }
-
-                gm.changeChannelName(onLive);
+            }
+            for (const [cID, { onLive, gm }] of channelStatus) {
+                gm.changeChannelName(cID, onLive);
             }
         }
     }
