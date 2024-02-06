@@ -50,8 +50,8 @@ const spamChecker = [
 
         // 3 same message in 20.000 sec
         // 6 same message in 60.000 sec
-        // 10 message in 3.000 sec
-        const judge = [spamFilter(3, 20), spamFilter(6, 60), spamFilter(10, 3, true)];
+        // 10 message in 4.000 sec
+        const judge = [spamFilter(3, 20), spamFilter(6, 60), (spamFilter(10, 4, true) && client.user.id != author.id)];
         if (!(judge[0] || judge[1] || judge[2])) { return null; }
 
         // additional delete
