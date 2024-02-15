@@ -227,7 +227,7 @@ module.exports = {
         if (LOG_CHANNEL_ID && punish.delete) {
             // get role data
             let roleList = [], roleLog = [];
-            for (let [rID, role] of authorInGuild.roles.cache) {
+            for (let [rID, role] of authorInGuild?.roles.cache || []) {
                 if (role.name == '@everyone') continue;
                 roleList.push(role);
             }
@@ -262,23 +262,25 @@ module.exports = {
         const botInGuild = guild.members.me;
         const botPermissions = channel.permissionsFor(botInGuild);
 
-        // remove role
-        if (PERMISSION_ROLE_ID && punish.kick) {
-            let role = guild.roles.cache.get(PERMISSION_ROLE_ID);  // 已驗證V粉
+        if (authorInGuild) {
+            // remove role
+            if (PERMISSION_ROLE_ID && punish.kick) {
+                let role = guild.roles.cache.get(PERMISSION_ROLE_ID);  // 已驗證V粉
 
-            if (role && botPermissions.has(PermissionFlagsBits.ManageRoles)) {
-                authorInGuild.roles.remove(role).catch(console.log);
-            } else {
-                console.log(`[SBK] Missing Permissions: MANAGE_ROLES, role: ${role}`);
+                if (role && botPermissions.has(PermissionFlagsBits.ManageRoles)) {
+                    authorInGuild.roles.remove(role).catch(console.log);
+                } else {
+                    console.log(`[SBK] Missing Permissions: MANAGE_ROLES, role: ${role}`);
+                }
             }
-        }
 
-        // kick author
-        if (!PERMISSION_ROLE_ID && punish.kick) {
-            if (botPermissions.has(PermissionFlagsBits.KickMembers)) {
-                authorInGuild.kick().catch(console.log);
-            } else {
-                console.log('[SBK] Missing Permissions: KICK_MEMBERS');
+            // kick author
+            if (!PERMISSION_ROLE_ID && punish.kick) {
+                if (botPermissions.has(PermissionFlagsBits.KickMembers)) {
+                    authorInGuild.kick().catch(console.log);
+                } else {
+                    console.log('[SBK] Missing Permissions: KICK_MEMBERS');
+                }
             }
         }
 
