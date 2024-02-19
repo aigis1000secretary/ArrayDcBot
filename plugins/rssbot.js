@@ -275,6 +275,8 @@ const checkLastRss = async (client, channel, hostColor) => {
 
     // get message log
     let messages = await channel.messages.fetch().catch(() => { });
+    if (!messages) { return null; }
+
     // filter target messages
     let tarMsgIDs = [];
     for (let key of messages.keys()) {
@@ -382,9 +384,13 @@ const sendRssItems = async (client, channel, hostColor, items) => {
 let bulkDelete = new Map(); // [cID, new Set()]
 let bulkDeleteSize = new Map(); // [cID, size]
 const addBulkDelete = (cID, message) => {
-    if (!bulkDelete.has(cID)) {
-        bulkDelete.set(cID, new Set());
+
+    if (Date.now() - (Number(BigInt(message.id) >> 22n) + 14200704e5) > 1192320000) {   // 1192320000 = 1000 * 60 * 60 * 24 * 13.8 = 13.8day
+        message.delete().catch((e) => console.log(e.message));
+        return;
     }
+
+    if (!bulkDelete.has(cID)) { bulkDelete.set(cID, new Set()); }
     bulkDelete.get(cID).add(message);
 }
 
