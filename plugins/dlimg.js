@@ -53,7 +53,7 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
 
 
             // download images
-            let i = 1;
+            let i = 1, invalidImage = false;
             for (let embed of embeds) {
                 let image = embed.image?.url || '';
                 const [, ext] = image.match(/([^\.]+)$/) || [, null];
@@ -73,13 +73,31 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
                 // set folder
                 if (!fs.existsSync(folderPath)) { fs.mkdirSync(folderPath, { recursive: true }); }
 
+                // check file
+                if (fs.existsSync(filePath) && !fs.statSync(filePath)?.size) { fs.unlinkSync(filePath); }
+
                 // download
                 if (!fs.existsSync(filePath)) {
 
+                    // normal download
                     await downloadFile(dlImage, filePath);
+
+                    // retry again if fail
                     if (!fs.statSync(filePath)?.size) {
                         fs.unlinkSync(filePath);
                         await downloadFile(image, filePath);
+                    }
+
+                    // retry with proxyURL if fail again
+                    if (!fs.statSync(filePath)?.size && embed.image?.proxyURL) {
+                        fs.unlinkSync(filePath);
+                        await downloadFile(embed.image?.proxyURL, filePath);
+                    }
+
+                    // still fail
+                    if (!fs.statSync(filePath)?.size) {
+                        fs.unlinkSync(filePath);
+                        invalidImage = true;
                     }
 
                     dilog(`mID: ${mID}, donwload image ${filename}`);
@@ -88,10 +106,14 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
                     dilog(`mID: ${mID},     skip image ${filename}`);
                 }
 
-
                 ++i;
                 newimg = true;  // set flag
 
+            }
+
+            // not fastmode & image download success
+            if (!fastmode && !invalidImage) {
+                await message.delete().catch(e => console.log(e.message));
             }
         }
 
