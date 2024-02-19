@@ -30,8 +30,9 @@ const rebootByHerokuAPI = async () => {
 };
 
 let clients = [];
-module.exports.terminate = async () => {
+module.exports.terminate = async (force = false) => {
     // check all clients
+    let busy = false;
     for (let client of clients) {
         // check all plugins
         for (let [key, value] of client.commands) {
@@ -41,11 +42,13 @@ module.exports.terminate = async () => {
 
                 if (!idle) {
                     console.log(`${client.mainConfig.botName} is busy, terminate fail.`);
-                    return;
+                    busy = true;
                 }
             }
         }
     }
+
+    if (busy && !force) { return; }
 
     // emit all client
     for (let client of clients) {

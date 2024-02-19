@@ -12,7 +12,7 @@ module.exports = {
         if (message.author.id != '353625493876113440') { return; }
 
         // let filepath = path.join(__dirname, `../index.js`);
-        require(`../index.js`).terminate();
+        require(`../index.js`).terminate(args[0] == 'force');
         return true;
     },
 
