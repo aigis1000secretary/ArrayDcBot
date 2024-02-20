@@ -15,14 +15,14 @@ let dilog = fs.existsSync('./.env') ? console.log : () => { };
 
 const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
 
-    let before;
+    let before, first = null;
     let donelog = [`donwload image done.`];
     while (1) {
         let newimg = false;
         let msgs = await channel.messages.fetch({ before, force: true });
         for (let [mID, message] of msgs) {
             before = mID;
-
+            first = first || mID;
 
             let reacts = message.reactions.cache.get(EMOJI_RECYCLE);
             if (!reacts || reacts.count < 1) { continue; }
@@ -112,7 +112,7 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
             }
 
             // not fastmode & image download success
-            if (!fastmode && !invalidImage) {
+            if (!fastmode && !invalidImage && (mID != first)) {
                 await message.delete().catch(e => console.log(e.message));
             }
         }
