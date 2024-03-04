@@ -1,4 +1,11 @@
-FROM node:16
+
+FROM ubuntu:20.04 AS base
+
+RUN apt-get update
+RUN apt-get install -y curl wget python3.8 python3-pip
+
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
+RUN apt-get install -y nodejs
 
 WORKDIR /app
 
