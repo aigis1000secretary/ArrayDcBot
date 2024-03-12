@@ -7,8 +7,9 @@ const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const regexToken = /(mfa\.[\w-]{84}|[\w-]{24}\.[\w-]{6}\.[\w-]{27})/;
 const regexMentions = /(@here|@everyone)/i;
 const regexInviteUrl = /(https?:\/\/)?discord.gg\/\S+/;
-const blacklist = ['GrastonBerry', '_CMRA_', 'sui1911', '_fromCanadaorg', 'CannabisEDCA', 'cannabisORGca', 'CannabisCDN', 'gochidesu459'];
-const regexAnti = new RegExp(`twitter\.com/(${blacklist.join('|')})/?`, 'i');
+const blacklistUser = ['GrastonBerry', '_CMRA_', 'sui1911', '_fromCanadaorg', 'CannabisEDCA', 'cannabisORGca', 'CannabisCDN', 'gochidesu459', 'PagallKhana'];
+const blacklistWord = ['PagallKhana'];
+const regexTweet = new RegExp(`twitter\.com\/([^\/\s]+)\/?`);
 
 // spam bot Level 1 (only delete message)
 const spamChecker = [
@@ -138,15 +139,34 @@ const spamChecker = [
         }
     },
 
-    // anti
+    // spam tweet
     ({ message }) => {
-        if (!regexAnti) { return null; }
+        if (!regexTweet) { return null; }   // unknown regex
+
         const { content } = message;
+        let [, twitteUser] = content.match(regexTweet) || [, null];
+        if (!twitteUser) { return null; }
 
-        const match = content.match(regexAnti);
-        if (!match) { return null; }
+        // twitter user name in blacklist or not
+        if (!blacklistUser.includes(twitteUser)) { twitteUser = null; }
 
-        // result
+        // twitter description found keyword in blacklist or not
+        let tweetDescription = null;
+        // check embed
+        if (message.embeds && Array.isArray(message.embeds) && message.embeds[0]?.description) {
+            const description = message.embeds[0].description;
+            for (const keyword of blacklistWord) {
+                // found keyword in blacklist
+                if (description.includes(keyword)) {
+                    tweetDescription = keyword;
+                    break;
+                }
+            }
+        }
+
+        // normal tweet
+        if (twitteUser == null && tweetDescription == null) { return null; }
+
         return {
             content,
             reason: `SPAM tweet`,
@@ -160,6 +180,10 @@ let guildMessagesCache = {};
 module.exports = {
     name: 'spamBotKicker',
     description: "kick spam bot",
+
+    async messageUpdate(oldMessage, message, pluginConfig) {
+        module.exports.execute(message, pluginConfig);
+    },
 
     async execute(message, pluginConfig, command, args, lines) {
         // // skip server bot
