@@ -135,7 +135,7 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
 
         // upload zip file
         const attachment = new AttachmentBuilder(filePath, { name: `${nowDate}.zip` });
-        await channel.send({ content: ' ', files: [attachment] }).catch((e) => console.log(e.message || e));
+        await channel.send({ files: [attachment] }).catch((e) => console.log(e.message || e));
 
         fs.rmSync('./image', { recursive: true, force: true });
         fs.unlinkSync(filePath);

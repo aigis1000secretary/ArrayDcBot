@@ -95,13 +95,13 @@ module.exports = {
                     iconURL: hookPayload.iconUrl
                 })
                 .setDescription(canvas.message);
-            interaction.reply({ content: ' ', embeds: [embed] }).catch(e => console.log(e.message));
+            interaction.reply({ embeds: [embed] }).catch(e => console.log(e.message));
             return true;
         }
 
         // send 
         const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'hook-image.png' });
-        interaction.reply({ content: ' ', files: [attachment] }).catch(e => console.log(e.message));
+        interaction.reply({ files: [attachment] }).catch(e => console.log(e.message));
         // let fileName = `tmp_${Date.now().toString()}ms`;
         // require('fs').writeFileSync(`./tmp/${fileName}.png`, canvas.toBuffer());
 

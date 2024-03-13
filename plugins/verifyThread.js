@@ -200,11 +200,7 @@ module.exports = {
                 `驗證日期: <t:${parseInt(Date.now() / 1000)}>`
             ].join('\n');
 
-            channel.send({
-                content: ' ', embeds: [
-                    new EmbedBuilder().setDescription(description)
-                ]
-            }).catch(() => { });
+            channel.send({ embeds: [new EmbedBuilder().setDescription(description)] }).catch(() => { });
 
             // mute reply
             interaction.reply({ content: ' ' }).catch(() => { });

@@ -228,7 +228,7 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
                 .setCustomId("dlThumbLast").setLabel(">|")
             );
 
-    return { content: ' ', embeds, components: [actionRow] };
+    return { embeds, components: [actionRow] };
 }
 
 
@@ -273,7 +273,7 @@ module.exports = {
         // create Message Payload
         let messagePayload = createDLsitePageMessage(result);
         await replyMsg.edit(messagePayload).catch(console.log);
-        
+
         if (message.author.bot) {
             replyMsg.react(EMOJI_RECYCLE).catch(() => { });
 

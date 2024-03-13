@@ -290,7 +290,7 @@ class AntiFilterCore {
         // upload zip file
         let files = [];
         files.push(new AttachmentBuilder(zipFile, { name: zipFile }));
-        await channel.send({ content: ' ', files }).catch(console.log);
+        await channel.send({ files }).catch(console.log);
         console.log(`[TAF] upload ${zipFile} ${(fs.statSync(zipFile)?.size / 1024).toFixed(2)} KB`);
 
         fs.unlinkSync(zipFile);
@@ -346,7 +346,7 @@ class AntiFilterCore {
         }
 
         if (files.length > 0) {
-            await msg.edit({ content: ' ', files }).catch(console.log);
+            await msg.edit({ files }).catch(console.log);
             console.log(`[TAF] uploadBlacklist done!`);
         }
 

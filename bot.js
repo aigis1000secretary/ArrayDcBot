@@ -172,15 +172,15 @@ module.exports = {
         });
 
         client.on('interactionCreate', async (interaction) => {
-            const { message } = interaction;
-            if (message.partial) { await message.fetch().then(() => { }).catch(() => { }); }
+            const { message, client } = interaction;
+            if (message?.partial) { await message.fetch().then(() => { }).catch(() => { }); }
 
             // Emitted
             for (let [key, value] of client.commands) {
                 if (!value.interactionCreate || typeof (value.interactionCreate) != "function") { continue; }
 
                 // get pluginConfig
-                let { client, guildId } = message;
+                let { client, guildId } = message || interaction;
                 const pluginConfig = client.getPluginConfig(guildId, key);
                 if (!pluginConfig) { continue; }
 
