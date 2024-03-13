@@ -11,6 +11,7 @@ const path = require('path');
 const Discord = require('discord.js');
 const { GatewayIntentBits, Partials } = require('discord.js');
 
+let recentlybootMsg = null;
 
 module.exports = {
     async init(filepath) {
@@ -245,9 +246,18 @@ module.exports = {
                 const rebooted =
                     ([1, 9, 17].includes(nowHours) && nowMinutes >= 55) ||  // in reboot time
                     ([2, 10, 18].includes(nowHours) && nowMinutes < 5);     // really reboot time
-                const type = process.env.HOST_TYPE == 'debug' ? EMOJI_BUILDING_CONSTRUCTION : (rebooted ? EMOJI_REBOOTED : EMOJI_HAMMER_AND_WRENCH);
+                const bootType = process.env.HOST_TYPE == 'debug' ? EMOJI_BUILDING_CONSTRUCTION : (rebooted ? EMOJI_REBOOTED : EMOJI_HAMMER_AND_WRENCH);
                 const nowDate = parseInt(Date.now() / 1000);
-                await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 📳! ${type}` }).catch(() => { });
+
+                let bootMsg;
+                if (!recentlybootMsg) {
+                    bootMsg = await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 📳! ${bootType}` }).catch(() => { });
+                    recentlybootMsg = bootMsg.id;
+                } else {
+                    bootMsg = await channel.messages.fetch({ message: recentlybootMsg });
+                }
+
+                bootMsg?.react(bootType).catch(e => console.log(e.message));
             }
 
 
