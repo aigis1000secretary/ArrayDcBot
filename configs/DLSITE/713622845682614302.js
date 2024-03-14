@@ -44,7 +44,7 @@ module.exports = {      // KTG
         // #hentai-anime
         { RSS_CHANNEL_ID: '979808194710880266', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-animation/feed/` },
         // #dlsite
-        { RSS_CHANNEL_ID: '1156057315829624933', RSS_FEEDURL: `https://rsshub.app/dlsite/new/maniax/` },
+        { RSS_CHANNEL_ID: '1156057315829624933', RSS_FEEDURL: `https://rsshub.app/dlsite/maniax/new` },
     ],
 
 
