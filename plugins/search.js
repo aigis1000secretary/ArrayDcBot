@@ -138,8 +138,8 @@ module.exports = {
 
         // start search
         const { client, guild } = interaction;
-        let keyword = interaction.options.data[0].value;
-        let days = interaction.options.data[1].value;
+        const keyword = interaction.options.data[0].value;
+        const days = interaction.options.data[1]?.value;
         const messagePayload = await searchKeyword(client, guild, keyword, days);
 
         // reply result
@@ -158,7 +158,9 @@ module.exports = {
                 .catch((e) => console.log(e.message));
 
             // start search
-            const messagePayload = await searchKeyword(client, guild, keyword);
+            const keyword = args[0];
+            const days = args[1];
+            const messagePayload = await searchKeyword(client, guild, keyword, days);
 
             // reply result
             reply.edit(messagePayload).catch((e) => console.log(e.message));
