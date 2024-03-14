@@ -2,12 +2,13 @@ const { EmbedBuilder, ApplicationCommandOptionType, MessagePayload } = require('
 
 const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 14200704e5);
 
-const searchKeyword = async (client, guild, keyword, days = 0) => {
+const searchKeyword = async (channel, keyword, days = 0) => {
 
-    days = Math.min(7, days);   // set days max limit
+    const { client, guild } = channel;
+    const longSearch = (days >= 7);
 
     // get channels
-    const channels = await guild.channels.fetch();
+    const channels = longSearch ? [[channel.id]] : await guild.channels.fetch();
 
     // set time limit
     const timenow = Date.now() - 3000;
@@ -137,10 +138,10 @@ module.exports = {
             .catch((e) => console.log(e.message));
 
         // start search
-        const { client, guild } = interaction;
+        const { channel } = interaction;
         const keyword = interaction.options.data[0].value;
         const days = interaction.options.data[1]?.value;
-        const messagePayload = await searchKeyword(client, guild, keyword, days);
+        const messagePayload = await searchKeyword(channel, keyword, days);
 
         // reply result
         interaction.editReply(messagePayload).catch((e) => console.log(e.message));
@@ -149,7 +150,7 @@ module.exports = {
     },
 
     async execute(message, pluginConfig, command, args, lines) {
-        const { client, guild } = message;
+        const { channel } = message;
 
         if (command == 'search') {
 
@@ -160,7 +161,7 @@ module.exports = {
             // start search
             const keyword = args[0];
             const days = args[1];
-            const messagePayload = await searchKeyword(client, guild, keyword, days);
+            const messagePayload = await searchKeyword(channel, keyword, days);
 
             // reply result
             reply.edit(messagePayload).catch((e) => console.log(e.message));
