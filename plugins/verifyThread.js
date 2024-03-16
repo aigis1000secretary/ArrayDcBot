@@ -43,7 +43,7 @@ module.exports = {
                         .setCustomId('start authorize')
                     )
                     .addComponents(new ButtonBuilder().setStyle(ButtonStyle.Primary)
-                        .setLabel('啟用/停用')
+                        .setLabel('🔧停用')
                         .setCustomId('switch')
                     )
 
@@ -139,17 +139,17 @@ module.exports = {
 
             // get button state
             if (buttons[0].customId != 'start authorize') { return false; }
-            let disabled = buttons[0].disabled;
+            let active = buttons[0].disabled;
 
             // new actions
             actionRow = new ActionRowBuilder()
-                .addComponents(new ButtonBuilder().setStyle(disabled ? ButtonStyle.Primary : ButtonStyle.Secondary)
-                    .setDisabled(!disabled)
-                    .setLabel('開始驗證')
+                .addComponents(new ButtonBuilder().setStyle(active ? ButtonStyle.Primary : ButtonStyle.Secondary)
+                    .setDisabled(!active)
+                    .setLabel(active ? '開始驗證' : '停止驗證中')
                     .setCustomId('start authorize')
                 )
                 .addComponents(new ButtonBuilder().setStyle(ButtonStyle.Primary)
-                    .setLabel('啟用/停用')
+                    .setLabel(active ? '🔧停用' : '🔧啟用')
                     .setCustomId('switch')
                 )
             await message.edit({ embeds, components: [actionRow] });
