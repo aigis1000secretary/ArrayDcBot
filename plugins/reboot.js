@@ -16,8 +16,6 @@ module.exports = {
         return true;
     },
 
-
-
     async clockMethod(client, { hours, minutes, seconds }) {
         // reboot at time
 
@@ -25,16 +23,15 @@ module.exports = {
         let reboot = false;
 
         // reboot at 01:55, 09:55, 17:55 (every 8hr)
-        if ([1, 9, 17].includes(hours) && minutes == 55 && seconds == 0) {
-            reboot = true;
-        }
+        if ([1, 9, 17].includes(hours) && minutes == 55 && seconds == 0) { reboot = true; }
 
         // check uptime
-        let uptimeInSec = parseInt(client.uptime / 1000);
+        const uptimeInSec = parseInt(client.uptime / 1000);
         // uptime < 5hr skip this reboot
-        if (uptimeInSec < 18000) {
-            reboot = false;
-        }
+        if (uptimeInSec < 18000) { reboot = false; }
+
+        // uptime > 8.5hr 
+        if (uptimeInSec > 30600 && minutes == 55 && seconds == 0) { reboot = true; }
 
         if (!reboot) { return; }
 
@@ -52,7 +49,7 @@ module.exports = {
                 await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 🔁!` })
             }
             // reboot
-            console.log(`=====BOT reboot!=====`);
+            console.log(`=====BOT reboot!=====`); 
             require('../index.js').terminate();
         }
     },
