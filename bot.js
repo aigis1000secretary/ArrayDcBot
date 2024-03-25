@@ -1,11 +1,13 @@
 
 const [EMOJI_HAMMER_AND_WRENCH, EMOJI_BIRD, EMOJI_ALARM_CLOCK, EMOJI_BUILDING_CONSTRUCTION] = ['🛠️', '🐦', '⏰', '🏗️']
 const EMOJI_REBOOTED = (process.env.HOST_TYPE == 'FLY_IO' ? EMOJI_BIRD : EMOJI_ALARM_CLOCK);
+const EMOJI_PHONE_OFF = '📴';
 
 const DEBUG_CHANNEL_ID = '826992877925171250';
 
 const fs = require('fs');
 const path = require('path');
+const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); };
 
 // discord
 const Discord = require('discord.js');
@@ -302,17 +304,25 @@ module.exports = {
         });
 
         client.interval = null;
-        client.once('close', () => {
+        client.once('close', async () => {
             // offline msg
             console.log(`${client.mainConfig.botName} is offline!`);
 
             clearTimeout(client.interval);
+
+            if (recentlybootMsg) {
+                const channel = await client.channels.fetch(DEBUG_CHANNEL_ID);
+                const bootMsg = await channel.messages.fetch({ message: recentlybootMsg });
+                bootMsg?.react(EMOJI_PHONE_OFF).catch(e => console.log(e.message));
+            }
+
             // destroy dc thread
             client.destroy();
         });
 
         // dc login
         await client.login(client.mainConfig.discordToken);  //.then(console.log);
+        if (!recentlybootMsg) { await sleep(500); }
         return client;
     },
 }

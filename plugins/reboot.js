@@ -1,6 +1,7 @@
 
 // const path = require('path');
 const DEBUG_CHANNEL_ID = '826992877925171250';
+const EMOJI_REPEAT = '🔁';
 
 module.exports = {
     name: 'reboot',
@@ -46,7 +47,7 @@ module.exports = {
                 // await channel.send({ content: `<${hours}:${minutes}> BOT reboot!` });
 
                 const nowDate = parseInt(Date.now() / 1000);
-                await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 🔁!` })
+                await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> ${EMOJI_REPEAT}!` })
             }
             // reboot
             console.log(`=====BOT reboot!=====`); 
