@@ -269,6 +269,7 @@ class ChromeDriver {
             let done = false;
             let lastTweetID = null;
             let lastElement = null;
+            let errorCount = 0;
             while (1) {
 
                 // get all tweet
@@ -365,6 +366,9 @@ class ChromeDriver {
                     let [, username, tID] = href.match(regUrl) || []; if (!tID) { await sleep(500); continue; }
 
                     if (lastTweetID == tID) {
+                        ++errorCount;
+                        if (errorCount > 30) { await sleepr(30000); }
+
                         // loading stuck
                         await this.driver.actions()
                             .sendKeys(Key.PAGE_UP)
@@ -372,7 +376,10 @@ class ChromeDriver {
                             .perform()
                             .catch(console.log);
                         console.log('Key.PAGE_UP')
+
                     } else {
+                        errorCount = 0;
+                        
                         lastTweetID = tID;
                         await this.scrollToElement(lastElement);
                         console.log('scrollToElement')
@@ -478,19 +485,43 @@ class ChromeDriver {
             const suspendedText = 'div > div.r-18u37iz.r-13qz1uu > div.r-14lw9ot.r-1jgb5lz.r-13qz1uu:first-child > div > div:last-child > div > div.r-1jgb5lz.r-13qz1uu > div.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div > div.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.r-poiln3.r-bcqeeo.r-qvutc0';
             const userDataScript = 'script[type="application/ld+json"]';
             const userProfileLock = 'svg.r-og9te1 > g';
+            const retryButton = 'div[data-testid="primaryColumn"] div[role="button"].r-ymttw5 svg.r-1d4mawv';
             // wait page load
             await Promise.race([
-                this.driver.wait(until.elementLocated(By.css(suspendedText)), 5000).catch(() => null),
-                this.driver.wait(until.elementLocated(By.css(userDataScript)), 5000).catch(() => null)
+                this.driver.wait(until.elementLocated(By.css(suspendedText)), 10000).catch(() => null),
+                this.driver.wait(until.elementLocated(By.css(userDataScript)), 10000).catch(() => null),
+                this.driver.wait(until.elementLocated(By.css(retryButton)), 10000).catch(() => null)
             ]);
 
+            // twitter APi error
+            let ele = await this.driver.findElement(By.css(retryButton)).catch(() => null);
+            if (ele) {
+                // sleep 30sec
+                await sleepr(30000);
+
+                // retry
+                // crawle user page
+                if (uID) {
+                    await this.driver.get(`https://twitter.com/i/user/${uID}`);
+                } else {
+                    await this.driver.get(`https://twitter.com/${username}`);
+                }
+
+                // wait page load
+                await Promise.race([
+                    this.driver.wait(until.elementLocated(By.css(suspendedText)), 10000).catch(() => null),
+                    this.driver.wait(until.elementLocated(By.css(userDataScript)), 10000).catch(() => null),
+                    this.driver.wait(until.elementLocated(By.css(retryButton)), 10000).catch(() => null)
+                ]);
+            }
+
             // locked profile
-            let ele = await this.driver.findElement(By.css(userProfileLock)).catch(() => null);
+            ele = await this.driver.findElement(By.css(userProfileLock)).catch(() => null);
             if (ele) { result.locked = true; }
 
             // read profile data
             ele = await this.driver.findElement(By.css(userDataScript)).catch(() => null);
-            if (ele) {  
+            if (ele) {
                 let innerHTML = await ele.getAttribute('innerHTML').catch(() => '{}') || '{}';
                 innerHTML = JSON.parse(innerHTML);
 

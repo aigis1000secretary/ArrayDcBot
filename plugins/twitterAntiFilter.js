@@ -501,7 +501,7 @@ class SpamUserList {
         if (!/^\d+$/.test(uID)) {
 
             // User has been suspended: [rXlxi7akZjaHCUG].
-            console.log(`${username} uID: <${uID}>`)
+            if (fs.existsSync("./.env")) { console.log(`${username} uID: <${uID}>`); }
 
             // check userIDList
             let _uID = this.userIDList.get(username);
@@ -509,7 +509,7 @@ class SpamUserList {
             // still error, new user but already banned
             if (!/^\d+$/.test(_uID)) {
                 let res = `[TAF] Get user ${username} identifier fail! uID: ${uID}`;
-                console.log(res);
+                if (fs.existsSync("./.env")) { console.log(res); }
                 return res;
             }
 
