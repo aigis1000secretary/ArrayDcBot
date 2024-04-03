@@ -254,7 +254,7 @@ module.exports = {
                 let bootMsg;
                 if (!recentlybootMsg) {
                     bootMsg = await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 📳! ${bootType}` }).catch(() => { });
-                    recentlybootMsg = bootMsg.id;
+                    recentlybootMsg = bootMsg?.id;
                 } else {
                     bootMsg = await channel.messages.fetch({ message: recentlybootMsg });
                 }

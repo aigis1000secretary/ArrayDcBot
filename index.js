@@ -81,6 +81,7 @@ module.exports.getBotIDs = () => {
     if (process.env.HOST_TYPE == 'debug') { process.env.HOST_URL = 'https://2897-114-36-103-113.ngrok-free.app'; }
 
     // web server
+    // process.env.PORT = 3001;    // for dice debug
     server.init();
 
     for (const bot of [
