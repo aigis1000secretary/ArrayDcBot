@@ -2,7 +2,7 @@
   "name": "arraydcbot",
   "version": "1.0.0",
   "engines": {
-    "node": "16.x"
+    "node": "20.x"
   },
   "description": "arraydcbot",
   "main": "index.js",
