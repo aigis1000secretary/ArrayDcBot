@@ -17,6 +17,8 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
 
     let before, first = null;
     let donelog = [`donwload image done.`];
+    let editCount = 0;
+    let emptyCount = 0;
     while (1) {
         let newimg = false;
         let msgs = await channel.messages.fetch({ before, force: true });
@@ -29,39 +31,45 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
 
 
             let { embeds } = message;
+            // if no any embed, try fix
             if (!embeds || !embeds[0]) {
-                let { author, content, client } = message;
+                let { author, content } = message;
                 if (author.id == client.user.id) {
                     donelog.push(`message.edit ${content}`);
+                    ++editCount;
+                    // content = content.replace('twitter.com', 'fxtwitter.com');   // use fxtwitter
                     message.edit({ content }).catch(() => { });
                 }
                 continue;
             }
+
+            // found embed(s)
             let embed = embeds[0];
 
             // get embed data
             const [, , tID] = (embed.url || '').match(regUrl) || [, null, null];
-            if (!tID) { continue; }
+            if (!tID) { continue; } // not tweet embed
 
             const [, username] = (embed.author?.url || '').match(regUrl) || [, null];
-            if (!username) { continue; }
+            if (!username) { continue; }    // can't found username
 
             const timestamp = embed.timestamp;
-            if (!timestamp) { continue; }
-            const nowDate = (new Date(timestamp).toLocaleString('en-ZA'))
+            if (!timestamp) { continue; }   // can't found timestamp
+            const tweetDate = (new Date(timestamp).toLocaleString('en-ZA'))
                 .replace(/[\/:]/g, '').replace(', ', '_');
 
-
-            // download images
-            let i = 1, invalidImage = false;
+            // download images from all embeds
+            let i = 1, invalidImage = false, emptyEmbed = true;
             for (let embed of embeds) {
+                // get image url
                 let image = embed.image?.url || '';
                 const [, ext] = image.match(/([^\.]+)$/) || [, null];
-                if (!image || !ext) { continue; }
+                if (!image || !ext) { continue; } // embed without image
+
                 let dlImage = image.replace(`.${ext}`, `?format=${ext}&name=orig`);
 
                 let folderPath = `./image/${username}`;
-                let filename = `${username}-${tID}-${nowDate}-img${i}.${ext}`
+                let filename = `${username}-${tID}-${tweetDate}-img${i}.${ext}`
                 let filePath = `${folderPath}/${filename}`;
 
                 if (fastmode) {
@@ -81,6 +89,7 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
 
                     // normal download
                     await downloadFile(dlImage, filePath);
+                    emptyEmbed = false;
 
                     // retry again if fail
                     if (!fs.statSync(filePath)?.size) {
@@ -98,20 +107,27 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
                     if (!fs.statSync(filePath)?.size) {
                         fs.unlinkSync(filePath);
                         invalidImage = true;
+                        emptyEmbed = true;
                     }
 
                     dilog(`mID: ${mID}, donwload image ${filename}`);
                     --limit;
                 } else {
+                    emptyEmbed = false;
+                    
                     dilog(`mID: ${mID},     skip image ${filename}`);
                 }
 
                 ++i;
                 newimg = true;  // set flag
-
             }
 
-            // not fastmode & image download success
+            if (emptyEmbed) {
+                donelog.push(`message without image ${message.content}`);
+                ++emptyCount;
+            }
+
+            // for img2, (not fastmode & image download success), delete message
             if (!fastmode && !invalidImage && (mID != first)) {
                 await message.delete().catch(e => console.log(e.message));
             }
@@ -122,7 +138,8 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
     }
 
     dilog(donelog.join('\n'));
-    dilog('donelog.length', donelog.length - 1);
+    dilog('editCount:', emptyCount);
+    dilog('editCount:', editCount);
 
     if (fs.existsSync('./image') && !fs.existsSync('./.env')) {
 
