@@ -1227,6 +1227,7 @@ class YoutubeCore {
             // '--cookies', 'cookies.txt'
         ];
         if (memberOnly) { command.push('--cookies'); command.push('cookies.txt'); }
+        if (debug) { console.log(`yt-dlp ${command.join(' ')}`); }
 
         ytDlpWrap
             .exec(command, { shell: true, detached: false }, this.ytDlpController.signal)
@@ -1281,6 +1282,7 @@ class YoutubeCore {
                         if (this.streamList.has(vID)) {
                             this.streamList.get(vID).memberOnly = 2;
                         }
+                        console.log('[MC4] Join this channel to get access to members-only content and other exclusive perks.')
                     }
 
                 } else if (error.toString().includes('Private video')) {
@@ -1335,6 +1337,9 @@ class YoutubeCore {
 
                 // disable working video id
                 this.cacheStreamID = null;
+
+                // disable AbortController
+                this.ytDlpController = null;
 
                 // delete video data if normal end
                 if (this.streamList.has(vID) && this.streamList.get(vID).memberOnly != 2) {
@@ -1838,9 +1843,15 @@ module.exports = {
             // switch mclog
             if (isLogChannel && command == 'mcdebug') {
 
-                setTimeout((showLog) => {
-                    mclog = showLog ? (() => { }) : console.log;
-                }, 500, (mclog == console.log));
+                const showLog = (mclog == console.log);
+                if (showLog) {
+                    setTimeout(() => { mclog = (() => { }); }, 500);
+                    console.log('[MC4] debug log off');
+                } else {
+                    setTimeout(() => { mclog = console.log; }, 500);
+                    console.log('[MC4] debug log on');
+                }
+
                 return;
             }
             // get user db data
