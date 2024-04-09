@@ -13,7 +13,7 @@ const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms
 const Discord = require('discord.js');
 const { GatewayIntentBits, Partials } = require('discord.js');
 
-let recentlybootMsg = null;
+let recentlyBootMsg = null;
 
 module.exports = {
     async init(filepath) {
@@ -252,11 +252,11 @@ module.exports = {
                 const nowDate = parseInt(Date.now() / 1000);
 
                 let bootMsg;
-                if (!recentlybootMsg) {
+                if (!recentlyBootMsg) {
                     bootMsg = await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 📳! ${bootType}` }).catch(() => { });
-                    recentlybootMsg = bootMsg?.id;
+                    recentlyBootMsg = bootMsg?.id;
                 } else {
-                    bootMsg = await channel.messages.fetch({ message: recentlybootMsg });
+                    bootMsg = await channel.messages.fetch({ message: recentlyBootMsg });
                 }
 
                 bootMsg?.react(bootType).catch(e => console.log(e.message));
@@ -310,9 +310,9 @@ module.exports = {
 
             clearTimeout(client.interval);
 
-            if (recentlybootMsg) {
+            if (recentlyBootMsg) {
                 const channel = await client.channels.fetch(DEBUG_CHANNEL_ID);
-                const bootMsg = await channel.messages.fetch({ message: recentlybootMsg });
+                const bootMsg = await channel.messages.fetch({ message: recentlyBootMsg });
                 bootMsg?.react(EMOJI_PHONE_OFF).catch(e => console.log(e.message));
             }
 
@@ -322,7 +322,7 @@ module.exports = {
 
         // dc login
         await client.login(client.mainConfig.discordToken);  //.then(console.log);
-        if (!recentlybootMsg) { await sleep(500); }
+        if (!recentlyBootMsg) { await sleep(500); }
         return client;
     },
 }

@@ -3,6 +3,8 @@
 const DEBUG_CHANNEL_ID = '826992877925171250';
 const EMOJI_REPEAT = '🔁';
 
+let recentlyRebootMsg = null;
+
 module.exports = {
     name: 'reboot',
     description: "reboot command",
@@ -47,10 +49,22 @@ module.exports = {
                 // await channel.send({ content: `<${hours}:${minutes}> BOT reboot!` });
 
                 const nowDate = parseInt(Date.now() / 1000);
-                await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> ${EMOJI_REPEAT}!` })
+                let content = `<t:${nowDate}>  <t:${nowDate}:R> ${EMOJI_REPEAT}!`;
+
+                let rebootMsg;
+                if (recentlyRebootMsg) {
+                    // delete old reboot log
+                    rebootMsg = await channel.messages.fetch({ message: recentlyRebootMsg });
+                    content = `${rebootMsg?.content || ''}\n${content}`.trim();
+                    await rebootMsg.delete().catch(() => { });
+                }
+
+                // send new reboot log
+                rebootMsg = await channel.send({ content }).catch(() => { });
+                recentlyRebootMsg = rebootMsg?.id;
             }
             // reboot
-            console.log(`=====BOT reboot!=====`); 
+            console.log(`=====BOT reboot!=====`);
             require('../index.js').terminate();
         }
     },
