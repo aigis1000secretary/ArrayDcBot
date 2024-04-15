@@ -322,7 +322,7 @@ module.exports = {
 
         // dc login
         await client.login(client.mainConfig.discordToken);  //.then(console.log);
-        if (!recentlyBootMsg) { await sleep(500); }
+        for (let i = 0; i < 10; ++i) { if (recentlyBootMsg) { break; } else { await sleep(500); } }
         return client;
     },
 }

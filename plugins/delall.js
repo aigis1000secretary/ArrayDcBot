@@ -56,7 +56,7 @@ const deleteAllMessage = async ({ channel, author }) => {
             if ([DEBUG_CHANNEL_ID].includes(cID)) {
                 if (!botIDs.has(msg.author.id)) { delFlag = true; }                                                     // del not-arraydcbot log
                 if (Date.now() - msg.createdTimestamp > 90000000) { delFlag = true; }                                   // delete old log (after 25hr)
-                if (msg.content.includes('🛠️') && Date.now() - msg.createdTimestamp > 28800000) { delFlag = true; }     // delete old log (after 8hr)
+                // if (msg.content.includes('🛠️') && Date.now() - msg.createdTimestamp > 28800000) { delFlag = true; }     // delete old log (after 8hr)
                 if (msg.content.includes('🏗️')) { delFlag = true; }
             }
 
