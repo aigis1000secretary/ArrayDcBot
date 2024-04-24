@@ -228,7 +228,7 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
                 .setCustomId("dlThumbLast").setLabel(">|")
             );
 
-    return { embeds, components: [actionRow] };
+    return { content: ' ', embeds, components: [actionRow] };
 }
 
 
@@ -258,7 +258,7 @@ module.exports = {
 
         // keep message space
         let embed = new EmbedBuilder().setDescription('Loading...');
-        let replyMsg = message.author.bot ?
+        let replyMsg = (message.author.bot && message.author.id == message.client.user.id) ?
             message : await message.channel.send({ embeds: [embed] }).catch(console.log);
 
         // download dlsite page
