@@ -14,6 +14,10 @@ const Discord = require('discord.js');
 const { GatewayIntentBits, Partials } = require('discord.js');
 
 let recentlyBootMsg = null;
+if (fs.existsSync("./.env")) {
+    process.on('SIGINT', async () => { await recentlyBootMsg.delete().catch(() => { }); process.exit(0); });
+    process.on('SIGHUP', async () => { await recentlyBootMsg.delete().catch(() => { }); process.exit(0); });
+}
 
 module.exports = {
     async init(filepath) {
@@ -251,15 +255,13 @@ module.exports = {
                 const bootType = process.env.HOST_TYPE == 'debug' ? EMOJI_BUILDING_CONSTRUCTION : (rebooted ? EMOJI_REBOOTED : EMOJI_HAMMER_AND_WRENCH);
                 const nowDate = parseInt(Date.now() / 1000);
 
-                let bootMsg;
                 if (!recentlyBootMsg) {
-                    bootMsg = await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 📳! ${bootType}` }).catch(() => { });
-                    recentlyBootMsg = bootMsg?.id;
+                    recentlyBootMsg = await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 📳! ${bootType}` }).catch(() => { });
                 } else {
-                    bootMsg = await channel.messages.fetch({ message: recentlyBootMsg });
+                    recentlyBootMsg = await channel.messages.fetch({ message: recentlyBootMsg.id });
                 }
 
-                bootMsg?.react(bootType).catch(e => console.log(e.message));
+                recentlyBootMsg?.react(bootType).catch(e => console.log(e.message));
             }
 
 
@@ -312,7 +314,7 @@ module.exports = {
 
             if (recentlyBootMsg) {
                 const channel = await client.channels.fetch(DEBUG_CHANNEL_ID);
-                const bootMsg = await channel.messages.fetch({ message: recentlyBootMsg });
+                const bootMsg = await channel.messages.fetch({ message: recentlyBootMsg.id });
                 bootMsg?.react(EMOJI_PHONE_OFF).catch(e => console.log(e.message));
             }
 
