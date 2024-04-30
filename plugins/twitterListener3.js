@@ -173,7 +173,7 @@ module.exports = {
 
     async execute(message, pluginConfig, command, args, lines) {
 
-        if (command == 'tldebug' && message.client.id == client.user.id) {
+        if (command == 'tldebug' && message.client.user.id == client.user.id) {
             tllog = (tllog == console.log) ? () => { } : console.log;
             return;
         }

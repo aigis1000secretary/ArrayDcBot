@@ -1,7 +1,7 @@
 
 const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); };
 
-const { EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, ContextMenuCommandBuilder, ApplicationCommandType } = require('discord.js');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 const channelID = '1009645372831977482';
@@ -11,7 +11,7 @@ module.exports = {
     description: 'pong',
 
     async execute(message, pluginConfig, command, args, lines) {
-        let { channel, author: user } = message;
+        const { channel, author } = message;
 
         // reply button message
         if (command == 'ping') {
@@ -21,13 +21,12 @@ module.exports = {
                     .setCustomId("ping")
                 );
 
-            // message.reply({ content: `pong!`, components: [actionRow], allowedMentions: { repliedUser: false } }).catch(() => { });
-            channel.send({ content: args[0] }).catch(() => { });
+            message.reply({ content: `pong! ${args[0]}`, components: [actionRow], allowedMentions: { repliedUser: false } }).catch(() => { });
         }
 
         // pong!
         if (!channel || channel.id != channelID) { return; }
-        if (!user || user.bot) { return; }
+        if (!author || author.bot) { return; }
 
         message.reply({ content: `messageExecute`, allowedMentions: { repliedUser: false } })
             .then(async (msg) => {
@@ -38,11 +37,11 @@ module.exports = {
     },
 
     async messageUpdate(oldMessage, message, pluginConfig) {
-        let { channel, author: user } = message;
+        const { channel, author } = message;
 
         // pong!
         if (!channel || channel.id != channelID) { return; }
-        if (!user || user.bot) { return; }
+        if (!author || author.bot) { return; }
 
         message.reply({ content: `messageUpdate`, allowedMentions: { repliedUser: false } })
             .then(async (msg) => {
@@ -53,11 +52,11 @@ module.exports = {
     },
 
     async messageDelete(message, pluginConfig) {
-        let { channel, author: user } = message;
+        const { channel, author } = message;
 
         // pong!
         if (!channel || channel.id != channelID) { return; }
-        if (!user || user.bot) { return; }
+        if (!author || author.bot) { return; }
 
         message.reply({ content: `messageDelete`, allowedMentions: { repliedUser: false } })
             .then(async (msg) => {
@@ -68,31 +67,60 @@ module.exports = {
     },
 
     async interactionCreate(interaction, pluginConfig) {
-        let { message, user } = interaction;
-        let { channel } = message;
 
         // button interaction
-        if (!interaction.isButton()) { return false; }
-        if (interaction.customId != 'ping') { return false; }
-        // mute reply
-        interaction.reply({ content: ' ' }).catch(() => { });
+        if (interaction.isButton()) {
 
-        // pong!
-        if (!channel || channel.id != channelID) { return; }
-        if (!user || user.bot) { return; }
+            if (interaction.customId != 'ping') { return false; }
 
-        message.reply({ content: `interactionCreate`, allowedMentions: { repliedUser: false } })
-            .then(async (msg) => {
-                await sleep(3000);
-                return msg.delete();
-            })
-            .catch(() => { });
+            let { message } = interaction;
+
+            // emtpy reply
+            interaction.reply({ content: ' ' }).catch(() => { });
+
+            // pong!
+            message.reply({ content: `interactionCreate isButton`, allowedMentions: { repliedUser: false } })
+                .then(async (msg) => {
+                    await sleep(3000);
+                    return msg.delete();
+                })
+                .catch(() => { });
+        }
+
+        if (interaction.isCommand()) {
+
+            if (interaction.commandName != 'ping') { return false; }
+
+            let { user } = interaction;
+
+            // pong!
+            interaction.reply({ content: `interactionCreate isCommand`, allowedMentions: { repliedUser: false }, ephemeral: true })
+                .then(async (msg) => {
+                    await sleep(3000);
+                    return msg.delete();
+                })
+                .catch(() => { });
+        }
+
+        if (interaction.isUserContextMenuCommand()) {
+
+            if (interaction.commandName != 'ping') { return false; }
+
+            const { user, targetMessage, targetUser } = interaction;
+
+            // pong!
+            interaction.reply({ content: `interactionCreate isUserContextMenuCommand`, allowedMentions: { repliedUser: false }, ephemeral: true })
+                .then(async (msg) => {
+                    await sleep(3000);
+                    return msg.delete();
+                })
+                .catch(() => { });
+        }
     },
 
     async messageReactionAdd(reaction, user, pluginConfig) {
-        let { message } = reaction;
-        let { channel } = message;
-        let content = message.content;
+        const { message } = reaction;
+        const { channel, content } = message;
 
         if (message.author?.id == message.client.user.id && !user?.bot) {
             message.edit({ content: `${content}?` })
@@ -114,8 +142,8 @@ module.exports = {
     },
 
     async messageReactionRemove(reaction, user, pluginConfig) {
-        let { message } = reaction;
-        let { channel } = message;
+        const { message } = reaction;
+        const { channel } = message;
 
         // pong!
         if (!channel || channel.id != channelID) { return; }
@@ -129,7 +157,21 @@ module.exports = {
             .catch(() => { });
     },
 
-    setup(client) {
+    async setup(client) {
+
+        // old version
+        // slash commands
+
+        // // registre slash command
+        // if (!client.application.commands.cache.find(c => c.name == 'search')) {
+        //     client.application.commands.create({
+        //         name: 'ping', description: 'ping!',
+        //     });
+        // }
     },
+    commands: [
+        new SlashCommandBuilder().setName('ping').setDescription('ping!'),
+        new ContextMenuCommandBuilder().setName('ping').setType(ApplicationCommandType.Message)
+    ]
 
 }

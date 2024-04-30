@@ -1,7 +1,8 @@
 const Canvas = require('canvas')
 
 // discord
-const { EmbedBuilder, AttachmentBuilder, ApplicationCommandOptionType } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 
 const hookImage = 'https://cdn.discordapp.com/stickers/1005497001460375702.png';
 const hook = async ({ iconUrl }) => {
@@ -48,25 +49,23 @@ module.exports = {
     description: "hook image",
 
     async setup(client) {
-
-        await client.application.commands.fetch();
-
-        // // delete all slash command
-        // for (let [key, value] of client.application.commands.cache) {
-        //     await value.delete();
+        // // registre slash command
+        // if (!client.application.commands.cache.find(c => c.name == 'hookup')) {
+        //     client.application.commands.create({
+        //         name: 'hookup', description: '夾！',
+        //         options: [{
+        //             name: 'target', description: "夾誰？",
+        //             type: ApplicationCommandOptionType.User, required: true,
+        //         }]
+        //     });
         // }
-
-        // registre slash command
-        if (!client.application.commands.cache.find(c => c.name == 'hookup')) {
-            client.application.commands.create({
-                name: 'hookup', description: '夾！',
-                options: [{
-                    name: 'target', description: "夾誰？",
-                    type: ApplicationCommandOptionType.User, required: true,
-                }]
-            });
-        }
     },
+    commands: [
+        new SlashCommandBuilder()
+            .setName('hookup')
+            .setDescription('夾！')
+            .addUserOption(option => option.setName('target').setDescription('夾誰？').setRequired(true))
+    ],
 
     async interactionCreate(interaction, pluginConfig) {
         // command type

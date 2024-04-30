@@ -1,4 +1,5 @@
-const { EmbedBuilder, ApplicationCommandOptionType, MessagePayload } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 
 const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 14200704e5);
 
@@ -103,29 +104,27 @@ module.exports = {
     description: "search string in guild",
 
     async setup(client) {
-
-        await client.application.commands.fetch();
-
-        // // delete all slash command
-        // for (let [key, value] of client.application.commands.cache) {
-        //     await value.delete();
+        // // registre slash command
+        // if (!client.application.commands.cache.find(c => c.name == 'search')) {
+        //     client.application.commands.create({
+        //         name: 'search', description: '搜尋',
+        //         options: [{
+        //             name: 'keyeord', description: "關鍵字",
+        //             type: ApplicationCommandOptionType.String, required: true,
+        //         }, {
+        //             name: 'days', description: "時間範圍(日)",
+        //             type: ApplicationCommandOptionType.Integer, required: false,
+        //         }]
+        //     });
         // }
-
-        // registre slash command
-        if (!client.application.commands.cache.find(c => c.name == 'search')) {
-            client.application.commands.create({
-                name: 'search', description: '搜尋',
-                options: [{
-                    name: 'keyeord', description: "關鍵字",
-                    type: ApplicationCommandOptionType.String, required: true,
-                }, {
-                    name: 'days', description: "時間範圍(日)",
-                    type: ApplicationCommandOptionType.Integer, required: false,
-                }]
-            });
-        }
     },
-
+    commands: [
+        new SlashCommandBuilder()
+            .setName('search')
+            .setDescription('搜尋')
+            .addStringOption(option => option.setName('keyeord').setDescription('關鍵字').setRequired(true))
+            .addStringOption(option => option.setName('days').setDescription('時間範圍(日)').setRequired(false))
+    ],
 
 
     async interactionCreate(interaction, pluginConfig) {

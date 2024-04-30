@@ -269,7 +269,8 @@ module.exports = {
             }
 
 
-            // Emitted 
+            // Emitted
+            let slashCommands = [];
             for (let [key, value] of client.commands) {
 
                 if (fs.existsSync("./.env")) {
@@ -279,6 +280,22 @@ module.exports = {
                 if (!value.setup || typeof (value.setup) != "function") { continue; }
 
                 value.setup(client);
+
+                if (Array.isArray(value.commands)) {
+                    slashCommands = slashCommands.concat(value.commands);
+                }
+            }
+
+            if (!fs.existsSync("./.env")) {
+                /* // old version
+                await client.application.commands.fetch();
+                for (let [key, value] of client.application.commands.cache) { await value.delete(); }    // delete all slash command
+                //*/
+
+                // Registering slash commands
+                const rest = new Discord.REST().setToken(client.mainConfig.discordToken);
+                await rest.put(Discord.Routes.applicationCommands(client.user.id), { body: slashCommands })    // .then(() => console.log('Successfully deleted all application commands.'))
+                    .catch(console.error);
             }
 
 
