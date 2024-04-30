@@ -100,6 +100,6 @@ module.exports = {      // SSRB的聚集地
     hook: {},
     search: {},
     streamStartTime: {},
-    superChat: {},
+    // superChat: {},
     twitterAntiFilter: {},
 }

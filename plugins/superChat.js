@@ -17,6 +17,11 @@ const color = {
     white: '#FFFFFF',
 }
 
+let ctxFont = 'fonts-noto-cjk fonts-symbola';
+// font for emoji
+// fonts-symbola
+// ttf-ancient-fonts-symbola
+
 const superChat = async ({ iconUrl, username, donate, content }) => {
 
     const iconSize = 86;
@@ -37,7 +42,7 @@ const superChat = async ({ iconUrl, username, donate, content }) => {
         case donate < 10000: { [bgColor, fgColor] = color.pink; fontColor = color.white; } break;
         case donate >= 10000: { [bgColor, fgColor] = color.red; fontColor = color.white; } break;
         default: {
-            console.log(`Sorry, we are out of ${donate}.`);
+            console.log(`[SC] Sorry, we are out of ${donate}.`);
             return null;
         }
     }
@@ -62,16 +67,19 @@ const superChat = async ({ iconUrl, username, donate, content }) => {
     // text
     // username
     ctx.fillStyle = fontColor;
-    ctx.font = '200 42px OpenSans'        // ctx.font = '42px helvetica-neue';
+    // ctx.font = '200 42px OpenSans'        // ctx.font = '42px helvetica-neue';
+    ctx.font = `42px ${ctxFont}`;
     ctx.fillText(username, 115, 55)
 
     // donate
-    ctx.font = '600 34px OpenSans'
+    // ctx.font = '600 34px OpenSans' 
+    ctx.font = `34px ${ctxFont}`;
     ctx.fillText(donateText, 120, 95)
 
     // content
     if (!!content) {
-        ctx.font = '200 36px OpenSans'
+        // ctx.font = '200 36px OpenSans' 
+        ctx.font = `36px ${ctxFont}`;
         // ctx.fillText(content, 15, 160)
         ctx.fillText(content, 15, 160)
     }
@@ -107,45 +115,52 @@ module.exports = {
 
     async execute(message, pluginConfig, command, args, lines) {
 
-        // get config
-        const { author } = message;
+        if ('scfont' == command) {
+            if (args[0]) {
+                ctxFont = args.join(' ');
+            }
 
-        if ('sc' != command) { return; }
-        const { channel } = message;
-
-        if (!args[0]) { return; }
-
-        const superCharPayload = {
-            iconUrl: author.displayAvatarURL({ format: 'png', size: 1024 }).replace(/\.webp/, '.png'), // size: 4096
-            username: author.username,
-            donate: parseInt(args[0]) || -1,
-            content: args[1] || ''
-        };
-        // const iconUrl = `https://cdn.discordapp.com/avatars/353625493876113440/0b69434e070a29d575737ed159a29224.png?size=256`;
-        // const username = `Username`;
-        // const donate = 1000000000;
-        // const content = `しし🎲🔑`
-
-        const canvas = await superChat(superCharPayload).catch(error => error);
-        if (!canvas) { return; }
-        // catch error
-        if (canvas.message) {
-            console.log(canvas)
-
-            const embed = new EmbedBuilder()
-                .setColor('#FFFF00')
-                .setAuthor({
-                    name: `${author.username} ${author.toString()}`,
-                    iconURL: superCharPayload.iconUrl
-                })
-                .setDescription(canvas.message);
-            channel.send({ embeds: [embed] }).catch(e => console.log(e.message));
+            message.reply({ content: `\`\`ctxFont = ${ctxFont}\`\``, allowedMentions: { repliedUser: false } })
+                .catch((e) => console.log(e.message));
         }
 
-        // send 
-        const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'superchat-image.png' });
-        channel.send({ files: [attachment] }).catch(e => console.log(e.message));
+        if ('sc' == command) {
+            if (!args[0]) { return; }
 
-        return true;
+            const { author, channel } = message;
+
+            const superCharPayload = {
+                iconUrl: author.displayAvatarURL({ format: 'png', size: 1024 }).replace(/\.webp/, '.png'), // size: 4096
+                username: author.globalName || author.displayName || author.username,
+                donate: parseInt(args[0]) || -1,
+                content: args.join(' ').replace(args[0], '').trim() || ''
+            };
+            // const iconUrl = `https://cdn.discordapp.com/avatars/353625493876113440/0b69434e070a29d575737ed159a29224.png?size=256`;
+            // const username = `Username`;
+            // const donate = 1000000000;
+            // const content = `しし🎲🔑`
+
+            const canvas = await superChat(superCharPayload).catch(error => error);
+            if (!canvas) { return; }
+            // catch error
+            if (canvas.message) {
+                console.log(canvas)
+
+                const embed = new EmbedBuilder()
+                    .setColor('#FFFF00')
+                    .setAuthor({
+                        name: `${author.username} ${author.toString()}`,
+                        iconURL: superCharPayload.iconUrl
+                    })
+                    .setDescription(canvas.message);
+                channel.send({ embeds: [embed] }).catch(e => console.log(e.message));
+            }
+
+            // send 
+            const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'superchat-image.png' });
+            channel.send({ files: [attachment] }).catch(e => console.log(e.message));
+
+            return true;
+        }
     },
 }

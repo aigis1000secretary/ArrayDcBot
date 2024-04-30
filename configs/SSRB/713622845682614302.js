@@ -27,4 +27,6 @@ module.exports = {      // KTG
         //     holoChannelID: 'UCZlDXzGoo7d44bwdNObFacg',   // kanata
         // }
     ],
+    
+    superChat: {},
 }
