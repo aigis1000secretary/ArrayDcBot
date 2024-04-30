@@ -1,6 +1,7 @@
 
 const [EMOJI_HAMMER_AND_WRENCH, EMOJI_BIRD, EMOJI_ALARM_CLOCK, EMOJI_BUILDING_CONSTRUCTION] = ['🛠️', '🐦', '⏰', '🏗️']
 const EMOJI_REBOOTED = (process.env.HOST_TYPE == 'FLY_IO' ? EMOJI_BIRD : EMOJI_ALARM_CLOCK);
+const EMOJI_VIBRATION = '📳';
 const EMOJI_PHONE_OFF = '📴';
 
 const DEBUG_CHANNEL_ID = '826992877925171250';
@@ -17,6 +18,9 @@ let recentlyBootMsg = null;
 if (fs.existsSync("./.env")) {
     process.on('SIGINT', async () => { await recentlyBootMsg.delete().catch(() => { }); process.exit(0); });
     process.on('SIGHUP', async () => { await recentlyBootMsg.delete().catch(() => { }); process.exit(0); });
+} else {
+    // github deploy
+    process.on('SIGINT', async () => { await recentlyBootMsg.react(EMOJI_HAMMER_AND_WRENCH).catch(() => { }); process.exit(0); });
 }
 
 module.exports = {
@@ -256,7 +260,7 @@ module.exports = {
                 const nowDate = parseInt(Date.now() / 1000);
 
                 if (!recentlyBootMsg) {
-                    recentlyBootMsg = await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> 📳! ${bootType}` }).catch(() => { });
+                    recentlyBootMsg = await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> ${EMOJI_VIBRATION}! ${bootType}` }).catch(() => { });
                 } else {
                     recentlyBootMsg = await channel.messages.fetch({ message: recentlyBootMsg.id });
                 }
