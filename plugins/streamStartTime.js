@@ -145,14 +145,14 @@ module.exports = {
         const [, vID] = content.match(regUrl);
         if (['post', 'channel'].includes(vID)) { return; }
         let time = await core.getStreamStatus(vID);
-        // console.log(time)
+        // console.log(vID, time)
 
         if (time) {
-            await message.react(CLOCK_A[parseInt(time[0])]).catch(() => { });
-            await message.react(CLOCK_B[parseInt(time[1])]).catch(() => { });
-            await message.react(EMOJI_SMALL_BLUE_DIAMOND).catch(() => { });
-            await message.react(CLOCK_C[parseInt(time[2])]).catch(() => { });
-            await message.react(CLOCK_D[parseInt(time[3])]).catch(() => { });
+            await message.react(CLOCK_A[parseInt(time[0])]).catch((e) => console.log(e.message));
+            await message.react(CLOCK_B[parseInt(time[1])]).catch((e) => console.log(e.message));
+            await message.react(EMOJI_SMALL_BLUE_DIAMOND).catch((e) => console.log(e.message));
+            await message.react(CLOCK_C[parseInt(time[2])]).catch((e) => console.log(e.message));
+            await message.react(CLOCK_D[parseInt(time[3])]).catch((e) => console.log(e.message));
         }
     },
 
