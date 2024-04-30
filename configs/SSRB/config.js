@@ -11,6 +11,7 @@ module.exports = {
         'twitterListener3',
     ] : [
         // 'delall',
+        'delMsgByMenu',
         'fxtwitter',
         'hook',
         'memberChecker4',

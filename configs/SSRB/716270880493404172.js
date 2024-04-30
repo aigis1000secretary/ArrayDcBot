@@ -95,11 +95,11 @@ module.exports = {      // SSRB的聚集地
     reactionVote: { VOTE_CHANNELS: ['827129069178978324'] },      // #投票區
 
 
-
+    delMsgByMenu: {},
     fxtwitter: {},
     hook: {},
     search: {},
     streamStartTime: {},
-    // superChat: {},
+    superChat: {},
     twitterAntiFilter: {},
 }

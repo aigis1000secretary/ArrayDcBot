@@ -3,6 +3,7 @@ const Canvas = require('canvas')
 
 // discord
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const editUserMessage = require(`../modules/editUserMessage.js`).editUserMessage;
 
 const color = {
     blue: ['#1565C0', '#000000'],
@@ -158,7 +159,8 @@ module.exports = {
 
             // send 
             const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'superchat-image.png' });
-            channel.send({ files: [attachment] }).catch(e => console.log(e.message));
+            // channel.send({ files: [attachment] }).catch(e => console.log(e.message));
+            editUserMessage(message, { files: [attachment] });
 
             return true;
         }

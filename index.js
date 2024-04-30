@@ -93,7 +93,6 @@ module.exports.getBotIDs = () => {
     ]) {
         const configPath = `./configs/${bot}/`;
 
-
         if (fs.existsSync(`./bot.js`)) {
             let botJs = require(`./bot.js`);
 
@@ -102,9 +101,12 @@ module.exports.getBotIDs = () => {
         }
     }
 
+    // load modules
+    const modulesFiles = fs.readdirSync(`./modules/`)
+        .filter(file => file.endsWith('.js'));
 
-
-
-
+    for (const file of modulesFiles) {
+        require(`./modules/${file}`);
+    }
 
 })();
