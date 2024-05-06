@@ -2,10 +2,11 @@
 // node base
 const fs = require('fs');
 const debug = fs.existsSync("./.env");
+const isLinux = (require("os").platform() == 'linux');
 
 // yt-dlp-wrap
 const { default: YTDlpWrap } = require("yt-dlp-wrap");
-const ytdlpPath = (require("os").platform() == 'linux' ? './yt-dlp' : '.\\yt-dlp.exe');
+const ytdlpPath = (isLinux ? './yt-dlp' : '.\\yt-dlp.exe');
 
 // method
 let mclog = debug ? console.log : () => { };
@@ -538,7 +539,8 @@ class EmojiManager {
                 if (emoji.author.bot) {
                     await emoji.delete()
                         .then(() => { mclog('[MC4] delete emoji.'); })
-                        .catch(console.log);
+                        .catch((e) => mclog(`[MC4] delete emoji fail: ${e.message}`));
+                    this.guildEmojis = await this.guild.emojis.fetch();
                     if (this.guildEmojis.size < 50) { break; }
                 }
             }
@@ -546,12 +548,29 @@ class EmojiManager {
 
         // create new emoji
         let emoji = await this.guild.emojis.create({ attachment: url, name: md5Name })
-            .catch((e) => { console.log(e.message); return null; });
+            .catch((e) => { mclog(e.message); return null; });
         // mclog(`[MC4] create emoji ${emoji}`);
 
         this.guildEmojis = await this.guild.emojis.fetch();
 
+        setTimeout(() => { this.checkEmoji(md5Name); }, 500);
         return emoji;
+    }
+
+    checkEmoji(md5Name) {
+
+        let foundEmoji = false;
+        for (const [eID, emoji] of this.guildEmojis) {
+
+            if (emoji.name != md5Name || !emoji.author.bot) { continue; }   // skip other emoji
+
+            if (!foundEmoji) { foundEmoji = true; continue; } // found first emoji
+
+            // delete repeat emoji
+            emoji.delete()
+                .then(() => { mclog('[MC4] delete repeat emoji.'); })
+                .catch((e) => mclog(`[MC4] delete repeat emoji fail: ${e.message}`));
+        }
     }
 }
 
@@ -861,8 +880,6 @@ class GuildManager {
 
     settingChannel = new Set();
     async changeChannelName(cID, onLive = false) {
-        if (debug) { return; }  // don't change channel name in debug mode
-
         if (this.settingChannel.has(cID)) { return; }
 
         const channel = await this.client.channels.fetch(cID);
@@ -970,6 +987,8 @@ class YoutubeCore {
     streamList = new Map(); // <vID, video>
     async getVideoList() {
 
+        let newStreamList = new Set();
+
         for (const eventType of ['upcoming', 'live']) {
             // get search
             let _videos = await this.youtubeAPI.getVideoSearch({ eventType });
@@ -992,6 +1011,8 @@ class YoutubeCore {
                 // update liveBroadcastContent
                 if (this.streamList.has(vID)) {
                     video.memberOnly = (this.streamList.get(vID))?.memberOnly;
+                } else {
+                    newStreamList.add(vID);
                 }
 
                 // cache video data
@@ -1057,151 +1078,20 @@ class YoutubeCore {
             // cache video data
             this.streamList.set(vID, videoStatus);
         }
-    }
 
-    // working video
-    cacheStreamID = null;
-    cacheFreechatID = null;
-    cacheStreamMemberOnly = () => { return this.streamList.get(this.cacheStreamID)?.memberOnly || false; }
-
-    interval = null;
-    // get stream chat by youtube api
-    async traceStreamChat({ vID, liveChatId, pageToken, loop = false }) {
-
-        // check liveChatId
-        if (!liveChatId) {
-            mclog(`[MC4] traceStreamChat: ${vID}`);
-
-            if (!this.streamList.has(vID)) {
-                mclog(`[MC4] Can't found video data`);
-                // return;
-
-                let videoStatus = await this.youtubeAPI.getVideoStatus(vID);
-                this.streamList.set(vID, videoStatus);
-            }
-
-            let video = this.streamList.get(vID);
-            liveChatId = video?.liveStreamingDetails?.activeLiveChatId;
-            if (!liveChatId) {
-                mclog(`[MC4] Can't found video liveChatId`);
-                return;
-            }
-        }
-
-        // get chat data
-        let data = await this.youtubeAPI.getStreamChat(liveChatId, pageToken);
-
-        if (Array.isArray(data.items)) {
-            this.readStreamChatData(data);
-
-            // once for freechat
-            if (!loop) { return; }
-
-            // only trace 1 stream in same time
-            if (this.cacheStreamID != null && this.cacheStreamID != vID) { return; }
-            // set working video id
-            this.cacheStreamID = vID;
-
-            // next request
-            pageToken = data.nextPageToken;
-            let nextTime = data.pollingIntervalMillis;
-            let length = data.items.length;
-            if (length == 0) { nextTime *= 3; }
-            mclog(`[MC4] ${vID} -- ${length.toString().padStart(8, ' ')} messages returned -- ${nextTime} ${pageToken}`)
-
-            this.interval = setTimeout(arg => this.traceStreamChat(arg), nextTime, { vID, liveChatId, pageToken, loop });
-            return;
-
-        } else {
-            // got some error
-
-            if (data.reason == 'liveChatEnded') {
-                // liveChatEnded
-
-                // disable working video id
-                this.cacheStreamID = null;
-
-                // // force update video status to none
-                // this.streamList.get(vID).snippet.liveBroadcastContent = 'none';
-                // delete video data
-                this.streamList.delete(vID);
-
-                // finish catch loop
-                this.interval = null;
-                return;
-
-            } else if (data.reason == 'quotaExceeded') {
-                // quotaExceeded
-
-                // disable working video id
-                this.cacheStreamID = null;
-
-                // finish catch loop, 
-                // this.youtubeAPI.quotaExceeded[1] will block method startGetStreamChat()
-                this.interval = null;
-                return;
-
-            } else if (data.reason == 'forbidden' && data.message.includes('permissions')) {
-                // 'You do not have the necessary permissions to retrieve messages for the specified chat.'     // 2022/01/08
-                // 'You do not have the permissions required to retrieve messages for the specified live chat.' // 2022/08/18
-
-                // forbidden, member only stream
-
-                // disable working video id
-                this.cacheStreamID = null;
-
-                // get video & set member only flag
-                if (this.streamList.has(vID)) {
-                    this.streamList.get(vID).memberOnly = 1;
-                }
-
-                // finish catch loop, 
-                // memberOnly flag will block method startGetStreamChat()
-                this.interval = null;
-                return;
-
-            } else {
-                // API error, try again later
-                this.interval = setTimeout(this.traceStreamChat, 1000, { vID, liveChatId, pageToken, loop });
-                return;
-            }
+        // trace livechat
+        for (let vID of newStreamList) {
+            this.traceStreamChatByYtdlp({ vID });
         }
     }
-    async readStreamChatData(data = { items: [] }, force = false) {
-        if (!data.items || !(typeof data.items[Symbol.iterator] === 'function')) { data = { items: [] } }
 
-        for (const chatMessage of data.items) {
-            // check user is Chat Sponsor or not
-            // get user data
-            let auDetails = chatMessage.authorDetails;
-            // let auDetails = {
-            //     channelId: 'UCBcPAHz9RxwYkcpWs8XwkRw',
-            //     channelUrl: 'https://www.youtube.com/channel/UCBcPAHz9RxwYkcpWs8XwkRw',
-            //     displayName: 'Detron',
-            //     isChatModerator: false,
-            //     isChatOwner: false,
-            //     isChatSponsor: false,
-            //     isVerified: false,
-            //     profileImageUrl: 'https://yt3.ggpht.com/ytc/AGIKgqNMdgsY_f_3yAnQQgKqKVRnfEnuPaTfaAGwgItm4w=s88-c-k-c0x00ffffff-no-rj'
-            // }
+    streamIsMemberOnly = (vID) => { return this.streamList.get(vID)?.memberOnly || false; }
 
-            let message = chatMessage.snippet?.textMessageDetails?.messageText || '';
-            let superchat = chatMessage.snippet?.superChatDetails?.amountDisplayString || '';
-
-            // callback
-            await mainMcCore.onLiveChat(this.holoChannelID, auDetails, message, superchat);
-        }
-    }
 
     // === yt-dlp-wrap ===
-    ytDlpController = null;
-    livechatRawPool = new Map();
+    ytDlpArray = new Map();
     async traceStreamChatByYtdlp({ vID, memberOnly }) {
 
-        // only trace 1 stream in same time
-        if (this.cacheStreamID != null) { return; }
-        // set working video id
-        this.cacheStreamID = vID;
 
         if (!this.streamList.has(vID)) {
             mclog(`[MC4] Can't found video data`);
@@ -1211,9 +1101,11 @@ class YoutubeCore {
             this.streamList.set(vID, videoStatus);
         }
 
+        let ytDlpData = { ytDlpController: null, livechatFile: null, indexOfLine: 0, readFileCount: 0, readFileInterval: null };
+
         // Additionally you can set the options of the spawned process and abort the process.
-        // The abortion of the spawned process is handled by passing the signal of an AbortController.
-        this.ytDlpController = new AbortController();
+        // The abortion of the spawned process is handled by passing the signal of an AbortController. 
+        ytDlpData.ytDlpController = new AbortController();
 
         // Init an instance with a given binary path.
         // If none is provided "youtube-dl" will be used as command.
@@ -1224,18 +1116,21 @@ class YoutubeCore {
             `https://www.youtube.com/watch?v=${vID}`,
             '--skip-download', '--restrict-filenames',
             '--write-subs', '--sub-langs', 'live_chat',
+            '--ignore-no-formats', (isLinux ? '--no-windows-filenames' : '--windows-filenames'),
             // '--cookies', 'cookies.txt'
         ];
         if (memberOnly) { command.push('--cookies'); command.push('cookies.txt'); }
-        if (debug) { console.log(`yt-dlp ${command.join(' ')}`); }
+        if (debug) { console.log(`[ytDlpEvent](${vID}) yt-dlp ${command.join(' ')}`); }
+
+        this.ytDlpArray.set(vID, ytDlpData);
 
         ytDlpWrap
-            .exec(command, { shell: true, detached: false }, this.ytDlpController.signal)
+            .exec(command, { shell: true, detached: false }, (this.ytDlpArray.get(vID)).signal)
             // .on('progress', (progress) => console.log(progress.percent, progress.totalSize, progress.currentSpeed, progress.eta))
             .on('ytDlpEvent', async (eventType, eventData) => {
-                if (eventType != 'download' || !eventData.includes('frag')) {
-                    // console.log(`[${eventType}]`, eventData);
-                }
+                // if (eventType != 'download' || !eventData.includes('frag')) {
+                //     mclog(`[ytDlpEvent](${vID}) [${eventType}]`, eventData);
+                // }
 
                 // download live chat data
                 if (eventType == 'download' && !eventData.includes('frag') &&
@@ -1245,31 +1140,20 @@ class YoutubeCore {
                     let [, filename] = eventData.match(/Destination:\s*([\S\s]+\.live_chat\.json)/);
                     console.log(`[ytDlpWrap] ${filename}`);
 
-                    // set file pool
-                    if (!this.livechatRawPool.has(vID)) {
-                        this.livechatRawPool.set(vID, { filename, indexOfLine: 0 });
-                    }
+                    // set filename
+                    (this.ytDlpArray.get(vID)).livechatFile = filename;
 
-                    // set working video id
-                    this.cacheStreamID = vID;
+                    // get livechat data
+                    (this.ytDlpArray.get(vID)).readFileInterval = setTimeout(() => this.readStreamChatFile(vID), 1000);
                 }
             })
             .on('error', (error) => {
-                // clear file pool
-                if (this.livechatRawPool.has(vID)) {
-                    this.livechatRawPool.delete(vID);
-                }
-
-                // disable working video id
-                this.cacheStreamID = null;
-
-                // // delete video data
-                // this.streamList.delete(vID);
-
-                if (this.interval) { clearTimeout(this.interval); }
-
                 // log
                 if (error.toString().includes('members-only')) {
+
+                    // destroy ytDlp data, if need, rebuild after retry.
+                    this.destroyByVid(vID);
+
                     if (!memberOnly) {
                         // retry with cookie
                         this.traceStreamChatByYtdlp({ vID, memberOnly: true });
@@ -1287,19 +1171,13 @@ class YoutubeCore {
 
                 } else if (error.toString().includes('Private video')) {
 
-                    // clear file pool
-                    if (this.livechatRawPool.has(vID)) {
-                        const { filename } = this.livechatRawPool.get(vID);
-                        try { fs.unlinkSync(filename); } catch (e) { console.log(e.message); }
-                        this.livechatRawPool.delete(vID);
-                    }
-
-                    // disable working video id
-                    this.cacheStreamID = null;
+                    // destroy ytDlp data
+                    this.destroyByVid(vID);
 
                     // delete video data
                     this.streamList.delete(vID);
 
+                    // for trace temporary ytCore
                     if (this.getVideoList == null) {
 
                         for (let mKey of mainMcCore.guildManagers.keys()) {
@@ -1316,34 +1194,25 @@ class YoutubeCore {
                         mainMcCore.ytChannelCores.delete(this.holoChannelID);
                     }
 
-                    if (this.interval) { clearTimeout(this.interval); }
-
                     // log
                     console.log(`[ytDlpWrap] Private video [${vID}]`);
 
+                } else if (error.toString().includes('Unable to rename file: [WinError 32]')) {
+                    console.log(`ERROR: Unable to rename file: [WinError 32]`);
+
                 } else {
                     console.error(error);
+                    // shouldn't here
                 }
             })
             .on('close', () => {
-                // clear file pool
-                if (this.livechatRawPool.has(vID)) {
-                    const { filename } = this.livechatRawPool.get(vID);
-                    try { fs.unlinkSync(filename); } catch (e) { console.log(e.message); }
-                    this.livechatRawPool.delete(vID);
-                }
-                // clear livechat interval
-                if (this.interval) { clearTimeout(this.interval); }
 
-                // disable working video id
-                this.cacheStreamID = null;
-
-                // disable AbortController
-                this.ytDlpController = null;
+                // destroy ytDlp data
+                this.destroyByVid(vID, false);
 
                 // delete video data if normal end
                 if (this.streamList.has(vID) && this.streamList.get(vID).memberOnly != 2) {
-                    // if memberOnly == 2, it's member only video but withour membership
+                    // if memberOnly == 2, it's member only video but without membership
                     this.streamList.delete(vID);
                 }
 
@@ -1368,143 +1237,165 @@ class YoutubeCore {
                 console.log(`[ytDlpWrap] All done [${vID}]`);
             }); //*/
 
-        // get livechat data
-        this.interval = setTimeout(() => this.readStreamChatFile(), 1000);
     }
-    async readStreamChatFile(calledTimes = 0) {
+    async readStreamChatFile(vID) {
+        if (!this.ytDlpArray.has(vID)) { return; }
 
-        for (const [vID, livechatRaw] of this.livechatRawPool) {
-            let { filename, indexOfLine } = livechatRaw;
+        let { livechatFile, indexOfLine, readFileCount } = this.ytDlpArray.get(vID);
 
-            // check file exist
-            if (!fs.existsSync(`${filename}.part`)) { continue; }
+        // check file exist
+        if (!fs.existsSync(`${livechatFile}.part`)) { return; }
 
-            // test livechat file for debug, don't forgot change start time in filename
-            if (fs.existsSync(`${filename}.test.part`)) { filename = `${filename}.test`; }
+        // test livechat file for debug, don't forgot change start time in filename
+        if (fs.existsSync(`${livechatFile}.test.part`)) { livechatFile = `${livechatFile}.test`; }
 
-            // file read stream
-            let fileStream = fs.createReadStream(`${filename}.part`, 'utf8');
-            const rl = require('readline').createInterface({
-                input: fileStream,
-                crlfDelay: Infinity
-            });
+        // file read stream
+        let fileStream = fs.createReadStream(`${livechatFile}.part`, 'utf8');
+        const rl = require('readline').createInterface({
+            input: fileStream,
+            crlfDelay: Infinity
+        });
 
-            let i = -1;
-            for await (const line of rl) {
-                ++i;
-                if (i < indexOfLine) { continue; }
+        let i = -1;
+        for await (const line of rl) {
+            ++i;
+            if (i < indexOfLine) { continue; }
 
-                // line to json
-                let chatItem;
-                try {
-                    ++livechatRaw.indexOfLine;
-                    chatItem = JSON.parse(line);
-                } catch (e) { continue; }
+            // line to json
+            let chatItem;
+            try {
+                ++indexOfLine;
+                chatItem = JSON.parse(line);
+            } catch (e) { continue; }
 
-                // get livechat object
-                // try {
-                // get main object
-                let actions = chatItem.replayChatItemAction.actions[0];
-                let item =
-                    actions.addChatItemAction?.item ||            // normal chat
-                    actions.addLiveChatTickerItemAction?.item ||  // super chat
-                    actions.addBannerToLiveChatCommand?.bannerRenderer.liveChatBannerRenderer.contents;     // banner
+            // get livechat object
+            // try {
+            // get main object
+            let actions = chatItem.replayChatItemAction.actions[0];
+            let item =
+                actions.addChatItemAction?.item ||            // normal chat
+                actions.addLiveChatTickerItemAction?.item ||  // super chat
+                actions.addBannerToLiveChatCommand?.bannerRenderer.liveChatBannerRenderer.contents;     // banner
 
-                // check event type, pick normal chat
-                let renderer = item?.liveChatTextMessageRenderer || item?.liveChatPaidMessageRenderer;
-                // 'liveChatViewerEngagementMessageRendere', 'liveChatMembershipItemRenderer',
-                // 'liveChatTickerSponsorItemRenderer',      'liveChatPaidMessageRenderer',
-                // 'liveChatTickerPaidMessageItemRenderer',  'liveChatSponsorshipsGiftPurchaseAnnouncementRenderer',
-                // 'liveChatPaidStickerRendere',             'liveChatSponsorshipsGiftRedemptionAnnouncementRenderer'
-                if (!renderer || !renderer.authorName) { continue; }
+            // check event type, pick normal chat
+            let renderer = item?.liveChatTextMessageRenderer || item?.liveChatPaidMessageRenderer;
+            // 'liveChatViewerEngagementMessageRendere', 'liveChatMembershipItemRenderer',
+            // 'liveChatTickerSponsorItemRenderer',      'liveChatPaidMessageRenderer',
+            // 'liveChatTickerPaidMessageItemRenderer',  'liveChatSponsorshipsGiftPurchaseAnnouncementRenderer',
+            // 'liveChatPaidStickerRendere',             'liveChatSponsorshipsGiftRedemptionAnnouncementRenderer'
+            if (!renderer || !renderer.authorName) { continue; }
 
 
-                // set result
-                let auDetails = {
-                    channelId: renderer.authorExternalChannelId,
-                    channelUrl: `https://www.youtube.com/channel/${renderer.authorExternalChannelId}`,
-                    displayName: renderer.authorName.simpleText,
-                    isChatModerator: false, isChatOwner: false,
-                    isChatSponsor: false, isVerified: false,
-                    sponsorLevel: -1,
-                    profileImageUrl: '',
-                    timestampText: renderer.timestampText?.simpleText || null
-                }
-                // user level
-                let authorBadges = renderer.authorBadges || [];
-                for (const badge of authorBadges) {
-                    let tooltip = badge?.liveChatAuthorBadgeRenderer.tooltip;
-
-                    if (tooltip.includes('ember')) {
-                        auDetails.isChatSponsor = true;
-                        switch (tooltip) {
-                            case 'New member': { auDetails.sponsorLevel = 0; } break;
-                            case 'Member (1 month)': { auDetails.sponsorLevel = 1; } break;
-                            case 'Member (2 months)': { auDetails.sponsorLevel = 2; } break;
-                            case 'Member (6 months)': { auDetails.sponsorLevel = 3; } break;
-                            case 'Member (1 year)': { auDetails.sponsorLevel = 4; } break;
-                            case 'Member (2 years)': { auDetails.sponsorLevel = 5; } break;
-                            case 'Member (3 years)': { auDetails.sponsorLevel = 6; } break;
-                            case 'Member (4 years)': { auDetails.sponsorLevel = 7; } break;
-                            default: {
-                                auDetails.sponsorLevel = -1;
-                                console.log(`[MC4] tooltip`, tooltip);
-                            } break;
-                        }
-                    }
-                    else if (tooltip == 'Verified') { auDetails.isVerified = true; }
-                    else if (tooltip == 'Moderator') { auDetails.isChatModerator = true; }
-                    else if (tooltip == 'Owner') { auDetails.isChatOwner = true; }
-                }
-                // user icon
-                let thumbnails = renderer.authorPhoto?.thumbnails || [];
-                auDetails.profileImageUrl = thumbnails.pop()?.url;
-                // message
-                let runs = renderer.message?.runs || [];
-                let emojis = new Map();
-                let message = '';
-                for (const { text, emoji } of runs) {
-                    if (text) { message += text; }
-                    if (emoji) {
-                        let name;
-
-                        if (emoji.isCustomEmoji) {
-                            // get emoji shortcuts
-                            for (const term of emoji.searchTerms) {
-                                name = term;
-                                // discord emoji name rule
-                                if (/^[A-Za-z0-9_]+$/.test(name)) { break; }
-                            }
-                            // get emoji image
-                            let thumbnails = emoji.image?.thumbnails || [];
-                            let url = thumbnails.pop()?.url;
-
-                            emojis.set(name, url);
-
-                            name = `:${name}:`;
-                        } else {
-                            name = emoji.emojiId;
-                        }
-                        message += ` ${name} `;
-                    }
-                }
-                // SC
-                let superchat = renderer.purchaseAmountText?.simpleText || '';
-                // callback
-                await mainMcCore.onLiveChat(this.holoChannelID, auDetails, message, superchat, emojis);
+            // set result
+            let auDetails = {
+                channelId: renderer.authorExternalChannelId,
+                channelUrl: `https://www.youtube.com/channel/${renderer.authorExternalChannelId}`,
+                displayName: renderer.authorName.simpleText,
+                isChatModerator: false, isChatOwner: false,
+                isChatSponsor: false, isVerified: false,
+                sponsorLevel: -1,
+                profileImageUrl: '',
+                timestampText: renderer.timestampText?.simpleText || null
             }
+            // user level
+            let authorBadges = renderer.authorBadges || [];
+            for (const badge of authorBadges) {
+                let tooltip = badge?.liveChatAuthorBadgeRenderer.tooltip;
 
-            if (calledTimes % 10 == 0) { mclog(`[MC4] ${vID} -- ${indexOfLine.toString().padStart(8, ' ')} messages returned --`) }
+                if (tooltip.includes('ember')) {
+                    auDetails.isChatSponsor = true;
+                    switch (tooltip) {
+                        case 'New member': { auDetails.sponsorLevel = 0; } break;
+                        case 'Member (1 month)': { auDetails.sponsorLevel = 1; } break;
+                        case 'Member (2 months)': { auDetails.sponsorLevel = 2; } break;
+                        case 'Member (6 months)': { auDetails.sponsorLevel = 3; } break;
+                        case 'Member (1 year)': { auDetails.sponsorLevel = 4; } break;
+                        case 'Member (2 years)': { auDetails.sponsorLevel = 5; } break;
+                        case 'Member (3 years)': { auDetails.sponsorLevel = 6; } break;
+                        case 'Member (4 years)': { auDetails.sponsorLevel = 7; } break;
+                        default: {
+                            auDetails.sponsorLevel = -1;
+                            console.log(`[MC4] tooltip`, tooltip);
+                        } break;
+                    }
+                }
+                else if (tooltip == 'Verified') { auDetails.isVerified = true; }
+                else if (tooltip == 'Moderator') { auDetails.isChatModerator = true; }
+                else if (tooltip == 'Owner') { auDetails.isChatOwner = true; }
+            }
+            // user icon
+            let thumbnails = renderer.authorPhoto?.thumbnails || [];
+            auDetails.profileImageUrl = thumbnails.pop()?.url;
+            // message
+            let runs = renderer.message?.runs || [];
+            let emojis = new Map();
+            let message = '';
+            for (const { text, emoji } of runs) {
+                if (text) { message += text; }
+                if (emoji) {
+                    let name;
 
-            fileStream.destroy();
+                    if (emoji.isCustomEmoji) {
+                        // get emoji shortcuts
+                        for (const term of emoji.searchTerms) {
+                            name = term;
+                            // discord emoji name rule
+                            if (/^[A-Za-z0-9_]+$/.test(name)) { break; }
+                        }
+                        // get emoji image
+                        let thumbnails = emoji.image?.thumbnails || [];
+                        let url = thumbnails.pop()?.url;
+
+                        emojis.set(name, url);
+
+                        name = `:${name}:`;
+                    } else {
+                        name = emoji.emojiId;
+                    }
+                    message += ` ${name} `;
+                }
+            }
+            // SC
+            let superchat = renderer.purchaseAmountText?.simpleText || '';
+            // callback
+            await mainMcCore.onLiveChat({ holoChannelID: this.holoChannelID, vID, auDetails, message, superchat, customEmojis: emojis });
         }
 
-        this.interval = setTimeout(() => this.readStreamChatFile(++calledTimes), 500);
+        if (readFileCount % 10 == 0) { mclog(`[MC4] ${vID} -- ${indexOfLine.toString().padStart(8, ' ')} messages returned --`); }
+
+        fileStream.destroy();
+
+        // update ytDlpData
+        (this.ytDlpArray.get(vID)).indexOfLine = indexOfLine;
+        (this.ytDlpArray.get(vID)).readFileCount = readFileCount + 1;
+        (this.ytDlpArray.get(vID)).readFileInterval = setTimeout(() => this.readStreamChatFile(vID), 500);
+    }
+
+    destroyByVid(vID, abort = true) {
+        if (!this.ytDlpArray.has(vID)) { return; }
+
+        // ytDlpData = { ytDlpController: null, livechatFile: null, indexOfLine: 0, readFileCount: 0, readFileInterval: null };
+        let ytDlpData = this.ytDlpArray.get(vID);
+
+        if (ytDlpData.ytDlpController) {
+            if (abort) { ytDlpData.ytDlpController.abort(); }
+            else { ytDlpData.ytDlpController = null; }
+        }
+
+        if (ytDlpData.livechatFile) {
+            try { fs.unlinkSync(ytDlpData.livechatFile); } catch (e) { console.log(e.message); }
+        }
+
+        if (ytDlpData.readFileInterval) { clearTimeout(ytDlpData.readFileInterval); }
+
+        this.ytDlpArray.delete(vID);
     }
 
     destroy() {
-        if (this.interval) { clearTimeout(this.interval); }
-        if (this.ytDlpController) { this.ytDlpController.abort(); }
+        const keys = this.ytDlpArray.keys();
+        for (let vID of keys) {
+            this.destroyByVid(vID);
+        }
     }
 }
 
@@ -1601,11 +1492,9 @@ class MainMemberCheckerCore {
         const { client, gID, pluginConfig } = rawConfig;
         const { holoChannelID } = pluginConfig;
 
-        // youtube core
+        // add new youtube core
         if (!this.ytChannelCores.has(holoChannelID)) {
-
             let ytCore = new YoutubeCore({ holoChannelID });
-
             this.ytChannelCores.set(holoChannelID, ytCore);
         }
 
@@ -1643,7 +1532,7 @@ class MainMemberCheckerCore {
         this.configs.push(config);
     }
 
-    async onLiveChat(holoChannelID, auDetails, message, superchat, customEmojis) {
+    async onLiveChat({ holoChannelID, vID, auDetails, message, superchat, customEmojis }) {  // mainMcCore.onLiveChat
         // console.log(
         //     `[Livechat ${holoChannelID}]`,
         //     (auDetails.isChatModerator ? '🔧' : '　'), (auDetails.isChatOwner ? '⭐' : '　'), (auDetails.isVerified ? '✔️' : '　'), (auDetails.isChatSponsor ? '🤝' : '　'),
@@ -1656,9 +1545,10 @@ class MainMemberCheckerCore {
 
         // check special livechat
         let messagePayload = null;
-        // if (auDetails.isChatOwner || auDetails.isChatModerator || auDetails.isVerified || !parseInt(Math.random() * 5000)) {
-        if (auDetails.isChatOwner || auDetails.isChatModerator || auDetails.isVerified) {
-
+        if (auDetails.isChatOwner || auDetails.isChatModerator || auDetails.isVerified
+            // || !parseInt(Math.random() * 5000)      // 1/5000
+            // || auDetails.isChatSponsor              // all ChatSponsor livechat
+        ) {
             // fix emojis text
             if (customEmojis && customEmojis.size > 0) {
 
@@ -1680,8 +1570,7 @@ class MainMemberCheckerCore {
             // get ytCore
             let ytCore = this.ytChannelCores.get(holoChannelID);
             // check target channel
-            const isMemberOnly = ytCore.cacheStreamMemberOnly();
-            const vID = ytCore.cacheStreamID;
+            const isMemberOnly = ytCore.streamIsMemberOnly(vID);
 
             messagePayload = { auDetails, message, superchat, vID, isMemberOnly };
         }
@@ -1700,8 +1589,11 @@ class MainMemberCheckerCore {
                 // get yt core
                 const ytCore = this.ytChannelCores.get(holoChannelID);
                 if (ytCore) {
-                    const video = ytCore.streamList.get(ytCore.cacheStreamID || ytCore.cacheFreechatID);
+                    const video = ytCore.streamList.get(vID);
 
+                    // update role script if:
+                    // > live or upcoming
+                    // > none when debug
                     if (['live', 'upcoming'].includes(video?.snippet.liveBroadcastContent) ||
                         (debug && video?.snippet.liveBroadcastContent == 'none')
                     ) {
@@ -1761,47 +1653,9 @@ class MainMemberCheckerCore {
         }
 
         // check every 10sec
-        if (seconds % 10 == 0) {
-            // check all channel stream statu
-            for (const [holoChannelID, ytCore] of this.ytChannelCores) {
-                // onlive
-                if (ytCore.cacheStreamID) { continue; }
-
-                // upcoming
-                for (const [vID, video] of ytCore.streamList) {
-                    let _video = video;
-                    // check upcoming
-                    if (video.snippet.liveBroadcastContent == 'upcoming') {
-                        // skip freechat
-                        let startTime = video.liveStreamingDetails?.scheduledStartTime || 0;
-                        if (startTime && Date.parse(startTime) > Date.now()) { continue; }
-                        if (Date.now() > (Date.parse(startTime) + 43200000)) { continue; }  // skip upcoming video after 12hr
-
-                        // now on live time, recheck stream if status is upcoming
-                        // get REALLY video data from API
-                        _video = await ytCore.youtubeAPI.getVideoStatus(vID);
-
-                        // API error, quotaExceeded
-                        if (!_video?.snippet) {
-                            // delete nan data video
-                            if (ytCore.streamList.has(vID)) {
-                                ytCore.streamList.delete(vID);
-                            }
-                            continue;
-                        }
-
-                        _video.memberOnly = (ytCore.streamList.get(vID))?.memberOnly;
-                        ytCore.streamList.set(vID, _video);
-                    }
-
-                    // now onlive, trace livechat
-                    if (_video.snippet.liveBroadcastContent == 'live') {
-                        ytCore.traceStreamChatByYtdlp({ vID });
-                        // ytCore.traceStreamChat({ vID });
-                    }
-                }
-            }
-
+        if (seconds % 10 == 0
+            && !debug    // don't change channel name in debug mode
+        ) {
             // check channel name
             let channelStatus = new Map();
 
@@ -1811,7 +1665,7 @@ class MainMemberCheckerCore {
                 if (!channelStatus.has(gm.streamChannelID)) { channelStatus.set(gm.streamChannelID, { onLive: false, gm }); }
                 if (!channelStatus.has(gm.memberChannelID)) { channelStatus.set(gm.memberChannelID, { onLive: false, gm }); }
 
-                // get cID
+                // get cID                
                 const gmChannelID = managerKey.replace(/^\d+-/, '');  // managerKey = `${config.gID}-${holoChannelID}`
                 // get ytCore by cID
                 for (const [holoChannelID, ytCore] of this.ytChannelCores) {
@@ -1862,6 +1716,7 @@ module.exports = {
         const { client, guild, channel } = message;
 
         let video;
+
         for (const [managerKey, rCore] of mainMcCore.roleManagers) {
             // check workspace
             if (rCore.client.user.id != client.user.id) { continue; }
@@ -1949,6 +1804,10 @@ module.exports = {
                         // cache video data
                         ytCore.streamList.set(vID, video);
 
+                        if (['live', 'upcoming'].includes(video?.snippet?.liveBroadcastContent)) {
+                            ytCore.traceStreamChatByYtdlp({ vID });
+                        }
+
                         rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`手動新增直播清單`).setFooter({ text: holoChannelID }));
                     }
                     continue;
@@ -1974,44 +1833,6 @@ module.exports = {
                 continue;
             }
 
-            if (command == 'freechat') {
-                const ytCore = mainMcCore.ytChannelCores.get(holoChannelID);
-
-                for (const [vID, video] of ytCore.streamList) {
-                    // get cache
-                    if (!video) { continue; }
-
-                    // check stream start time
-                    const status = video.snippet.liveBroadcastContent;
-
-                    // get video data
-                    if (status != 'upcoming') { continue; }
-
-                    ytCore.cacheFreechatID = vID;
-                    ytCore.traceStreamChat({ vID });
-                }
-
-                (async (message) => {
-
-                    const dID = message.author.id;
-                    const member = guild.members.cache.get(dID);
-                    const roleIDs = Array.from(member.roles.cache.keys());
-                    await sleep(1500);
-                    const newRoleIDs = [];
-
-                    for (const value of member.roles.cache.keys()) {
-                        if (!roleIDs.includes(value)) { newRoleIDs.push(value); }
-                    }
-
-                    if (newRoleIDs.length > 0) {
-                        message.react('✅').catch(() => { });
-                    }
-
-                })(message);
-
-                continue;
-            }
-
             //    !trace <https://youtube.com/watch/Vx1K89idggs>    // member
             //    !trace <https://youtube.com/watch/-ni8_BFjjB8>    // short live
             //    !trace <https://youtube.com/watch/37YNx2Gag4g>    // long live
@@ -2023,67 +1844,54 @@ module.exports = {
                 // get vID
                 const [, vID] = args[0].match(regUrl);
 
+                // get video channel             
+                let ytCore = new YoutubeCore({ holoChannelID: null });  // dummy core for API
+                const video = await ytCore.youtubeAPI.getVideoStatus(vID);
+                const newChannelID = video?.snippet?.channelId;
+                const status = video?.snippet?.liveBroadcastContent;
+
+                // skip if not live
+                if (status == 'upcoming') { console.log(`[MC4] Can't trace upcoming video`); return; }
+                if (!newChannelID) { console.log(`[MC4] Can't trace video without channel ID`); return; }
+
+                let isDummyCore = false;
                 // set youtube core
-                let ytCore = new YoutubeCore({ holoChannelID: null });
-
-                let video = await ytCore.youtubeAPI.getVideoStatus(vID);
-
-                let newChannelID = video?.snippet?.channelId;
-                if (!video?.snippet) { return; }
+                if (!mainMcCore.ytChannelCores.has(newChannelID)) {
+                    const _ytCore = new YoutubeCore({ holoChannelID: newChannelID });
+                    mainMcCore.ytChannelCores.set(newChannelID, _ytCore);
+                    isDummyCore = true;
+                }
+                ytCore = mainMcCore.ytChannelCores.get(newChannelID);
 
                 // trace archive
-                if (!debug && video.snippet.liveBroadcastContent == 'none') { console.log(`[MC4] Trace archive ${vID}, skip rm.onLiveChat method.`); }
+                if (video.snippet.liveBroadcastContent == 'none') {
+                    console.log(`[MC4] Trace archive ${vID}`, debug ? `in debug mode.` : `, skip rm.onLiveChat method.`);
+                }
 
-                if (mainMcCore.ytChannelCores.has(newChannelID)) {
-                    // set real youtube core
-                    ytCore.destroy();
-                    ytCore = mainMcCore.ytChannelCores.get(newChannelID);
-                    if (!ytCore) { return; }
 
-                    ytCore.streamList.set(vID, video);
-                    ytCore.traceStreamChatByYtdlp({ vID });
-                    return;
-                } else {
-
+                if (isDummyCore) {
                     const cID = channel.id;
-
-                    // // check channel in use or not
-                    // for (let gID of client.guildConfigs.keys()) {
-
-                    //     const pluginConfig = client.getPluginConfig(gID, 'memberChecker4');
-                    //     if (!pluginConfig) { continue; }
-
-                    //     for (let config of pluginConfig) {
-                    //         if (config.streamChannelID == cID || config.memberChannelID == cID) {
-                    //             mclog(`[MC4] This channel is in use`)
-                    //             return;
-                    //         }
-                    //     }
-                    // }
-
                     const gID = guild.id;
 
                     // set new channel ID
                     ytCore.init({ holoChannelID: newChannelID });
-                    ytCore.streamList.set(vID, video);
                     // block clock method
                     ytCore.getVideoList = null;
 
-                    // set youtube core
-                    mainMcCore.ytChannelCores.set(newChannelID, ytCore);
-
                     // get variable
                     const newManagerKey = `${gID}-${newChannelID}`;
+
                     // set guild manager
                     let gm = new GuildManager({ client, gID, streamChannelID: cID, memberChannelID: cID });
                     mainMcCore.guildManagers.set(newManagerKey, gm);
 
                     // set config object 
                     mainMcCore.configs.push({ gID, holoChannelID: newChannelID, streamChannelID: cID, memberChannelID: cID });
-
-                    ytCore.traceStreamChatByYtdlp({ vID });
-                    return;
                 }
+
+                ytCore.streamList.set(vID, video);
+                ytCore.traceStreamChatByYtdlp({ vID });
+                return;
             }
         }
     },
@@ -2120,8 +1928,17 @@ module.exports = {
     },
 
     idleCheck() {
-        for (let [holoChannelID, core] of mainMcCore.ytChannelCores) {
-            if (core.cacheStreamID != null) { return false };
+        for (let [holoChannelID, ytCore] of mainMcCore.ytChannelCores) {
+            // get video from ytCore
+            for (const [vID, video] of ytCore.streamList) {
+
+                // check stream start time
+                const status = video?.snippet?.liveBroadcastContent;
+
+                // skip if not live
+                if (status != 'live') { continue; }
+                return false;
+            }
         }
         return true;
     }
