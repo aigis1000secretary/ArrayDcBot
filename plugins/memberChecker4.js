@@ -695,6 +695,7 @@ class RoleManager {
         }
     }
 
+    // <youtubeID, isChatSponsor>
     memberCache = new Map();
     // method for outside call
     async onLiveChat({ auDetails }) {   // rm.onLiveChat
@@ -1366,9 +1367,11 @@ class YoutubeCore {
         fileStream.destroy();
 
         // update ytDlpData
-        (this.ytDlpArray.get(vID)).indexOfLine = indexOfLine;
-        (this.ytDlpArray.get(vID)).readFileCount = readFileCount + 1;
-        (this.ytDlpArray.get(vID)).readFileInterval = setTimeout(() => this.readStreamChatFile(vID), 500);
+        if (this.ytDlpArray.has(vID)) { // sometimes run after destroy
+            (this.ytDlpArray.get(vID)).indexOfLine = indexOfLine;
+            (this.ytDlpArray.get(vID)).readFileCount = readFileCount + 1;
+            (this.ytDlpArray.get(vID)).readFileInterval = setTimeout(() => this.readStreamChatFile(vID), 500);
+        }
     }
 
     destroyByVid(vID, abort = true) {
@@ -2011,6 +2014,7 @@ app.all('/callback', async (req, res) => {
         let connections = await get({ url: `${API_ENDPOINT}/users/@me/connections`, headers, json: true })
         // get user data
         let cIDs = [];          // YT channel ID list
+        let cIDstring = '';
         let dID = null;         // Discord user ID
         let username = null;    // Discord user name
         let tag = null;         // Discord user tag number
@@ -2041,21 +2045,21 @@ app.all('/callback', async (req, res) => {
             res.send(html);
             return;
         } else {
-            cIDs = cIDs.join(',').substring(0, 80);
+            cIDstring = cIDs.join(',').substring(0, 80);
         }
 
         // check database
         pgData = (await Pg.getDataByDiscordID(dID))?.rows || [];
         if (pgData.length <= 0) {
-            await Pg.creatData(dID, cIDs);
-        } else if (pgData[0].youtube_id != cIDs) {
-            await Pg.updateYoutubeID(dID, cIDs);
+            await Pg.creatData(dID, cIDstring);
+        } else if (pgData[0].youtube_id != cIDstring) {
+            await Pg.updateYoutubeID(dID, cIDstring);
         }
 
         // get result
         let userData = Pg.dataCache.get(dID);
         let html = [`User: ${username}`,];
-        for (let cID of cIDs.split(',')) {
+        for (let cID of cIDs) {
             html.push(`Youtube channel: https://www.youtube.com/channel/${cID}`);
         }
         for (let key of Object.keys(userData)) {
@@ -2072,6 +2076,14 @@ app.all('/callback', async (req, res) => {
             // log
             rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.Green).setDescription(`申請完成: @${username}#${tag} <@${dID}>`));
         }
+
+        // delete yt user from all roleManagers cache
+        for (const [managerKey, rm] of mainMcCore.roleManagers) {
+            for (let cID of cIDs) {
+                rm.memberCache.delete(cID)
+            }
+        }
+
         return;
     } catch (e) {
         console.log(e)
