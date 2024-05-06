@@ -1,42 +1,57 @@
 
 const { PermissionFlagsBits } = require('discord.js');
 
+const webhookName = 'dummy messenger';
+
 module.exports = {
     name: 'edit user message',
-    description: "replace user message by make a fake message",
+    description: "replace user message by make a dummy message",
 
     async editUserMessage(message, payload) {
 
         const { author, channel } = message;
 
+
         // check permissions
-        let permissions = channel.permissionsFor(channel.guild.members.me);
+        const permissions = channel.permissionsFor(channel.guild.members.me);
         if (!permissions.has(PermissionFlagsBits.ManageWebhooks)) {
             console.log('[Modules] Missing Permissions: MANAGE_WEBHOOKS');
             return;
         }
 
-        // get user
-        const name = author.globalName || author.displayName || author.username;
-        const avatar = author.displayAvatarURL({ format: 'png', size: 1024 }).replace(/\.webp/, '.png') // size: 4096
 
-        // create webhook
-        const webhook = await channel.createWebhook({ name, avatar })
-            // .then(webhook => { console.log(webhook); return webhook; })
-            .catch(console.error)
+        // get channel webhook
+        let hook;
+        const hooks = await channel.fetchWebhooks().catch(console.error);
+        if (hooks) {
+            // get webhook
+            for (let [key, value] of hooks) {
+                if (value.owner.id == message.client.user.id && value.name == webhookName) {
+                    hook = value;
+                    break;
+                }
+            }
+        }
+        // create webhook if not exist
+        hook = hook || await channel.createWebhook({ name: webhookName }).catch(console.error);
+
 
         // delete origin message
         if (message.deletable) { message.delete().catch(() => { }); }
 
+
         // send message by webhook
-        await webhook.send(payload)
+        // payload.username = (author.globalName || author.displayName || author.username) + ` <@${author.id}>`;
+        payload.username = author.globalName || author.displayName || author.username || `<@${author.id}>`;
+        payload.avatarURL = author.displayAvatarURL({ format: 'png', size: 1024 }).replace(/\.webp/, '.png') // size: 4096
+        await hook.send(payload)
             // .then(message => { console.log(`Sent message: ${message.content}`); return message; })
             .catch(console.error);
 
-        // delete webhook
-        await webhook.delete()
-            // .then(console.log)
-            .catch(console.error);
+        // // delete webhook
+        // await webhook.delete()
+        //     // .then(console.log)
+        //     .catch(console.error);
 
         return;
 
