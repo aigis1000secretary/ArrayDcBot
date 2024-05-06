@@ -1804,22 +1804,34 @@ class MainMemberCheckerCore {
 
             // check channel name
             let channelStatus = new Map();
+
             for (const [managerKey, gm] of this.guildManagers) {
 
                 // register channel
                 if (!channelStatus.has(gm.streamChannelID)) { channelStatus.set(gm.streamChannelID, { onLive: false, gm }); }
                 if (!channelStatus.has(gm.memberChannelID)) { channelStatus.set(gm.memberChannelID, { onLive: false, gm }); }
 
-                // get live status
-                const holoChannelID = managerKey.replace(/^\d+-/, '');
-                const ytCore = this.ytChannelCores.get(holoChannelID);
-                let video = ytCore.streamList.get(ytCore.cacheStreamID) || null;
-                if (video) {
-                    // onLive
-                    if (!video.memberOnly) {
-                        { channelStatus.get(gm.streamChannelID).onLive = true; }
-                    } else {
-                        { channelStatus.get(gm.memberChannelID).onLive = true; }
+                // get cID
+                const gmChannelID = managerKey.replace(/^\d+-/, '');  // managerKey = `${config.gID}-${holoChannelID}`
+                // get ytCore by cID
+                for (const [holoChannelID, ytCore] of this.ytChannelCores) {
+                    if (holoChannelID != gmChannelID) { continue; }
+
+                    // get video from ytCore
+                    for (const [vID, video] of ytCore.streamList) {
+
+                        // check stream start time
+                        const status = video?.snippet?.liveBroadcastContent;
+
+                        // skip if not live
+                        if (status != 'live') { continue; }
+
+                        // get member only or not
+                        const memberOnly = ytCore.streamIsMemberOnly(vID);
+
+                        // set onlive statu
+                        if (memberOnly) { (channelStatus.get(gm.memberChannelID)).onLive = true; }
+                        else { (channelStatus.get(gm.streamChannelID)).onLive = true; }
                     }
                 }
             }
