@@ -1,8 +1,7 @@
 
 const [EMOJI_HAMMER_AND_WRENCH, EMOJI_BIRD, EMOJI_ALARM_CLOCK, EMOJI_BUILDING_CONSTRUCTION] = ['🛠️', '🐦', '⏰', '🏗️']
 const EMOJI_REBOOTED = (process.env.HOST_TYPE == 'FLY_IO' ? EMOJI_BIRD : EMOJI_ALARM_CLOCK);
-const EMOJI_VIBRATION = '📳';
-const EMOJI_PHONE_OFF = '📴';
+const [EMOJI_VIBRATION, EMOJI_PHONE_OFF] = ['📳', '📴'];
 
 const DEBUG_CHANNEL_ID = '826992877925171250';
 
@@ -20,7 +19,7 @@ if (fs.existsSync("./.env")) {
     process.on('SIGHUP', async () => { await recentlyBootMsg.delete().catch(() => { }); process.exit(0); });
 } else {
     // github deploy
-    process.on('SIGINT', async () => { await recentlyBootMsg.react(EMOJI_HAMMER_AND_WRENCH).catch(() => { }); process.exit(0); });
+    process.on('SIGINT', async () => { await recentlyBootMsg.react(EMOJI_VIBRATION).catch(() => { }); process.exit(0); });
 }
 
 module.exports = {
