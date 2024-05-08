@@ -297,13 +297,14 @@ class Pg {
             await this.creatTable();
         }
 
-        // load cache
+        // load data to cache
         const sql = `SELECT * FROM user_connections;`
         const res = await pool.query(sql).catch((error) => { console.log(error.message) });
         if (res) {
             for (const pgUser of res.rows) {
                 pgUser.discord_id = pgUser.discord_id.trim();
                 pgUser.youtube_id = pgUser.youtube_id.trim();
+                for (let key of Object.keys(pgUser)) { if (key.includes('_expires')) { pgUser[key] = parseInt(pgUser[key]); } }
                 this.dataCache.set(pgUser.discord_id, pgUser);
             }
         }
@@ -868,7 +869,7 @@ class GuildManager {
         const { client } = config;
         this.client = client;
 
-        // get guild, expiresKey
+        // get guild
         const { gID } = config;
         this.guild = await this.client.guilds.fetch(gID);
 
