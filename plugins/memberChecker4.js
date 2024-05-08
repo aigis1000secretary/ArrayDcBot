@@ -1386,7 +1386,7 @@ class YoutubeCore {
             else { ytDlpData.ytDlpController = null; }
         }
 
-        if (ytDlpData.livechatFile) {
+        if (ytDlpData.livechatFile && fs.existsSync(ytDlpData.livechatFile)) {
             try { fs.unlinkSync(ytDlpData.livechatFile); } catch (e) { console.log(e.message); }
         }
 
@@ -1994,12 +1994,12 @@ app.all('/callback', async (req, res) => {
         let headers = { "Content-Type": "application/x-www-form-urlencoded" };
         let body = [
             `client_id=${rCore.client.user.id}`,
-            `&client_secret=${rCore.client.mainConfig.clientSecret}`,
-            '&grant_type=authorization_code',
-            `&code=${req.query.code}`,
-            `&redirect_uri=${redirectUri}/callback`,
-            '&scope=connections'
-        ].join('');
+            `client_secret=${rCore.client.mainConfig.clientSecret}`,
+            `grant_type=authorization_code`,
+            `code=${req.query.code}`,
+            `redirect_uri=${redirectUri}/callback`,
+            `scope=connections`
+        ].join('&');
 
         // get oauth2 token
         let tokenResponse = await post({ url: `${API_ENDPOINT}/oauth2/token`, headers, body, json: true })
@@ -2064,13 +2064,31 @@ app.all('/callback', async (req, res) => {
             html.push(`Youtube channel: https://www.youtube.com/channel/${cID}`);
         }
         for (let key of Object.keys(userData)) {
-            if (!key.includes('_expires')) { continue; }
+            if (key != expiresKey) { continue; }
             if (parseInt(userData[key]) != 0) {
                 html.push(`${key} in time: ${new Date(parseInt(userData[key])).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
             } else {
                 html.push(`${key} in time: waiting Authorize`);
             }
         }
+
+        const keys = new Set();
+        const vIDs = new Set();
+        for (const config of mainMcCore.configs) { if (config.expiresKey == expiresKey) { keys.add(config.holoChannelID); } }
+        for (const holoChannelID of keys) { for (const [vID, video] of mainMcCore.ytChannelCores.get(holoChannelID).streamList) { vIDs.add(vID); } }
+        if (vIDs.size >= 1) {
+            html.push(`可在此留言等待bot驗證:`);
+            let array = [[], []];
+
+            for (const vID of vIDs) {
+                array[0].push(`<iframe width="280" height="157" src="https://www.youtube.com/embed/${vID}"></iframe>`);
+                array[1].push(`<iframe width="280" height="400" src="https://www.youtube.com/live_chat?v=${vID}&embed_domain=${redirectUri.replace('https:\/\/', '')}"></iframe>`);
+            }
+
+            html.push(array[0].join(' '));
+            html.push(array[1].join(' '));
+        }
+
         res.send(html.join('<br>'));
 
         for (rCore of rCores) {
