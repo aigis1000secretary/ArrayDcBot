@@ -920,7 +920,7 @@ class GuildManager {
 
     liveChatCache = new Set();
     // method for outside call
-    async onLiveChat({ auDetails, message, superchat, vID, isMemberOnly }) {    // gm.onLiveChat
+    async onLiveChat({ auDetails, message, superchat, vID, isMemberOnly, startTime }) {    // gm.onLiveChat
 
         // get Date
         const now = new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' });
@@ -942,12 +942,14 @@ class GuildManager {
         else if (auDetails.isChatSponsor) { embed.setColor(0x13B56E); }
         // set url
         let url = `https://youtu.be/${vID}`;
+        let offsetTimeMsec = 0;
         if (auDetails.timestampText) {
             let timeText = '00:00:' + auDetails.timestampText;
             let [, hrs, min, sec] = timeText.match(/(\d+):(\d+):(\d+)$/) || [, '00', '00', '00'];
             timeText = `${hrs}h${min}m${sec}s`.replace(/^[0hm]+/, '');
 
             url = `https://youtu.be/${vID}&t=${timeText}`;
+            offsetTimeMsec = ((hrs * 60 + parseInt(min)) * 60 + parseInt(sec)) * 1000;
         }
 
         embed.setAuthor({
@@ -955,7 +957,12 @@ class GuildManager {
             iconURL: auDetails.profileImageUrl, url
         })
         if (message) { embed.setDescription(message); }
-        embed.setFooter({ text: `${vID} - ${now}` });
+        if (startTime && (auDetails.videoOffsetTimeMsec || offsetTimeMsec)) {
+            const timestamp = startTime + (parseInt(auDetails.videoOffsetTimeMsec) || offsetTimeMsec);
+            const timestampString = new Date(timestamp).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' });
+            embed.setFooter({ text: `${vID} - ${timestampString}` });
+        }
+        else { embed.setFooter({ text: `${vID} - ${now}` }); }
 
         channel.send({ embeds: [embed] }).catch(console.log);
     }
@@ -1115,7 +1122,7 @@ class YoutubeCore {
 
         // start stream
         let command = [
-            `https://www.youtube.com/watch?v=${vID}`,
+            `https://youtu.be/${vID}`,
             '--skip-download', '--restrict-filenames',
             '--write-subs', '--sub-langs', 'live_chat',
             '--ignore-no-formats', (isLinux ? '--no-windows-filenames' : '--windows-filenames'),
@@ -1264,6 +1271,13 @@ class YoutubeCore {
             crlfDelay: Infinity
         });
 
+        const video = this.streamList.get(vID);
+        let startTime = null;
+        if (video) {
+            startTime = video.liveStreamingDetails?.scheduledStartTime || video.snippet?.publishedAt || null;
+            startTime = startTime ? Date.parse(startTime) : null;
+        }
+
         let i = -1;
         for await (const line of rl) {
             ++i;
@@ -1303,7 +1317,8 @@ class YoutubeCore {
                 isChatSponsor: false, isVerified: false,
                 sponsorLevel: -1,
                 profileImageUrl: '',
-                timestampText: renderer.timestampText?.simpleText || null
+                timestampText: renderer.timestampText?.simpleText || null,
+                videoOffsetTimeMsec: chatItem.replayChatItemAction.videoOffsetTimeMsec || null
             }
             // user level
             let authorBadges = renderer.authorBadges || [];
@@ -1366,7 +1381,7 @@ class YoutubeCore {
             // SC
             let superchat = renderer.purchaseAmountText?.simpleText || '';
             // callback
-            await mainMcCore.onLiveChat({ holoChannelID: this.holoChannelID, vID, auDetails, message, superchat, customEmojis: emojis });
+            await mainMcCore.onLiveChat({ holoChannelID: this.holoChannelID, vID, auDetails, message, superchat, customEmojis: emojis, startTime });
         }
 
         if (readFileCount % 10 == 0) { mclog(`[MC4] ${vID} -- ${indexOfLine.toString().padStart(8, ' ')} messages returned --`); }
@@ -1542,7 +1557,7 @@ class MainMemberCheckerCore {
         this.configs.push(config);
     }
 
-    async onLiveChat({ holoChannelID, vID, auDetails, message, superchat, customEmojis }) {  // mainMcCore.onLiveChat
+    async onLiveChat({ holoChannelID, vID, auDetails, message, superchat, customEmojis, startTime }) {  // mainMcCore.onLiveChat
         // console.log(
         //     `[Livechat ${holoChannelID}]`,
         //     (auDetails.isChatModerator ? '🔧' : '　'), (auDetails.isChatOwner ? '⭐' : '　'), (auDetails.isVerified ? '✔️' : '　'), (auDetails.isChatSponsor ? '🤝' : '　'),
@@ -1582,7 +1597,7 @@ class MainMemberCheckerCore {
             // check target channel
             const isMemberOnly = ytCore.streamIsMemberOnly(vID);
 
-            messagePayload = { auDetails, message, superchat, vID, isMemberOnly };
+            messagePayload = { auDetails, message, superchat, vID, isMemberOnly, startTime };
         }
 
 
