@@ -901,11 +901,11 @@ class GuildManager {
         if (channel.name != channelName) {
             // setting
             this.settingChannel.add(channel.id);
-            console.log(`<#${channel.id}> set name to ${channelName}`);
+            mclog(`<#${channel.id}> set name to ${channelName}`);
 
             channel.setName(channelName)
                 .then((newChannel) => {
-                    console.log(`<#${channel.id}> now name is ${newChannel.name}`);
+                    mclog(`<#${channel.id}> now name is ${newChannel.name}`);
                     this.settingChannel.delete(channel.id);
                 })
                 .catch((error) => {
@@ -991,7 +991,7 @@ class YoutubeCore {
 
         let newStreamList = new Set();
 
-        for (const eventType of ['upcoming', 'live']) {
+        for (const eventType of ['live', 'upcoming']) {
             // get search
             let _videos = await this.youtubeAPI.getVideoSearch({ eventType });
 
@@ -1013,7 +1013,7 @@ class YoutubeCore {
                 // update liveBroadcastContent
                 if (this.streamList.has(vID)) {
                     video.memberOnly = (this.streamList.get(vID))?.memberOnly;
-                } else {
+                } else if (['live', 'upcoming'].includes(video.snippet?.liveBroadcastContent)) {
                     newStreamList.add(vID);
                 }
 
@@ -1122,7 +1122,8 @@ class YoutubeCore {
             // '--cookies', 'cookies.txt'
         ];
         if (memberOnly) { command.push('--cookies'); command.push('cookies.txt'); }
-        if (debug) { console.log(`[ytDlpEvent](${vID}) yt-dlp ${command.join(' ')}`); }
+        if (debug) { console.log(`[ytDlpWrap] (${vID}) yt-dlp ${command.join(' ')}`); }
+        console.log(`[ytDlpWrap] (${vID}) Execute.`);
 
         this.ytDlpArray.set(vID, ytDlpData);
 
@@ -1131,7 +1132,7 @@ class YoutubeCore {
             // .on('progress', (progress) => console.log(progress.percent, progress.totalSize, progress.currentSpeed, progress.eta))
             .on('ytDlpEvent', async (eventType, eventData) => {
                 // if (eventType != 'download' || !eventData.includes('frag')) {
-                //     mclog(`[ytDlpEvent](${vID}) [${eventType}]`, eventData);
+                //     mclog(`[ytDlpWrap] (${vID}) [${eventType}]`, eventData);
                 // }
 
                 // download live chat data
@@ -1140,7 +1141,7 @@ class YoutubeCore {
                 ) {
                     // get data json filename
                     let [, filename] = eventData.match(/Destination:\s*([\S\s]+\.live_chat\.json)/);
-                    console.log(`[ytDlpWrap] ${filename}`);
+                    console.log(`[ytDlpWrap] (${vID}) ${filename}`);
 
                     // set filename
                     (this.ytDlpArray.get(vID)).livechatFile = filename;
@@ -1197,12 +1198,17 @@ class YoutubeCore {
                     }
 
                     // log
-                    console.log(`[ytDlpWrap] Private video [${vID}]`);
+                    console.log(`[ytDlpWrap] (${vID}) Private video.`);
 
                 } else if (error.toString().includes('Unable to rename file: [WinError 32]')) {
                     console.log(`ERROR: Unable to rename file: [WinError 32]`);
 
+                } else if (error.toString().includes('aQvGIIdgFDM')) {
+                    console.log(`[ytDlpWrap] (${vID}) Warning:`);
+                    console.log(`WARNING: [youtube] Skipping player responses from android clients (got player responses for video "aQvGIIdgFDM" instead of "IiVnwOy_CP0")`);
+                    // shouldn't here
                 } else {
+                    console.log(`[ytDlpWrap] (${vID}) Error.`);
                     console.error(error);
                     // shouldn't here
                 }
@@ -1236,7 +1242,7 @@ class YoutubeCore {
                 }
 
                 // log
-                console.log(`[ytDlpWrap] All done [${vID}]`);
+                console.log(`[ytDlpWrap] (${vID}) All done.`);
             }); //*/
 
     }
