@@ -1685,35 +1685,67 @@ class MainMemberCheckerCore {
             let channelStatus = new Map();
 
             for (const [managerKey, gm] of this.guildManagers) {
+                // get gm's youtube channel ID
+                const gmYtChannelID = managerKey.replace(/^\d+-/, '');  // managerKey = `${config.gID}-${holoChannelID}`
 
                 // register channel
-                if (!channelStatus.has(gm.streamChannelID)) { channelStatus.set(gm.streamChannelID, { onLive: false, gm }); }
-                if (!channelStatus.has(gm.memberChannelID)) { channelStatus.set(gm.memberChannelID, { onLive: false, gm }); }
+                if (!channelStatus.has(gm.streamChannelID)) { channelStatus.set(gm.streamChannelID, { onLive: false, gm, gmYtChannelID }); }
+                if (!channelStatus.has(gm.memberChannelID)) { channelStatus.set(gm.memberChannelID, { onLive: false, gm, gmYtChannelID }); }
+            }
 
-                // get cID                
-                const gmChannelID = managerKey.replace(/^\d+-/, '');  // managerKey = `${config.gID}-${holoChannelID}`
-                // get ytCore by cID
-                for (const [holoChannelID, ytCore] of this.ytChannelCores) {
-                    if (holoChannelID != gmChannelID) { continue; }
+            // check all channel stream statu
+            for (const [holoChannelID, ytCore] of this.ytChannelCores) {
 
-                    // get video from ytCore
-                    for (const [vID, video] of ytCore.streamList) {
+                // get video from ytCore
+                for (const [vID, video] of ytCore.streamList) {
 
-                        // check stream start time
-                        const status = video?.snippet?.liveBroadcastContent;
+                    let _video = video;
+                    // get stream statu
+                    const status = video?.snippet?.liveBroadcastContent;
 
-                        // skip if not live
-                        if (status != 'live') { continue; }
+                    // try to update video if upcoming
+                    if (status == 'upcoming') {
+
+                        // skip freechat by starttime
+                        let startTime = video.liveStreamingDetails?.scheduledStartTime || 0;
+                        if (startTime && Date.parse(startTime) > Date.now()) { continue; }
+                        if (Date.now() > (Date.parse(startTime) + 43200000)) { continue; }  // skip upcoming video after 12hr
+
+                        // now is live time, recheck stream if status is upcoming
+                        // get REAL video data from API
+                        _video = await ytCore.youtubeAPI.getVideoStatus(vID);
+
+                        // API error, quotaExceeded
+                        if (!_video?.snippet) {
+                            // delete nan data video
+                            if (ytCore.streamList.has(vID)) {
+                                ytCore.streamList.delete(vID);
+                            }
+                            continue;
+                        }
+
+                        // update video data
+                        _video.memberOnly = (ytCore.streamList.get(vID))?.memberOnly;
+                        ytCore.streamList.set(vID, _video);
+                    }
+
+                    // set channel onLive flag
+                    if (status == 'live') {
 
                         // get member only or not
                         const memberOnly = ytCore.streamIsMemberOnly(vID);
 
-                        // set onlive statu
-                        if (memberOnly) { (channelStatus.get(gm.memberChannelID)).onLive = true; }
-                        else { (channelStatus.get(gm.streamChannelID)).onLive = true; }
+                        for (const [cID, { onLive, gm, gmYtChannelID }] of channelStatus) {
+                            if (holoChannelID != gmYtChannelID) { continue; }
+
+                            // set onlive statu
+                            if (memberOnly) { (channelStatus.get(gm.memberChannelID)).onLive = true; }
+                            else { (channelStatus.get(gm.streamChannelID)).onLive = true; }
+                        }
                     }
                 }
             }
+
             for (const [cID, { onLive, gm }] of channelStatus) {
                 gm.changeChannelName(cID, onLive);
             }
@@ -1876,7 +1908,7 @@ module.exports = {
                 const status = video?.snippet?.liveBroadcastContent;
 
                 // skip if not live
-                if (status == 'upcoming') { console.log(`[MC4] Can't trace upcoming video`); return; }
+                // if (status == 'upcoming') { console.log(`[MC4] Can't trace upcoming video`); return; }
                 if (!newChannelID) { console.log(`[MC4] Can't trace video without channel ID`); return; }
 
                 let isDummyCore = false;
