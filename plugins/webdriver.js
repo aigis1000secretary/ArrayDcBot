@@ -133,7 +133,7 @@ class ChromeDriver {
         console.log('Chrome driver login...');
 
         const loginBar = `input[autocomplete='username']`;
-        const userBtn = 'div > div > div > div.css-175oi2r.r-usiww2.r-1awozwy > div > div > div > div > div.r-1p0dtai.r-1pi2tsx.r-u8s1d.r-1d2f490.r-ipm5af.r-13qz1uu > div > div.r-1p0dtai.r-1pi2tsx.r-u8s1d.r-1d2f490.r-ipm5af.r-13qz1uu > div > div > div > div';
+        const userBtn = 'header[role="banner"] div[role="presentation"]';
 
         // home page
         await this.driver.get('https://twitter.com/i/flow/login');
