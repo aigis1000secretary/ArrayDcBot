@@ -30,8 +30,9 @@ module.exports = {
 
         // check uptime
         const uptimeInSec = parseInt(client.uptime / 1000);
-        // uptime < 5hr skip this reboot
-        if (uptimeInSec < 18000) { reboot = false; }
+
+        // // uptime < 3.5hr skip this reboot
+        // if (uptimeInSec < 12600) { reboot = false; }
 
         // uptime > 8.5hr 
         if (uptimeInSec > 30600 && minutes == 55 && seconds == 0) { reboot = true; }
