@@ -206,76 +206,87 @@ class YoutubeAPI {
         }
     };
 
-    async getStreamChat(liveChatId, pageToken) {
-        if (this.quotaExceeded[1]) {
-            return {
-                code: 403, message: 'quotaExceeded', reason: 'quotaExceeded',
-                variabale: { liveChatId, pageToken }
+    // youtube api by yt-dlp
+    async getVideoSearchByYtdlp({ channelId = this.holoChannelID, eventType, order, publishedAfter, memberOnly } = {}) {
+        const ytDlpWrap = new YTDlpWrap(ytdlpPath);
+
+        const playlistID = memberOnly ? channelId.replace(/^UC/, `UUMO`) : channelId.replace(/^UC/, `UU`);
+
+        // start stream
+        const command = [
+            `https://youtube.com/playlist?list=${playlistID}`,
+            `-O "%(id)s %(release_timestamp)s %(live_status)s %(channel_id)s %(title)s"`,
+            `--skip-download`, `--no-warning`, `--ignore-no-formats`, `--flat-playlist`
+        ];
+        // if (debug) { console.log(`[ytDlpWrap] (${channelId})`); console.log(`yt-dlp ${command.join(' ')}`); }
+
+        const stdout = await ytDlpWrap.execPromise(command, { shell: true, detached: false });
+
+        let results = [];
+        for (const _line of stdout.split('\n')) {
+            const line = _line.trim();
+            if (!line) { continue; }
+
+            const [, _vID, releaseTimestamp, liveStatus, channelId] = line.match(/([\w-]{11}) ([NA\d]+) ([\w_]+) ([\w-_]+) /) || [];
+            const title = line.replace(`${_vID} ${releaseTimestamp} ${liveStatus} ${channelId} `, '');   // in win32 title has encode error
+
+            // check match data
+            if (!_vID) { continue; }
+            const liveBroadcastContent = (liveStatus == 'is_live' ? `live` : (liveStatus == 'is_upcoming' ? `upcoming` : 'none'));
+            const scheduledStartTime = /^\d+$/.test(releaseTimestamp) ? new Date(parseInt(releaseTimestamp) * 1000).toISOString() : null;
+
+            // check tule
+            if (eventType && !eventType.includes(liveBroadcastContent)) { continue; }
+
+            // set result ro youtube API format
+            results.push({
+                id: _vID,
+                snippet: { channelId, title, liveBroadcastContent },
+                liveStreamingDetails: { scheduledStartTime, activeLiveChatId: null },
+                memberOnly
+            });
+        }
+
+        mclog(`[ytDlpWrap] (${channelId}) getVideoSearch, ${results.length} results`);
+        return results;
+    };
+    async getVideoStatusByYtdlp(vID) {
+        const ytDlpWrap = new YTDlpWrap(ytdlpPath);
+
+        // start stream
+        const command = [
+            `https://youtu.be/${vID}`,
+            `-O "%(id)s %(release_timestamp)s %(live_status)s %(channel_id)s %(title)s"`,
+            `--skip-download`, `--no-warning`, `--ignore-no-formats`, `--flat-playlist`
+        ];
+        if (debug) { console.log(`[ytDlpWrap] (${vID})`); console.log(`yt-dlp ${command.join(' ')}`); }
+
+        const stdout = await ytDlpWrap.execPromise(command, { shell: true, detached: false });
+
+        let result = null;
+        for (const _line of stdout.split('\n')) {
+            const line = _line.trim();
+            if (!line) { continue; }
+
+            const [, _vID, releaseTimestamp, liveStatus, channelId] = line.match(/([\w-]{11}) ([NA\d]+) ([\w_]+) ([\w-_]+) /) || [];
+            const title = line.replace(`${_vID} ${releaseTimestamp} ${liveStatus} ${channelId} `, '');   // in win32 title has encode error
+
+            // check match data
+            if (!_vID) { continue; }
+            const liveBroadcastContent = (liveStatus == 'is_live' ? `live` : (liveStatus == 'is_upcoming' ? `upcoming` : 'none'));
+            const scheduledStartTime = /^\d+$/.test(releaseTimestamp) ? new Date(parseInt(releaseTimestamp) * 1000).toISOString() : null;
+
+            // set result ro youtube API format
+            result = {
+                id: _vID,
+                snippet: { channelId, title, liveBroadcastContent },
+                liveStreamingDetails: { scheduledStartTime, activeLiveChatId: null },
             };
         }
 
-        try {
-            const url = 'https://www.googleapis.com/youtube/v3/liveChat/messages';
-            const params = {
-                part: 'id,snippet,authorDetails',
-                // part: 'id,authorDetails',
-                key: this.apiKey[1],
-                liveChatId,
-                pageToken
-            }
-            mclog(`[MC4] youtube.getStreamChat( ${liveChatId}, ${pageToken} )`);
-            const res = await get({ url, qs: params, json: true });
-
-            // throw error
-            if (res.statusCode != 200 || (res.body && res.body.error)) {
-                if (res.statusCode == 404) {
-                    throw {
-                        code: 404, message: 'Error 404 (Not Found)!!',
-                        errors: [{
-                            message: 'Error 404 (Not Found)!!',
-                            domain: 'global', reason: 'Not Found'
-                        }],
-                    };
-                }
-                else if (res.body) { throw res.body.error ? res.body.error : res.body; }
-                else throw res;
-            }
-
-            // get response data
-            const data = res.body;
-            return data;
-            // return
-            // const returnResult = {
-            //     kind: 'youtube#liveChatMessageListResponse', etag: 'k2roznPdnguYKdn3FWiXBQQrv6w', pollingIntervalMillis: 5008,
-            //     pageInfo: { totalResults: 200, resultsPerPage: 200 }, nextPageToken: 'GKvSj6q1z_kCIJmkya21z_kC',
-            //     items: [
-            //         {
-            //             kind: 'youtube#liveChatMessage', etag: 'JlqT1lUOml7QnSJvw8q-3RsVYCU',
-            //             id: 'LCC.CjgKDQoLWEZGYmtnejZ5QmsqJwoYVUMtaE02WUp1TllWQW1VV3hlSXI5RmVBEgtYRkZia2d6NnlCaxJFChpDT2FSaHFHMXpfa0NGWk1DclFZZFpPY0JzQRInQ0txT3B2SzB6X2tDRmZlUlZnRWRPTUFEbmcxNjYwNzkyMjQ5MjA4',
-            //             authorDetails: [Object]
-            //         }
-            //     ]
-            // }
-
-        } catch (error) {
-            // unknown error
-            if (!Array.isArray(error.errors) || !error.errors[0]) {
-                console.log(error);
-                return { code: error.code || null, error };
-            }
-
-            if (error.code == 403 && error.errors[0].reason == 'quotaExceeded') {
-                this.quotaExceeded[1] = true;
-            }
-            console.log(`youtube.getStreamChat ${error.errors[0].reason}`);
-            return {
-                code: error.code,
-                message: error.message,
-                reason: error.errors[0].reason,
-                variabale: { liveChatId, pageToken }
-            }
-        }
-    };
+        mclog(`[ytDlpWrap] (${vID}) getVideoStatus`, result === null ? 'fail.' : 'done.');
+        return result;
+    }
 }
 
 
@@ -1020,18 +1031,26 @@ class YoutubeCore {
             _videos = _videos.concat(videos);
         }//*/
 
-            for (let video of _videos) {
+        /* // get videos by yt-dlp
+        for (let videos of (await Promise.all([
+            this.youtubeAPI.getVideoSearchByYtdlp({ eventType: ['live', 'upcoming'], memberOnly: false }),
+            this.youtubeAPI.getVideoSearchByYtdlp({ eventType: ['live', 'upcoming'], memberOnly: true })
+        ]))) {
+            _videos = _videos.concat(videos);
+        }//*/
+
+        for (let video of _videos) {
             let vID = video.id.videoId || video.id;
 
-                // update liveBroadcastContent
-                if (this.streamList.has(vID)) {
+            // update liveBroadcastContent
+            if (this.streamList.has(vID)) {
                 video.memberOnly = (this.streamList.get(vID))?.memberOnly;  // maybe no need
-                } else if (['live', 'upcoming'].includes(video.snippet?.liveBroadcastContent)) {
-                    newStreamList.add(vID);
-                }
+            } else if (['live', 'upcoming'].includes(video.snippet?.liveBroadcastContent)) {
+                newStreamList.add(vID);
+            }
 
-                // cache video data
-                this.streamList.set(vID, video);
+            // cache video data
+            this.streamList.set(vID, video);
         }
 
 
@@ -1044,6 +1063,7 @@ class YoutubeCore {
         // set promise
         for (let [vID, video] of this.streamList) {
             streamList.push([vID, video, this.youtubeAPI.getVideoStatus(vID)]);
+            // streamList.push([vID, video, this.youtubeAPI.getVideoStatusByYtdlp(vID)]);
         }
         // promise.all
         for (let [, , promise] of streamList) { await promise; }
@@ -1082,11 +1102,11 @@ class YoutubeCore {
             let status = videoStatus.snippet.liveBroadcastContent;
             let startTime = videoStatus.liveStreamingDetails.scheduledStartTime;
 
-            // show search result
+            // show search result 
             searchResult.push([`[MC4] stream at`,
-                    new Date(Date.parse(startTime)).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }),
-                    vID,
-                    status.padStart(8, ' '),
+                new Date(Date.parse(startTime)).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }),
+                vID,
+                status.padStart(8, ' '),
                 videoStatus.snippet.title].join(' '));
 
             // update liveBroadcastContent
@@ -1885,7 +1905,7 @@ module.exports = {
 
                     if (ytCore.getVideoList == null) { continue; }
                     ytCore.getVideoList().then(() => {
-                    rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`更新直播清單`).setFooter({ text: holoChannelID }));
+                        rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`更新直播清單`).setFooter({ text: holoChannelID }));
                     });
                     continue;
                 }
