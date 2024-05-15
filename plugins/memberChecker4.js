@@ -47,7 +47,7 @@ class YoutubeAPI {
     };
 
     // youtube api
-    async getVideoSearch({ channelId = this.holoChannelID, eventType, order, publishedAfter } = {}) {
+    async getVideoSearch({ channelId = this.holoChannelID, eventType, order, publishedAfter, memberOnly } = {}) {
         mclog(`[MC4] youtube.getVideoSearch( ${channelId}, ${eventType} )`);
         if (this.quotaExceeded[0]) {
             return {
@@ -282,7 +282,7 @@ class YoutubeAPI {
 
 // ****** database api ******
 const { Pool } = require('pg');
-const pgConfig = { connectionString: process.env.DATABASE_URL, ssl: false, };
+const pgConfig = { connectionString: process.env.DATABASE_URL, ssl: false };
 const pool = new Pool(pgConfig);
 pool.connect().then(p => { p.end(); }).catch(console.error); // test connect
 const memberTime = 1000 * 60 * 60 * 24 * 35;    // 1000 ms  *  60 sec  *  60 min  *  24 hr  *  35 days
@@ -998,48 +998,60 @@ class YoutubeCore {
 
         let newStreamList = new Set();
 
+        let _videos = [];
+
+        // /* // get videos by youtube api
         for (const eventType of ['live', 'upcoming']) {
             // get search
-            let _videos = await this.youtubeAPI.getVideoSearch({ eventType });
+            let videos = await this.youtubeAPI.getVideoSearch({ eventType });
 
             // check result
-            if (!Array.isArray(_videos)) {
+            if (!Array.isArray(videos)) {
                 console.log(`getVideoLists error:`, this.holoChannelID);
-                if (_videos?.reason == 'quotaExceeded') {
+                if (videos?.reason == 'quotaExceeded') {
                     console.log(`{ code: 403, message: 'quotaExceeded', reason: 'quotaExceeded',`)
-                    console.log(`  variabale: { channelId: '${this.holoChannelID}', eventType: 'live', } }`)
+                    console.log(`  variabale: { channelId: '${this.holoChannelID}', eventType: 'live' } }`)
                 } else {
-                    console.log(_videos)
+                    console.log(videos)
                 }
-                _videos = [];
+                videos = [];
             }   // something is wrong
 
+            _videos = _videos.concat(videos);
+        }//*/
+
             for (let video of _videos) {
-                let vID = video.id.videoId;
+            let vID = video.id.videoId || video.id;
 
                 // update liveBroadcastContent
                 if (this.streamList.has(vID)) {
-                    video.memberOnly = (this.streamList.get(vID))?.memberOnly;
+                video.memberOnly = (this.streamList.get(vID))?.memberOnly;  // maybe no need
                 } else if (['live', 'upcoming'].includes(video.snippet?.liveBroadcastContent)) {
                     newStreamList.add(vID);
                 }
 
                 // cache video data
                 this.streamList.set(vID, video);
-            }
         }
 
 
         // ready to show search result
-        sleep(1000).then(() => {
-            mclog(`[MC4] now time:`, new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }));
-        });
+        let searchResult = [[`[MC4] now time:`, new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })].join(' ')];
 
         // get REALLY video data
+        // data array
+        let streamList = [];
+        // set promise
         for (let [vID, video] of this.streamList) {
+            streamList.push([vID, video, this.youtubeAPI.getVideoStatus(vID)]);
+        }
+        // promise.all
+        for (let [, , promise] of streamList) { await promise; }
+
+        for (let [vID, video, promise] of streamList) {
 
             // get REALLY video data & liveStreamingDetails
-            let videoStatus = await this.youtubeAPI.getVideoStatus(vID);
+            let videoStatus = await promise;
             if (!videoStatus) { continue; }
 
             // API error, quotaExceeded
@@ -1071,13 +1083,11 @@ class YoutubeCore {
             let startTime = videoStatus.liveStreamingDetails.scheduledStartTime;
 
             // show search result
-            sleep(1000).then(() => {
-                mclog(`[MC4] stream at`,
+            searchResult.push([`[MC4] stream at`,
                     new Date(Date.parse(startTime)).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }),
                     vID,
                     status.padStart(8, ' '),
-                    videoStatus.snippet.title);
-            });
+                videoStatus.snippet.title].join(' '));
 
             // update liveBroadcastContent
             if (this.streamList.has(vID)) {
@@ -1087,6 +1097,8 @@ class YoutubeCore {
             // cache video data
             this.streamList.set(vID, videoStatus);
         }
+
+        for (let line of searchResult) { mclog(line); }
 
         // trace livechat
         for (let vID of newStreamList) {
@@ -1129,7 +1141,7 @@ class YoutubeCore {
             // '--cookies', 'cookies.txt'
         ];
         if (memberOnly) { command.push('--cookies'); command.push('cookies.txt'); }
-        if (debug) { console.log(`[ytDlpWrap] (${vID}) yt-dlp ${command.join(' ')}`); }
+        // if (debug) { console.log(`[ytDlpWrap] (${vID})`); console.log(`yt-dlp ${command.join(' ')}`); }
         console.log(`[ytDlpWrap] (${vID}) Execute.`);
 
         this.ytDlpArray.set(vID, ytDlpData);
@@ -1646,7 +1658,7 @@ class MainMemberCheckerCore {
     async getVideoLists() {
         for (const [holoChannelID, ytCore] of this.ytChannelCores) {
             if (ytCore.getVideoList == null) { continue; }
-            await ytCore.getVideoList();
+            ytCore.getVideoList();
         }
     }
 
@@ -1872,8 +1884,9 @@ module.exports = {
                 } else if (isLogChannel) {
 
                     if (ytCore.getVideoList == null) { continue; }
-                    await ytCore.getVideoList();
+                    ytCore.getVideoList().then(() => {
                     rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`更新直播清單`).setFooter({ text: holoChannelID }));
+                    });
                     continue;
                 }
 
