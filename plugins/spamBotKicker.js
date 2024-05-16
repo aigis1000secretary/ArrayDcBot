@@ -76,7 +76,7 @@ const spamChecker = [
             const channel = bulkDelMessage[cID].channel;
             if (channel.permissionsFor(guild.members.me).has(PermissionFlagsBits.ManageMessages)) {
                 const bulkDel = bulkDelMessage[cID].messages;
-                channel.bulkDelete(bulkDel).catch((err) => console.log(`[sbk] ${err.message}`));
+                channel.bulkDelete(bulkDel).catch((err) => { if (err.message != 'Unknown Message') { console.log(`[SBK] ${err.message}`); } });
             }
         }
 
