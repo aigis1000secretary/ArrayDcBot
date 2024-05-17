@@ -8,9 +8,9 @@ const chrome = require('selenium-webdriver/chrome');
 
 const configPath = `./configs`;
 const loginPath = `./configs/login.json`;
-const regUrl = /https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)/;
-const regUserUrl = /https:\/\/twitter\.com\/([a-zA-Z0-9_]+)/;
-const regOnlyUrl = /^https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)$/;
+const regUrl = /https:\/\/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)/;
+const regUserUrl = /https:\/\/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)/;
+const regOnlyUrl = /^https:\/\/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)$/;
 const regImage = /^(http[^\?]+)\?format=([^\&]+)/;
 
 const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
@@ -273,7 +273,7 @@ class ChromeDriver {
             while (1) {
 
                 // get all tweet
-                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div > div > div > div > div`)).catch(() => []);
+                let elements = await this.driver.findElements(By.css(`main section > div > div > div > div > div`)).catch(() => []);
                 // let elements = await this.driver.findElements(By.css(`div[data-testid="cellInnerDiv"]`)).catch(() => []);
 
                 // div[data-testid="cellInnerDiv"]  // main .r-14lw9ot section > .css-1dbjc4n > div.r-18u37iz > div.r-13qz1uu > div > div
@@ -285,7 +285,7 @@ class ChromeDriver {
 
                 // get single tweet
                 for (let i = 0; i < elements.length; ++i) {
-                    const elePath = `main .r-14lw9ot section > div > div > div:nth-child(${i + 1}) > div > div`;
+                    const elePath = `main section > div > div > div:nth-child(${i + 1}) > div > div`;
                     // const elePath = `div[data-testid="cellInnerDiv"]:nth-child(${i + 1})`;
 
                     let tweet = await this.getTweetBySelector(elePath);
@@ -608,11 +608,11 @@ class ChromeDriver {
 
             {
                 // get tweet
-                let elements = await this.driver.findElements(By.css(`main .r-14lw9ot section > div > div > div > div > div`)).catch(() => []);
+                let elements = await this.driver.findElements(By.css(`main section > div > div > div > div > div`)).catch(() => []);
 
                 // get single tweet
                 for (let i = 0; i < elements.length; ++i) {
-                    const elePath = `main .r-14lw9ot section > div > div > div:nth-child(${i + 1}) > div > div`;
+                    const elePath = `main section > div > div > div:nth-child(${i + 1}) > div > div`;
 
                     let tweet = await this.getTweetBySelector(elePath);
 
