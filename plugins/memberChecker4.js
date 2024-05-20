@@ -953,27 +953,35 @@ class GuildManager {
         else if (auDetails.isChatSponsor) { embed.setColor(0x13B56E); }
         // set url
         let url = `https://youtu.be/${vID}`;
-        let offsetTimeMsec = 0;
-        if (auDetails.timestampText) {
-            let timeText = '00:00:' + auDetails.timestampText;
-            let [, hrs, min, sec] = timeText.match(/(\d+):(\d+):(\d+)$/) || [, '00', '00', '00'];
-            timeText = `${hrs}h${min}m${sec}s`.replace(/^[0hm]+/, '');
-
-            url = `https://youtu.be/${vID}&t=${timeText}`;
-            offsetTimeMsec = ((hrs * 60 + parseInt(min)) * 60 + parseInt(sec)) * 1000;
-        }
 
         embed.setAuthor({
             name: auDetails.displayName,
             iconURL: auDetails.profileImageUrl, url
         })
         if (message) { embed.setDescription(message); }
-        if (startTime && (auDetails.videoOffsetTimeMsec || offsetTimeMsec)) {
-            const timestamp = startTime + (parseInt(auDetails.videoOffsetTimeMsec) || offsetTimeMsec);
+
+        if (startTime) {
+            let timestamp;
+
+            if (auDetails.timestampText) {                      // for archive
+                let timeText = '00:00:' + auDetails.timestampText;
+                let [, hrs, min, sec] = timeText.match(/(\d+):(\d+):(\d+)$/) || [, '00', '00', '00'];
+                timeText = `${hrs}h${min}m${sec}s`.replace(/^[0hm]+/, '');
+
+                url = `https://youtu.be/${vID}&t=${timeText}`;
+                const offsetTimeMsec = ((hrs * 60 + parseInt(min)) * 60 + parseInt(sec)) * 1000;
+
+                timestamp = startTime + offsetTimeMsec;
+
+            } else if (auDetails.videoOffsetTimeMsec) {         // for upcoming & live
+                const offsetTimeMsec = parseInt(auDetails.videoOffsetTimeMsec);
+                timestamp = Date.now() + offsetTimeMsec;
+            }
+
             const timestampString = new Date(timestamp).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' });
             embed.setFooter({ text: `${vID} - ${timestampString}` });
-        }
-        else { embed.setFooter({ text: `${vID} - ${now}` }); }
+
+        } else { embed.setFooter({ text: `${vID} - ${now}` }); }
 
         channel.send({ embeds: [embed] }).catch(console.log);
     }
@@ -1357,7 +1365,7 @@ class YoutubeCore {
                 sponsorLevel: -1,
                 profileImageUrl: '',
                 timestampText: renderer.timestampText?.simpleText || null,
-                videoOffsetTimeMsec: chatItem.replayChatItemAction.videoOffsetTimeMsec || null
+                videoOffsetTimeMsec: chatItem.replayChatItemAction.videoOffsetTimeMsec || chatItem.videoOffsetTimeMsec || null
             }
             // user level
             let authorBadges = renderer.authorBadges || [];
