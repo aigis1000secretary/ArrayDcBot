@@ -975,6 +975,7 @@ class GuildManager {
 
             } else if (auDetails.videoOffsetTimeMsec) {         // for upcoming & live
                 const offsetTimeMsec = parseInt(auDetails.videoOffsetTimeMsec);
+                if (offsetTimeMsec < -30 * 1000) { return; }
                 timestamp = Date.now() + offsetTimeMsec;
             }
 
