@@ -1021,13 +1021,11 @@ class YoutubeCore {
         let _videos = [];
         if (byYtdlp) {
 
-            // get videos by yt-dlp
-            for (let videos of (await Promise.all([
-                this.youtubeAPI.getVideoSearchByYtdlp({ eventType: ['live', 'upcoming'], memberOnly: false }),
-                this.youtubeAPI.getVideoSearchByYtdlp({ eventType: ['live', 'upcoming'], memberOnly: true })
-            ]))) {
-                _videos = _videos.concat(videos);
-            }
+            // get videos by yt-dlp 
+            _videos = _videos.concat(
+                await this.youtubeAPI.getVideoSearchByYtdlp({ eventType: ['live', 'upcoming'], memberOnly: false }),
+                await this.youtubeAPI.getVideoSearchByYtdlp({ eventType: ['live', 'upcoming'], memberOnly: true })
+            );
 
         } else {
 
@@ -1077,16 +1075,18 @@ class YoutubeCore {
         // set promise
         for (let [vID, video] of this.streamList) {
 
-            if (byYtdlp) { streamList.push([vID, video, this.youtubeAPI.getVideoStatusByYtdlp(vID)]); }
-            else { streamList.push([vID, video, this.youtubeAPI.getVideoStatus(vID)]); }
+            const videoStatus = byYtdlp ?
+                await this.youtubeAPI.getVideoStatusByYtdlp(vID) :
+                await this.youtubeAPI.getVideoStatus(vID);
+
+            streamList.push([vID, video, videoStatus]);
         }
         // promise.all
         for (let [, , promise] of streamList) { await promise; }
 
-        for (let [vID, video, promise] of streamList) {
+        for (let [vID, video, videoStatus] of streamList) {
 
             // get REALLY video data & liveStreamingDetails
-            let videoStatus = await promise;
             if (!videoStatus) { continue; }
 
             // API error, quotaExceeded
@@ -1724,7 +1724,7 @@ class MainMemberCheckerCore {
         if (minutes == 3 && seconds == 0) {
             if ([3, 4, 5, 7, 9, 11].includes(hours)) {
                 // check stream by ytdlp in midnight
-                this.getVideoLists(true);
+                this.getVideoLists(true);    // disable for memoery leak error
             } else {
                 this.getVideoLists(false);
             }
@@ -1927,7 +1927,7 @@ module.exports = {
                 } else if (isLogChannel) {
 
                     if (ytCore.getVideoList == null) { continue; }
-                    ytCore.getVideoList().then(() => {
+                    ytCore.getVideoList(true).then(() => {
                         rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`更新直播清單`).setFooter({ text: holoChannelID }));
                     });
                     continue;
