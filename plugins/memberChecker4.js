@@ -1259,9 +1259,8 @@ class YoutubeCore {
                     console.log(`ERROR: Unable to rename file: [WinError 32]`);
 
                 } else if (error.toString().includes('aQvGIIdgFDM')) {
-                    console.log(`[ytDlpWrap] (${vID}) Warning:`);
-                    console.log(`WARNING: [youtube] Skipping player responses from android clients (got player responses for video "aQvGIIdgFDM" instead of "IiVnwOy_CP0")`);
-                    // shouldn't here
+                    mclog(`[ytDlpWrap] (${vID}) Warning:`);
+                    mclog(`WARNING: [youtube] Skipping player responses from android clients (got player responses for video "aQvGIIdgFDM" instead of "IiVnwOy_CP0")`);
                 } else {
                     console.log(`[ytDlpWrap] (${vID}) Error.`);
                     console.error(error);
@@ -1724,12 +1723,12 @@ class MainMemberCheckerCore {
         if (minutes == 3 && seconds == 0) {
             if ([3, 4, 5, 7, 9, 11].includes(hours)) {
                 // check stream by ytdlp in midnight
-                this.getVideoLists(true);    // disable for memoery leak error
+                // this.getVideoLists(true);    // disable for memoery leak error
             } else {
                 this.getVideoLists(false);
             }
         } else if ([23, 43].includes(minutes) && seconds == 0) {
-            this.getVideoLists(true);
+            // this.getVideoLists(true);
         }
 
         // check every 10sec
