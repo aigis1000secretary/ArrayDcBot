@@ -19,4 +19,5 @@ configs/login.json
 cookies.txt
 exported-cookies.json
 yt-dlp.exe
+*.live_chat.json.*
 image/

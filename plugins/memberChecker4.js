@@ -1005,39 +1005,44 @@ class YoutubeCore {
 
     // get live/upcoming stream by channel ID
     streamList = new Map(); // <vID, video>
-    async getVideoList() {
+    async getVideoList(byYtdlp = true) {
 
         let newStreamList = new Set();
 
         let _videos = [];
+        if (byYtdlp) {
 
-        // /* // get videos by youtube api
-        for (const eventType of ['live', 'upcoming']) {
-            // get search
-            let videos = await this.youtubeAPI.getVideoSearch({ eventType });
+            // get videos by yt-dlp
+            for (let videos of (await Promise.all([
+                this.youtubeAPI.getVideoSearchByYtdlp({ eventType: ['live', 'upcoming'], memberOnly: false }),
+                this.youtubeAPI.getVideoSearchByYtdlp({ eventType: ['live', 'upcoming'], memberOnly: true })
+            ]))) {
+                _videos = _videos.concat(videos);
+            }
 
-            // check result
-            if (!Array.isArray(videos)) {
-                console.log(`getVideoLists error:`, this.holoChannelID);
-                if (videos?.reason == 'quotaExceeded') {
-                    console.log(`{ code: 403, message: 'quotaExceeded', reason: 'quotaExceeded',`)
-                    console.log(`  variabale: { channelId: '${this.holoChannelID}', eventType: 'live' } }`)
-                } else {
-                    console.log(videos)
-                }
-                videos = [];
-            }   // something is wrong
+        } else {
 
-            _videos = _videos.concat(videos);
-        }//*/
+            // get videos by youtube api
+            for (const eventType of ['live', 'upcoming']) {
+                // get search
+                let videos = await this.youtubeAPI.getVideoSearch({ eventType });
 
-        /* // get videos by yt-dlp
-        for (let videos of (await Promise.all([
-            this.youtubeAPI.getVideoSearchByYtdlp({ eventType: ['live', 'upcoming'], memberOnly: false }),
-            this.youtubeAPI.getVideoSearchByYtdlp({ eventType: ['live', 'upcoming'], memberOnly: true })
-        ]))) {
-            _videos = _videos.concat(videos);
-        }//*/
+                // check result
+                if (!Array.isArray(videos)) {
+                    console.log(`getVideoLists error:`, this.holoChannelID);
+                    if (videos?.reason == 'quotaExceeded') {
+                        console.log(`{ code: 403, message: 'quotaExceeded', reason: 'quotaExceeded',`)
+                        console.log(`  variabale: { channelId: '${this.holoChannelID}', eventType: 'live' } }`)
+                    } else {
+                        console.log(videos)
+                    }
+                    videos = [];
+                }   // something is wrong
+
+                _videos = _videos.concat(videos);
+            }
+
+        }
 
         for (let video of _videos) {
             let vID = video.id.videoId || video.id;
@@ -1062,8 +1067,9 @@ class YoutubeCore {
         let streamList = [];
         // set promise
         for (let [vID, video] of this.streamList) {
-            streamList.push([vID, video, this.youtubeAPI.getVideoStatus(vID)]);
-            // streamList.push([vID, video, this.youtubeAPI.getVideoStatusByYtdlp(vID)]);
+
+            if (byYtdlp) { streamList.push([vID, video, this.youtubeAPI.getVideoStatusByYtdlp(vID)]); }
+            else { streamList.push([vID, video, this.youtubeAPI.getVideoStatus(vID)]); }
         }
         // promise.all
         for (let [, , promise] of streamList) { await promise; }
@@ -1155,12 +1161,13 @@ class YoutubeCore {
         // start stream
         let command = [
             `https://youtu.be/${vID}`,
-            '--skip-download', '--restrict-filenames',
-            '--write-subs', '--sub-langs', 'live_chat',
-            '--ignore-no-formats', (isLinux ? '--no-windows-filenames' : '--windows-filenames'),
-            // '--cookies', 'cookies.txt'
+            `--skip-download`, `--ignore-no-formats`,
+            `--write-subs`, `--sub-langs live_chat`,
+            // `--restrict-filenames`, (isLinux ? `--no-windows-filenames` : `--windows-filenames`),
+            `-o "livechat_%(id)s"`,
+            // `--cookies cookies.txt`
         ];
-        if (memberOnly) { command.push('--cookies'); command.push('cookies.txt'); }
+        if (memberOnly) { command.push(`--cookies`); command.push(`cookies.txt`); }
         // if (debug) { console.log(`[ytDlpWrap] (${vID})`); console.log(`yt-dlp ${command.join(' ')}`); }
         console.log(`[ytDlpWrap] (${vID}) Execute.`);
 
@@ -1552,6 +1559,7 @@ class MainMemberCheckerCore {
         // add new youtube core
         if (!this.ytChannelCores.has(holoChannelID)) {
             let ytCore = new YoutubeCore({ holoChannelID });
+            ytCore.getVideoList(true);
             this.ytChannelCores.set(holoChannelID, ytCore);
         }
 
@@ -1675,10 +1683,10 @@ class MainMemberCheckerCore {
     }
 
     // get stream (live/upcoming) videos
-    async getVideoLists() {
+    async getVideoLists(byYtdlp) {
         for (const [holoChannelID, ytCore] of this.ytChannelCores) {
             if (ytCore.getVideoList == null) { continue; }
-            ytCore.getVideoList();
+            ytCore.getVideoList(byYtdlp);
         }
     }
 
@@ -1704,9 +1712,15 @@ class MainMemberCheckerCore {
     async clockMethod({ hours, minutes, seconds }) {
 
         // check stream task list at XX:03:00
-        if (![3, 4, 5, 7, 9, 11].includes(hours) &&
-            minutes == 3 && seconds == 0) {
-            this.getVideoLists();
+        if (minutes == 3 && seconds == 0) {
+            if ([3, 4, 5, 7, 9, 11].includes(hours)) {
+                // check stream by ytdlp in midnight
+                this.getVideoLists(true);
+            } else {
+                this.getVideoLists(false);
+            }
+        } else if ([23, 43].includes(minutes) && seconds == 0) {
+            this.getVideoLists(true);
         }
 
         // check every 10sec
@@ -1936,7 +1950,7 @@ module.exports = {
 
                 // get video channel             
                 let ytCore = new YoutubeCore({ holoChannelID: null });  // dummy core for API
-                const video = await ytCore.youtubeAPI.getVideoStatus(vID);
+                const video = await ytCore.youtubeAPI.getVideoStatusByYtdlp(vID);
                 const newChannelID = video?.snippet?.channelId;
                 const status = video?.snippet?.liveBroadcastContent;
 
