@@ -123,6 +123,18 @@ class ChromeDriver {
         return null;
     }
 
+    async waitElementByText(options, text, timeout) {
+
+        for (let i = 0; i < timeout / 100; ++i) {
+            let ele = await this.findElementByText(options, text);
+            if (ele) { return ele; }
+
+            await sleep(100);
+        }
+
+        return null;
+    }
+
     async scrollToElement(ele) {
         await this.driver.actions()
             .scroll(0, 0, 0, 0, ele).perform()
@@ -379,7 +391,7 @@ class ChromeDriver {
 
                     } else {
                         errorCount = 0;
-                        
+
                         lastTweetID = tID;
                         await this.scrollToElement(lastElement);
                         console.log('scrollToElement')
@@ -564,6 +576,103 @@ class ChromeDriver {
         return result;
     }
 
+    async reportUser({ username }) {
+        if (!this.isWin32) { return {}; }
+
+        // waiting login
+        while (!this.constructed) { await sleepr(1500); }
+
+
+        // add task num hold searchTweet
+        ++this.searchingTask;
+
+        // waiting searching...
+        while (this.searching) { await sleepr(370); }
+
+
+        // start search
+        this.searching = true;
+        // get user obj
+        // crawle user page
+        await this.driver.get(`https://twitter.com/${username}`);
+
+
+        // get data object
+        const suspendedText = 'div > div.r-18u37iz.r-13qz1uu > div.r-14lw9ot.r-1jgb5lz.r-13qz1uu:first-child > div > div:last-child > div > div.r-1jgb5lz.r-13qz1uu > div.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div > div.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.r-poiln3.r-bcqeeo.r-qvutc0';
+        const userDataScript = 'script[type="application/ld+json"]';
+        const userProfileLock = 'svg.r-og9te1 > g';
+        const retryButton = 'div[data-testid="primaryColumn"] div[role="button"].r-ymttw5 svg.r-1d4mawv';
+        // wait page load
+        await Promise.race([
+            this.driver.wait(until.elementLocated(By.css(suspendedText)), 10000).catch(() => null),
+            this.driver.wait(until.elementLocated(By.css(userDataScript)), 10000).catch(() => null),
+            this.driver.wait(until.elementLocated(By.css(retryButton)), 10000).catch(() => null)
+        ]);
+
+        // twitter APi error
+        let ele = await this.driver.findElement(By.css(retryButton)).catch(() => null);
+        if (ele) {
+            // sleep 30sec
+            await sleepr(30000);
+
+            // retry
+            // crawle user page
+            if (uID) {
+                await this.driver.get(`https://twitter.com/i/user/${uID}`);
+            } else {
+                await this.driver.get(`https://twitter.com/${username}`);
+            }
+
+            // wait page load
+            await Promise.race([
+                this.driver.wait(until.elementLocated(By.css(suspendedText)), 10000).catch(() => null),
+                this.driver.wait(until.elementLocated(By.css(userDataScript)), 10000).catch(() => null),
+                this.driver.wait(until.elementLocated(By.css(retryButton)), 10000).catch(() => null)
+            ]);
+        }
+
+        // locked profile
+        ele = await this.driver.findElement(By.css(userProfileLock)).catch(() => null);
+        if (ele) { result.locked = true; }
+
+        // read profile data
+        const userAction = 'button[data-testid="userActions"]';
+        const elements = await this.driver.findElements(By.css(userAction)).catch(() => null);
+        for (const ele of elements) {
+            await ele.click().catch(() => { });
+
+            let _ele;
+            const userMenuitem = 'div[data-testid="Dropdown"] div[role="menuitem"] > div > div > span';
+            const userMenuReport = 'div[role="dialog"] div[role="group"] label > div > div > span';
+            const userMenuButton = 'div[role="dialog"] div[role="group"] Button';
+
+            _ele = await this.waitElementByText(By.css(userMenuitem), '檢舉', 10000);
+            if (!_ele) { continue; }
+            await _ele.click().catch(() => { });
+
+            _ele = await this.waitElementByText(By.css(userMenuReport), '垃圾訊息', 10000);
+            if (!_ele) { continue; }
+            await _ele.click().catch(() => { });
+
+            _ele = await this.waitElementByText(By.css(userMenuButton), '下一步', 10000);
+            if (!_ele) { continue; }
+            await _ele.click().catch(() => { });
+
+            _ele = await this.waitElementByText(By.css(userMenuButton), '完成', 10000);
+            if (!_ele) { continue; }
+            await _ele.click().catch(() => { });
+        }
+
+        --this.searchingTask;
+        this.searching = false;
+
+        if (this.searchingTask <= 0) {
+            this.searchingTask = 0;
+            await this.driver.get('https://twitter.com/notifications');
+        }
+
+        return;
+    }
 
 
 

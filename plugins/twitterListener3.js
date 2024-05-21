@@ -321,6 +321,18 @@ module.exports = {
                 return;
             }
 
+        } else if (command == 'report' && args[0]) {
+
+            if (chromeDriver.searching) {
+                channel.send(`[TL3] chromeDriver.searching...`)
+                    .then((msg) => setTimeout(() => msg.delete().catch(() => { }), 1000)).catch(() => { });
+            }
+
+            for (let username of args) {
+                // !report <username>
+                await chromeDriver.reportUser({ username });
+            }
+
         } else if (command == 'fixembed') {
 
             await message.delete().catch(() => { });
