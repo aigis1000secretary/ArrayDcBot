@@ -301,6 +301,14 @@ class ChromeDriver {
         return logged;
     }
 
+    async idle() {
+        await sleepr(3000);
+        if (!this.taskManager.queue.find(task => [taskStatus.none, taskStatus.waiting, taskStatus.running].includes(task.status))) {
+            // all task done
+            await this.driver.get('https://twitter.com/settings');
+        }
+    }
+
 
     // script
     async searchTweet(keyword, { dataNum = 20, after = 0, before = getTwitterSnowflake(Date.now()) }) {
@@ -453,8 +461,7 @@ class ChromeDriver {
             }
         }
 
-        await sleepr(370);
-        await this.driver.get('https://twitter.com/settings');
+        this.idle();
         // task done
         this.taskManager.taskDone(taskID);
         console.log(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
@@ -592,8 +599,7 @@ class ChromeDriver {
             }
         }
 
-        await sleepr(370);
-        await this.driver.get('https://twitter.com/settings');
+        this.idle();
         // task done
         this.taskManager.taskDone(taskID);
 
@@ -655,6 +661,7 @@ class ChromeDriver {
         // read profile data
         // const userAction = 'button[data-testid="userActions"]';
         const userAction = 'button[data-testid="caret"]';
+        await this.driver.wait(until.elementLocated(By.css(userAction)), 10000).catch(() => null)
         const elements = await this.driver.findElements(By.css(userAction)).catch(() => null);
         for (const ele of elements) {
             await ele.click().catch(() => { });
@@ -667,24 +674,27 @@ class ChromeDriver {
             _ele = await this.waitElementByText(By.css(userMenuitem), '檢舉', 10000);
             if (!_ele) { continue; }
             await _ele.click().catch(() => { });
+            await sleepr(370);
 
             _ele = await this.waitElementByText(By.css(userMenuReport), '垃圾訊息', 10000);
             if (!_ele) { continue; }
             await _ele.click().catch(() => { });
+            await sleepr(370);
 
             _ele = await this.waitElementByText(By.css(userMenuButton), '下一步', 10000);
             if (!_ele) { continue; }
             await _ele.click().catch(() => { });
+            await sleepr(370);
 
             _ele = await this.waitElementByText(By.css(userMenuButton), '完成', 10000);
             if (!_ele) { continue; }
             await _ele.click().catch(() => { });
+            await sleepr(370);
 
             break;
         }
 
-        await sleepr(370);
-        await this.driver.get('https://twitter.com/settings');
+        this.idle();
         // task done
         this.taskManager.taskDone(taskID);
 
@@ -719,7 +729,7 @@ class ChromeDriver {
 
                 ele = await this.driver.findElement(By.css(`div[data-testid="error-detail"]`)).catch(() => null);
                 if (ele) {
-                    await this.driver.get('https://twitter.com/settings');
+                    this.idle();
                     // task done
                     this.taskManager.taskDone(taskID);
                     return null;
@@ -753,8 +763,7 @@ class ChromeDriver {
             }
         }
 
-        await sleepr(370);
-        await this.driver.get('https://twitter.com/settings');
+        this.idle();
         // task done
         this.taskManager.taskDone(taskID);
 
