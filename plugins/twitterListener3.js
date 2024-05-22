@@ -206,11 +206,6 @@ module.exports = {
 
         } else if (command == 'getuid') {
 
-            if (chromeDriver.searching) {
-                channel.send(`[TL3] chromeDriver.searching...`)
-                    .then((msg) => setTimeout(() => msg.delete().catch(() => { }), 1000)).catch(() => { });
-            }
-
             if (args[0]) {
 
                 if (regUrl.test(args[0])) {
@@ -322,11 +317,6 @@ module.exports = {
             }
 
         } else if (command == 'report' && args[0]) {
-
-            if (chromeDriver.searching) {
-                channel.send(`[TL3] chromeDriver.searching...`)
-                    .then((msg) => setTimeout(() => msg.delete().catch(() => { }), 1000)).catch(() => { });
-            }
 
             for (let username of args) {
                 // !report <username>

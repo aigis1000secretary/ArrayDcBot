@@ -21,6 +21,7 @@ const getTwitterSnowflake = (time) => (BigInt(time - 1288834974657) << 22n);
 const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 14200704e5);
 const getTimeFromTwitterSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 1288834974657);
 
+// twitter user data
 class UserData {
     dateCreated;
     uID = '';
@@ -38,9 +39,60 @@ class UserData {
         this.suspended = false;
     }
 }
+
+const taskStatus = { none: 0, waiting: 1, running: 2, done: 3 }
+class Task {
+    id = null; status = taskStatus.none;
+    description = '';
+    constructor(id, description) {
+        this.id = id; this.description = description;
+        this.status = taskStatus.waiting;
+    }
+}
+class TaskManager {
+    queue = [];
+    queueCount = 0;
+    constructor() { }
+
+    registerTask(description) {
+        this.queue.push(new Task(this.queueCount, description));
+
+        if (this.queueCount == 0 || this.queue[this.queueCount - 1].status == taskStatus.done) {
+            this.queue[this.queueCount].status = taskStatus.running;
+        }
+
+        ++this.queueCount;
+        return this.queueCount - 1;
+    }
+
+    async waitingTask(id) {
+        while (1) {
+            // check task flag
+            if (this.queue[id].status == taskStatus.running) { break; }
+            await sleep(500);
+        }
+        return;
+    }
+
+    taskDone(id) {
+        // set doew flag
+        this.queue[id].status = taskStatus.done;
+
+        if (this.queueCount - 1 != id) {
+            // check if not last task
+            if (this.queue[id + 1].status == taskStatus.waiting) {
+                // next task is waiting, turn it running.
+                this.queue[id + 1].status = taskStatus.running;
+            }
+        }
+    }
+}
+
 class ChromeDriver {
 
     isWin32 = require("os").platform() == 'win32';
+
+    taskManager = new TaskManager();
 
     driver = null;
     constructor() {
@@ -49,8 +101,10 @@ class ChromeDriver {
         }
     }
 
-    constructed = false;
     async initBotChrome() {
+
+        const taskID = this.taskManager.registerTask('bot chrome init');
+        await this.taskManager.waitingTask(taskID);
 
         // chrome
         let chromeOptions = new chrome.Options();
@@ -72,7 +126,7 @@ class ChromeDriver {
 
         console.log('Chrome driver login done.');
 
-        this.constructed = true;
+        this.taskManager.taskDone(taskID);
     }
 
     async getLoginData() {
@@ -111,10 +165,10 @@ class ChromeDriver {
     }
 
     async findElementByText(options, text) {
-        let elements = await this.driver.findElements(options).catch(() => { });
+        const elements = await this.driver.findElements(options).catch(() => { });
 
         for (let ele of elements) {
-            let eleText = await ele.getText().catch(() => 'error');
+            const eleText = await ele.getText().catch(() => 'error');
             if (eleText == text || eleText.includes(text)) {
                 return ele;
             }
@@ -124,12 +178,13 @@ class ChromeDriver {
     }
 
     async waitElementByText(options, text, timeout) {
+        const delay = 100;
 
-        for (let i = 0; i < timeout / 100; ++i) {
-            let ele = await this.findElementByText(options, text);
+        for (let i = 0; i < timeout; i += delay) {
+            const ele = await this.findElementByText(options, text);
             if (ele) { return ele; }
 
-            await sleep(100);
+            await sleep(delay);
         }
 
         return null;
@@ -246,20 +301,16 @@ class ChromeDriver {
         return logged;
     }
 
-    searching = false;
-    searchingTask = 0;
 
+    // script
     async searchTweet(keyword, { dataNum = 20, after = 0, before = getTwitterSnowflake(Date.now()) }) {
         if (!this.isWin32) { return null; }
 
-        // waiting login
-        while (!this.constructed) { await sleepr(1500); }
-        // waiting searching...
-        while (this.searching || this.searchingTask) { await sleepr(1500); }
+        // register Task
+        const taskID = this.taskManager.registerTask(`searchTweet ${keyword}`);
+        await this.taskManager.waitingTask(taskID);                                 // waiting task queue
 
         // start search
-        this.searching = true;
-
         let searchResult = new Map();   // <tID>, <tweet>;
         {
             console.log(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} ${keyword}`);
@@ -402,9 +453,10 @@ class ChromeDriver {
             }
         }
 
-        await this.driver.get('https://twitter.com/notifications');
-        this.searching = false;
-
+        await sleepr(370);
+        await this.driver.get('https://twitter.com/settings');
+        // task done
+        this.taskManager.taskDone(taskID);
         console.log(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
 
         return searchResult;
@@ -439,50 +491,25 @@ class ChromeDriver {
     async getUserData({ username, uID, force = false }) {
         if (!this.isWin32) { return {}; }
 
-        // waiting login
-        while (!this.constructed) { await sleepr(1500); }
+        // register Task
+        const taskID = this.taskManager.registerTask(`getUserData ${username}`);
+        await this.taskManager.waitingTask(taskID);                                 // waiting task queue
 
-
-        // check db get username
+        // check db to get username
         if (!username && uID) { username = this.getUsernameByUID(uID); }
-
 
         // check db
         if (!force && this.mainUserDB.has(username)) {
             // not force search & verify data exist
             if (this.mainUserDB.get(username).suspended || this.mainUserDB.get(username).uID) {
+                // task done
+                this.taskManager.taskDone(taskID);
                 return this.mainUserDB.get(username);
             }
         }
         // data not exist, need to search
 
-
-        // add task num hold searchTweet
-        ++this.searchingTask;
-
-        // waiting searching...
-        while (this.searching) { await sleepr(370); }
-
-
-        // check db, maybe other search done when waiting
-        // check db get username
-        if (!username && uID) { username = this.getUsernameByUID(uID); }
-        if (this.mainUserDB.has(username)) {
-
-            --this.searchingTask;
-
-            if (this.searchingTask <= 0) {
-                this.searchingTask = 0;
-                await this.driver.get('https://twitter.com/notifications');
-            }
-
-            return this.mainUserDB.get(username);
-        }
-        // still no data
-
-
         // start search
-        this.searching = true;
         // get user obj
         let result = this.mainUserDB.has(username) ? this.mainUserDB.get(username) : new UserData(username);
         {
@@ -564,13 +591,11 @@ class ChromeDriver {
                 result.suspended = true;
             }
         }
-        --this.searchingTask;
-        this.searching = false;
 
-        if (this.searchingTask <= 0) {
-            this.searchingTask = 0;
-            await this.driver.get('https://twitter.com/notifications');
-        }
+        await sleepr(370);
+        await this.driver.get('https://twitter.com/settings');
+        // task done
+        this.taskManager.taskDone(taskID);
 
         this.mainUserDB.set(username, result);
         return result;
@@ -579,19 +604,11 @@ class ChromeDriver {
     async reportUser({ username }) {
         if (!this.isWin32) { return {}; }
 
-        // waiting login
-        while (!this.constructed) { await sleepr(1500); }
-
-
-        // add task num hold searchTweet
-        ++this.searchingTask;
-
-        // waiting searching...
-        while (this.searching) { await sleepr(370); }
-
+        // register Task
+        const taskID = this.taskManager.registerTask(`reportUser ${username}`);
+        await this.taskManager.waitingTask(taskID);                                 // waiting task queue
 
         // start search
-        this.searching = true;
         // get user obj
         // crawle user page
         await this.driver.get(`https://twitter.com/${username}`);
@@ -636,7 +653,8 @@ class ChromeDriver {
         if (ele) { result.locked = true; }
 
         // read profile data
-        const userAction = 'button[data-testid="userActions"]';
+        // const userAction = 'button[data-testid="userActions"]';
+        const userAction = 'button[data-testid="caret"]';
         const elements = await this.driver.findElements(By.css(userAction)).catch(() => null);
         for (const ele of elements) {
             await ele.click().catch(() => { });
@@ -661,15 +679,14 @@ class ChromeDriver {
             _ele = await this.waitElementByText(By.css(userMenuButton), '完成', 10000);
             if (!_ele) { continue; }
             await _ele.click().catch(() => { });
+
+            break;
         }
 
-        --this.searchingTask;
-        this.searching = false;
-
-        if (this.searchingTask <= 0) {
-            this.searchingTask = 0;
-            await this.driver.get('https://twitter.com/notifications');
-        }
+        await sleepr(370);
+        await this.driver.get('https://twitter.com/settings');
+        // task done
+        this.taskManager.taskDone(taskID);
 
         return;
     }
@@ -679,14 +696,11 @@ class ChromeDriver {
     async getTweetByTID({ username, tID }) {
         if (!this.isWin32) { return null; }
 
-        // waiting login
-        while (!this.constructed) { await sleepr(1500); }
-        // waiting searching...
-        while (this.searching || this.searchingTask) { await sleepr(370); }
+        // register Task
+        const taskID = this.taskManager.registerTask(`getTweetByTID ${tID}`);
+        await this.taskManager.waitingTask(taskID);                                 // waiting task queue
 
         // start search
-        this.searching = true;
-
         let searchResult = new Map();   // <tID>, <tweet>;
         {
             console.log(`Chrome get tweet ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} ${username}/status/${tID}`);
@@ -706,7 +720,8 @@ class ChromeDriver {
                 ele = await this.driver.findElement(By.css(`div[data-testid="error-detail"]`)).catch(() => null);
                 if (ele) {
                     await this.driver.get('https://twitter.com/settings');
-                    this.searching = false;
+                    // task done
+                    this.taskManager.taskDone(taskID);
                     return null;
                 }
 
@@ -738,8 +753,10 @@ class ChromeDriver {
             }
         }
 
+        await sleepr(370);
         await this.driver.get('https://twitter.com/settings');
-        this.searching = false;
+        // task done
+        this.taskManager.taskDone(taskID);
 
         return searchResult.has(tID) ? searchResult.get(tID) : null;
     }
@@ -909,11 +926,13 @@ const chromeDriver = new ChromeDriver();
 
 if (chromeDriver.isWin32) {
     const TEMP = process.env.TMP || process.env.TEMP;
-    for (let dir of fs.readdirSync(TEMP)) {
-        if (!dir.startsWith(`scoped_dir`) || !fs.lstatSync(`${TEMP}\\${dir}`).isDirectory()) { continue; }
+    try {
+        for (let dir of fs.readdirSync(TEMP)) {
+            if (!dir.startsWith(`scoped_dir`) || !fs.lstatSync(`${TEMP}\\${dir}`).isDirectory()) { continue; }
 
-        fs.rmSync(`${TEMP}\\${dir}`, { recursive: true, force: true });
-    }
+            fs.rmSync(`${TEMP}\\${dir}`, { recursive: true, force: true });
+        }
+    } catch (e) { console.log(e.message); }
 }
 
 
