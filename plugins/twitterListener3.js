@@ -18,7 +18,7 @@ const getTimeFromTwitterSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 
 // tl3-dlimg
 // const downloadFile = (url, filepath) => new Promise((resolve) => { require('request')(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); })
 
-const { chromeDriver } = require('./webdriver.js') || require('./plugins/webdriver.js');;
+const { chromeDriver, webLog } = require('./webdriver.js');
 
 const findLastTwitterMessage = async (channel, uID) => {
     let oldMessages = await channel.messages.fetch().catch(() => { });
@@ -175,10 +175,11 @@ module.exports = {
 
         if (command == 'tldebug' && message.client.user.id == client.user.id) {
             tllog = (tllog == console.log) ? () => { } : console.log;
+            webLog();
             return;
         }
 
-        if (!chromeDriver.isWin32) { return; }
+        if (!chromeDriver.active) { return; }
 
         const { channel, client } = message;
 
@@ -405,6 +406,7 @@ module.exports = {
 
     async messageReactionAdd(reaction, user, pluginConfig) {
 
+        // only run in ubuntu
         if (chromeDriver.isWin32) { return; }
 
         // skip bot reaction
@@ -437,7 +439,7 @@ module.exports = {
 
     async setup(client) {
 
-        if (!chromeDriver.isWin32) { return; }
+        if (!chromeDriver.active) { return; }
 
         client.once('close', () => {
             chromeDriver.close();
@@ -446,7 +448,7 @@ module.exports = {
 
     async clockMethod(client, { hours, minutes, seconds }) {
 
-        if (!chromeDriver.isWin32) { return; }
+        if (!chromeDriver.active) { return; }
 
         if (DISABLE_CLOCK_METHOD) { return; }
 

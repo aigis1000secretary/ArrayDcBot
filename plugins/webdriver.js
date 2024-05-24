@@ -21,6 +21,11 @@ const getTwitterSnowflake = (time) => (BigInt(time - 1288834974657) << 22n);
 const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 14200704e5);
 const getTimeFromTwitterSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 1288834974657);
 
+const headless = process.env.HEADLESS;
+const onlyWin32 = true;
+let webLog = headless ? () => { } : console.log
+
+
 // twitter user data
 class UserData {
     dateCreated;
@@ -91,12 +96,15 @@ class TaskManager {
 class ChromeDriver {
 
     isWin32 = require("os").platform() == 'win32';
+    active = (!onlyWin32 || this.isWin32);
+    // NOT only run in Win32            => active webdriver
+    // only run in Win32     && isWin32 => active webdriver
 
     taskManager = new TaskManager();
 
     driver = null;
     constructor() {
-        if (this.isWin32) {
+        if (this.active) {
             this.initBotChrome();
         }
     }
@@ -111,7 +119,7 @@ class ChromeDriver {
         chromeOptions.addArguments('--disable-gpu');             // 關閉GPU 避免某些系統或是網頁出錯
         chromeOptions.addArguments('--window-size=800,600');
         // chromeOptions.addArguments('User-Agent=Mozilla/5.0 (Linux; U; Android 8.1.0; zh-cn; BLA-AL00 Build/HUAWEIBLA-AL00) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.132 MQQBrowser/8.9 Mobile Safari/537.36')
-        if (!process.env.SHOW) {
+        if (process.env.HEADLESS) {
             chromeOptions.addArguments('--headless');                // 啟動Headless 無頭
         }
         // tab page
@@ -120,11 +128,11 @@ class ChromeDriver {
             .setChromeOptions(chromeOptions)
             .build();
 
-        console.log('Chrome driver init.');
+        webLog('Chrome driver init.');
 
         while (!await this.login()) { };
 
-        console.log('Chrome driver login done.');
+        webLog('Chrome driver login done.');
 
         this.taskManager.taskDone(taskID);
     }
@@ -154,7 +162,7 @@ class ChromeDriver {
 
             let username = (loginData || [])[0]?.username || '';
             if (username != '') {
-                console.log(); break;
+                break;
             }
 
             // let user set username/password
@@ -193,7 +201,7 @@ class ChromeDriver {
     async scrollToElement(ele) {
         await this.driver.actions()
             .scroll(0, 0, 0, 0, ele).perform()
-            .catch(e => console.log(e.message));
+            .catch(e => webLog(e.message));
     }
 
     async login() {
@@ -312,7 +320,7 @@ class ChromeDriver {
 
     // script
     async searchTweet(keyword, { dataNum = 20, after = 0, before = getTwitterSnowflake(Date.now()) }) {
-        if (!this.isWin32) { return null; }
+        if (!this.active) { return null; }
 
         // register Task
         const taskID = this.taskManager.registerTask(`searchTweet ${keyword}`);
@@ -321,7 +329,7 @@ class ChromeDriver {
         // start search
         let searchResult = new Map();   // <tID>, <tweet>;
         {
-            console.log(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} ${keyword}`);
+            webLog(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} ${keyword}`);
 
             // search page
             let _keyword = querystring.escape(keyword);
@@ -383,7 +391,7 @@ class ChromeDriver {
 
                     let { tID, isAdvertisement } = tweet;
 
-                    console.log(after, '<', tID, '<', before, (after < BigInt(tID)), (BigInt(tID) < before), !isAdvertisement);
+                    webLog(after, '<', tID, '<', before, (after < BigInt(tID)), (BigInt(tID) < before), !isAdvertisement);
 
                     if (!isAdvertisement) {
                         if (after) {
@@ -425,7 +433,7 @@ class ChromeDriver {
                         .sendKeys(Key.UP)
                         .sendKeys(Key.DOWN)
                         .perform()
-                        .catch(console.log);
+                        .catch(() => { });
 
                     await sleep(500); continue;
 
@@ -445,15 +453,15 @@ class ChromeDriver {
                             .sendKeys(Key.PAGE_UP)
                             .sendKeys(Key.END)
                             .perform()
-                            .catch(console.log);
-                        console.log('Key.PAGE_UP')
+                            .catch(() => { });
+                        webLog('Key.PAGE_UP')
 
                     } else {
                         errorCount = 0;
 
                         lastTweetID = tID;
                         await this.scrollToElement(lastElement);
-                        console.log('scrollToElement')
+                        webLog('scrollToElement')
                     }
 
                     await sleep(500); continue;
@@ -464,7 +472,7 @@ class ChromeDriver {
         this.idle();
         // task done
         this.taskManager.taskDone(taskID);
-        console.log(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
+        webLog(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
 
         return searchResult;
     }
@@ -496,7 +504,7 @@ class ChromeDriver {
         return;
     }
     async getUserData({ username, uID, force = false }) {
-        if (!this.isWin32) { return {}; }
+        if (!this.active) { return {}; }
 
         // register Task
         const taskID = this.taskManager.registerTask(`getUserData ${username}`);
@@ -608,7 +616,7 @@ class ChromeDriver {
     }
 
     async reportUser({ username }) {
-        if (!this.isWin32) { return {}; }
+        if (!this.active) { return {}; }
 
         // register Task
         const taskID = this.taskManager.registerTask(`reportUser ${username}`);
@@ -704,7 +712,7 @@ class ChromeDriver {
 
 
     async getTweetByTID({ username, tID }) {
-        if (!this.isWin32) { return null; }
+        if (!this.active) { return null; }
 
         // register Task
         const taskID = this.taskManager.registerTask(`getTweetByTID ${tID}`);
@@ -713,7 +721,7 @@ class ChromeDriver {
         // start search
         let searchResult = new Map();   // <tID>, <tweet>;
         {
-            console.log(`Chrome get tweet ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} ${username}/status/${tID}`);
+            webLog(`Chrome get tweet ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} ${username}/status/${tID}`);
 
             // search page
             let url = `https://twitter.com/${username || 'username'}/status/${tID}`;
@@ -913,7 +921,7 @@ class ChromeDriver {
                 continue;
             }
 
-            console.log(`media read error!`)
+            webLog(`media read error!`)
         }
 
         this.tweetCache.set(tID, tweet);
@@ -922,7 +930,7 @@ class ChromeDriver {
 
 
     async close() {
-        if (!this.isWin32) { return null; }
+        if (!this.active) { return null; }
 
         await this.driver.quit().catch(() => { });
     }
@@ -972,7 +980,12 @@ class crypto {
 }
 
 
-module.exports = { chromeDriver };
+module.exports = {
+    chromeDriver,
+    webLog: () => {
+        webLog = (webLog == console.log) ? () => { } : console.log;
+    }
+};
 
 
 
