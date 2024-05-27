@@ -1,4 +1,4 @@
-const [EMOJI_RECYCLE, EMOJI_ENVELOPE_WITH_ARROW] = ['♻️', '📩'];
+const [EMOJI_RECYCLE, EMOJI_ENVELOPE_WITH_ARROW, EMOJI_WASTEBASKET] = ['♻️', '📩', '🗑️'];
 const rssIcon = 'https://www.rssboard.org/images/rss-feed-icon-96-by-96.png';
 const dlsiteIcon = 'https://media.discordapp.net/attachments/947064593329557524/1156438574997184562/RBIlIWRJ2HEHkWiTV4ng_gt_icon020.png';
 
@@ -370,8 +370,8 @@ const sendRssItems = async (client, channel, hostColor, items) => {
             channel.send({ embeds: [new EmbedBuilder(embed)] })
                 .then(async (msg) => {
                     await msg.react(EMOJI_RECYCLE).catch(() => { });
-
                     if (reg1.test(embed.footer?.text)) { await msg.react(EMOJI_ENVELOPE_WITH_ARROW).catch(() => { }); }
+                    await msg.react(EMOJI_WASTEBASKET).catch(() => { });
                 }).catch(console.log);
             newRss = true;
         }
@@ -440,8 +440,7 @@ module.exports = {
         if (user.bot) { return; }
 
         // skip other emoji
-        if (reaction.emoji.toString() != EMOJI_ENVELOPE_WITH_ARROW &&
-            reaction.emoji.toString() != EMOJI_RECYCLE) { return; }
+        if (![EMOJI_RECYCLE, EMOJI_ENVELOPE_WITH_ARROW, EMOJI_WASTEBASKET].includes(reaction.emoji.toString())) { return; }
 
         // get msg data
         const { message } = reaction;
@@ -506,6 +505,63 @@ module.exports = {
             return;
         }
 
+        // EMOJI_WASTEBASKET
+        if (reaction.emoji.name == EMOJI_WASTEBASKET) {
+
+            // get message log
+            let msgs = await message.channel.messages.fetch().catch(() => { });
+            // filter target messages
+            let hexColors = [];
+            let tarMsgIDs = {};
+            for (let key of msgs.keys()) {
+                let msg = msgs.get(key);
+
+                // only check bot message
+                if (!msg.deletable) { continue; }
+                if (msg.author?.id != client.user.id) { continue; }
+                // skip msg without embed
+                let embed = (msg.embeds || [])[0];
+                if (embed) {
+                    // skip msg without rss data
+                    if (embed.thumbnail?.url != rssIcon) { continue; }
+
+                    // skip error log message
+                    if (embed.url.includes('127.0.0.1')) { continue; }
+                    // if (embed.url.includes('www.dlsite.com')) { continue; }
+                }
+
+                // skip msg without recycle emoji
+                let reacts = msg.reactions.cache.get(EMOJI_RECYCLE);
+                let reactsCount = reacts?.count || 0;
+                if (reactsCount < 1) { continue; }
+
+                let color = embed?.color || 0;
+                if (!hexColors.includes(color)) { hexColors.push(color); }
+                if (!tarMsgIDs[color]) { tarMsgIDs[color] = []; }
+
+                // keep msg
+                tarMsgIDs[color].push(BigInt(msg.id));
+            }
+
+            for (let color of hexColors) {
+                tarMsgIDs[color].sort((a, b) => a > b || -(a < b));
+                let lastMsgID = tarMsgIDs[color].pop();
+
+                // get react count
+                for (let mID of tarMsgIDs[color]) {
+                    let msg = await message.channel.messages.fetch({ message: mID.toString() });
+
+                    // delete
+                    setTimeout(async () => {
+                        await msg.suppressEmbeds(true).catch(() => { });
+                        // await message.delete().catch(() => { });
+                        addBulkDelete(message.channel.id, msg);
+                    }, 250);
+                };
+            }
+            return;
+        }
+
         return;
     },
 
@@ -545,7 +601,7 @@ module.exports = {
 
                     // skip error log message
                     if (embed.url.includes('127.0.0.1')) { continue; }
-                    if (embed.url.includes('www.dlsite.com')) { continue; }
+                    // if (embed.url.includes('www.dlsite.com')) { continue; }
                 }
 
                 // skip msg without recycle emoji
