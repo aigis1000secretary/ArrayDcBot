@@ -157,7 +157,7 @@ class AntiFilterCore {
         // if process done, check result
         if (tweetStatu == 1) {
             // process still running, maybe error
-            console.log(`getImageComparison timeout, mID: ${message.id}, tID: ${tID}`);
+            console.log(`getImageComparison timeout, tID: ${tID}`);
             return false;
 
         } else if (tweetStatu == 2) {
