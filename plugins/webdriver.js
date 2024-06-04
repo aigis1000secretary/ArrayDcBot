@@ -719,12 +719,13 @@ class ChromeDriver {
             // search page
             let url = `https://twitter.com/${username || 'username'}/status/${tID}`;
             // wait search page load
-            while (1) {
+            for (let i = 1; true; ++i) {
+                if (i > 3) { await sleepr(60000); }
                 await this.driver.get(url);
 
                 let ele = await Promise.race([
-                    this.driver.wait(until.elementLocated(By.css(`div[data-testid="error-detail"]`)), 2500).catch(() => null),
-                    this.driver.wait(until.elementLocated(By.partialLinkText('@')), 2500).catch(() => null)
+                    this.driver.wait(until.elementLocated(By.css(`div[data-testid="error-detail"]`)), 5000).catch(() => null),
+                    this.driver.wait(until.elementLocated(By.partialLinkText('@')), 5000).catch(() => null)
                 ]);
                 if (ele === null) { continue; }
 
@@ -790,8 +791,8 @@ class ChromeDriver {
             mediaEle,
             hrefs
         ] = await Promise.all([
-            this.driver.wait(until.elementLocated(By.css(`${elePath} article > div > div > div > div > div > div[data-testid="tweetText"]`)), 2500).catch(() => null),
-            this.driver.wait(until.elementLocated(By.css(`${elePath} article > div > div > div > div > div[data-testid="Tweet-User-Avatar"] img`)), 2500).catch(() => null),
+            this.driver.wait(until.elementLocated(By.css(`${elePath} article > div > div > div > div > div > div[data-testid="tweetText"]`)), 5000).catch(() => null),
+            this.driver.wait(until.elementLocated(By.css(`${elePath} article > div > div > div > div > div[data-testid="Tweet-User-Avatar"] img`)), 5000).catch(() => null),
             this.driver.findElements(By.css(`${elePath} article > div > div > div > div > div > div > div > div > div[data-testid="User-Name"] a`)).catch(() => []),
             this.driver.findElements(By.css(`${elePath} article > div > div > div > div > div > div.r-9aw3ui div[data-testid="tweetPhoto"]`)).catch(() => []),
             this.driver.findElements(By.css(`${elePath} a`)).catch(() => [])
