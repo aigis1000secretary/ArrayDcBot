@@ -2,7 +2,7 @@
 const EMOJI_SMALL_BLUE_DIAMOND = '🔹';
 const EMOJI_RECYCLE = '♻️';
 
-const regUrl = /https?:\/\/(www\.|mobile\.)?twitter\.com\/(\S+)\/status\/(\d+)/;
+const regUrl = /https?:\/\/(?:www\.|mobile\.)?(?:twitter|x)\.com\/(\S+)\/status\/(\d+)/;
 
 module.exports = {
     name: 'fxtwitter',
@@ -41,7 +41,7 @@ module.exports = {
 
             // check message target
             if (!regUrl.test(content)) { return; }
-            const [, , userID, tweetID] = content.match(regUrl);
+            const [, userID, tweetID] = content.match(regUrl);
 
             const fxUrl = `https://fxtwitter.com/${userID}/status/${tweetID}`;
 

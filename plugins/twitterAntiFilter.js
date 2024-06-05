@@ -107,7 +107,7 @@ const replacer = (key, value) => {
 }
 
 // [, username, , tID]
-const regUrl = /https?:\/\/twitter\.com(?:\/([^\/]+)(?:\/status\/(\d+))?)?/i;
+const regUrl = /https?:\/\/(?:twitter|x)\.com(?:\/([^\/]+)(?:\/status\/(\d+))?)?/i;
 const regUsername = /\(@([A-Za-z0-9_]+)\)$/;
 const CODE_CHANNEL = '872122458545725451';
 const LOG1_CHANNEL = '713623232070156309';
@@ -1227,7 +1227,7 @@ module.exports = {
     // // get config
     // const { channel, author } = message;
     // if (!author || !embeds) { return false; }
-    // if (!/https:\/\/twitter\.com/i.test(content)) { return false; }
+    // if (!/https:\/\/(?:twitter|x)\.com/i.test(content)) { return false; }
     // if (!['1054284227375542333'].includes(channel.id)) { return false; }
 
     // // get tweet from discord embed
@@ -1239,7 +1239,7 @@ module.exports = {
     //     isAnti |= ((description.match(/#/g) || []).length > 3);
     //     // // check twitter profile by api
     //     // if (isAnti) {
-    //     //     let [, username] = (content.match(/https:\/\/twitter\.com\/([^\/]+)/i) || []);
+    //     //     let [, username] = (content.match(/https:\/\/(?:twitter|x)\.com\/([^\/]+)/i) || []);
     //     //     let user = await twitter.getUserByUsername(username, { 'user.fields': ['description'] });
     //     //     isAnti |= user.data?.description?.includes('kis_kirrrrrr');
     //     //     isAnti |= user.data?.name?.includes('如月キ');

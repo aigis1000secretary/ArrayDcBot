@@ -4,7 +4,7 @@ const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 // const
 const [EMOJI_RECYCLE] = ['♻️']
-const regUrl = /https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)/;
+const regUrl = /https:\/\/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)(?:\/status\/)(\d+)/;
 
 const EMBED_BY_DISCORD = false;
 const DISABLE_CLOCK_METHOD = false;

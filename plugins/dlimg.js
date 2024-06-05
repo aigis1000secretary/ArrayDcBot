@@ -5,7 +5,7 @@ const fs = require('fs');
 const compressing = require('compressing');
 const { AttachmentBuilder } = require('discord.js');
 
-const regUrl = /^\<?https:\/\/twitter\.com\/([a-zA-Z0-9_]+)(?:\/status\/(\d+))?[\>\?]*$/;
+const regUrl = /^\<?https:\/\/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)(?:\/status\/(\d+))?[\>\?]*$/;
 // const regUsername = /\(@([a-zA-Z0-9_]+)\)$/;
 
 const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); };
