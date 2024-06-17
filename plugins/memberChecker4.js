@@ -1743,8 +1743,15 @@ class MainMemberCheckerCore {
                 const gmYtChannelID = managerKey.replace(/^\d+-/, '');  // managerKey = `${config.gID}-${holoChannelID}`
 
                 // register channel
-                if (!channelStatus.has(gm.streamChannelID)) { channelStatus.set(gm.streamChannelID, { onLive: false, gm, gmYtChannelID }); }
-                if (!channelStatus.has(gm.memberChannelID)) { channelStatus.set(gm.memberChannelID, { onLive: false, gm, gmYtChannelID }); }
+                for (let cID of [gm.streamChannelID, gm.memberChannelID]) {
+                    if (channelStatus.has(cID)) {
+                        // add yt channel
+                        channelStatus.get(cID).gmYtChannelID.push(gmYtChannelID);
+                    } else {
+                        // register channel
+                        channelStatus.set(cID, { onLive: false, gm, gmYtChannelID: [gmYtChannelID] });
+                    }
+                }
             }
 
             // check all channel stream statu
@@ -1790,7 +1797,7 @@ class MainMemberCheckerCore {
                         const memberOnly = ytCore.streamIsMemberOnly(vID);
 
                         for (const [cID, { onLive, gm, gmYtChannelID }] of channelStatus) {
-                            if (holoChannelID != gmYtChannelID) { continue; }
+                            if (!gmYtChannelID.includes(holoChannelID)) { continue; }
 
                             // set onlive statu
                             if (memberOnly) { (channelStatus.get(gm.memberChannelID)).onLive = true; }
