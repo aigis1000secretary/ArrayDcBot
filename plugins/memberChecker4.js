@@ -162,7 +162,21 @@ class YoutubeAPI {
                 // };
                 return null;
             }
-            return data.items[0];
+
+            const result = data.items[0];
+            {   // get isMemberOnly by  yt.lemnoslife.com
+                // https://yt.lemnoslife.com/videos?part=isMemberOnly&id=U_7Pn04cip4
+                const url = 'https://yt.lemnoslife.com/videos';
+                const params = {
+                    part: 'isMemberOnly',
+                    id: vID
+                }
+                const res = await get({ url, qs: params, json: true });
+
+                result.memberOnly = ((res.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
+            }
+
+            return result;
             // return {
             //     id: '3gH2la1zZ3A', kind: 'youtube#video', etag: 'ktzgCNL-70YVg2aP-FcihaZ_vKA',
             //     snippet: {
@@ -256,7 +270,7 @@ class YoutubeAPI {
         // start stream
         const command = [
             `https://youtu.be/${vID}`,
-            `-O "%(id)s %(release_timestamp)s %(live_status)s %(channel_id)s %(title)s"`,
+            `-O "%(id)s %(release_timestamp)s %(live_status)s %(channel_id)s %(availability)s %(title)s"`,
             `--skip-download`, `--no-warning`, `--ignore-no-formats`, `--flat-playlist`
         ];
         if (debug) { console.log(`[ytDlpWrap] (${vID})`); console.log(`yt-dlp ${command.join(' ')}`); }
@@ -268,19 +282,21 @@ class YoutubeAPI {
             const line = _line.trim();
             if (!line) { continue; }
 
-            const [, _vID, releaseTimestamp, liveStatus, channelId] = line.match(/([\w-]{11}) ([NA\d]+) ([\w_]+) ([\w-_]+) /) || [];
-            const title = line.replace(`${_vID} ${releaseTimestamp} ${liveStatus} ${channelId} `, '');   // in win32 title has encode error
+            const [, _vID, releaseTimestamp, liveStatus, channelId, availability, title] = line.match(/([\w-]{11}) ([NA\d]+) ([\w_]+) ([\w-_]+) ([\w_]+) (.+)$/) || [];
 
             // check match data
             if (!_vID) { continue; }
             const liveBroadcastContent = (liveStatus == 'is_live' ? `live` : (liveStatus == 'is_upcoming' ? `upcoming` : 'none'));
             const scheduledStartTime = /^\d+$/.test(releaseTimestamp) ? new Date(parseInt(releaseTimestamp) * 1000).toISOString() : null;
 
+            const memberOnly = (availability == 'public' ? 0 : (availability == 'subscriber_only' ? 1 : 2));
+
             // set result ro youtube API format
             result = {
                 id: _vID,
                 snippet: { channelId, title, liveBroadcastContent },
                 liveStreamingDetails: { scheduledStartTime, activeLiveChatId: null },
+                memberOnly
             };
         }
 
@@ -1137,7 +1153,8 @@ class YoutubeCore {
 
         // trace livechat
         for (let vID of newStreamList) {
-            this.traceStreamChatByYtdlp({ vID });
+            const memberOnly = (this.streamList.get(vID).memberOnly == 1);
+            this.traceStreamChatByYtdlp({ vID, memberOnly });
         }
     }
 
@@ -1168,16 +1185,16 @@ class YoutubeCore {
         const ytDlpWrap = new YTDlpWrap(ytdlpPath);
 
         // start stream
-        let command = [
+        const command = [
             `https://youtu.be/${vID}`,
             `--skip-download`, `--ignore-no-formats`,
             `--write-subs`, `--sub-langs live_chat`,
             // `--restrict-filenames`, (isLinux ? `--no-windows-filenames` : `--windows-filenames`),
             `-o "livechat_%(id)s"`,
-            // `--cookies cookies.txt`
+            // `--cookies ytcookies.txt`
         ];
-        if (memberOnly) { command.push(`--cookies`); command.push(`cookies.txt`); }
-        // if (debug) { console.log(`[ytDlpWrap] (${vID})`); console.log(`yt-dlp ${command.join(' ')}`); }
+        if (memberOnly) { command.push(`--cookies`); command.push(`ytcookies.txt`); }
+        if (debug) { console.log(`[ytDlpWrap] (${vID})`); console.log(`yt-dlp ${command.join(' ')}`); }
         console.log(`[ytDlpWrap] (${vID}) Execute.`);
 
         this.ytDlpArray.set(vID, ytDlpData);
@@ -1206,12 +1223,14 @@ class YoutubeCore {
                 }
             })
             .on('error', (error) => {
+                mclog(`[ytDlpWrap] (${vID}) ${error.toString()}`);
                 // log
                 if (error.toString().includes('members-only')) {
 
                     // destroy ytDlp data, if need, rebuild after retry.
                     this.destroyByVid(vID);
 
+                    console.log(`[MC4] Join this channel to get access to members-only content and other exclusive perks. memberOnly: ${memberOnly}`);
                     if (!memberOnly) {
                         // retry with cookie
                         this.traceStreamChatByYtdlp({ vID, memberOnly: true });
@@ -1224,7 +1243,6 @@ class YoutubeCore {
                         if (this.streamList.has(vID)) {
                             this.streamList.get(vID).memberOnly = 2;
                         }
-                        console.log('[MC4] Join this channel to get access to members-only content and other exclusive perks.')
                     }
 
                 } else if (error.toString().includes('Private video')) {
@@ -1263,7 +1281,7 @@ class YoutubeCore {
                     mclog(`WARNING: [youtube] Skipping player responses from android clients (got player responses for video "aQvGIIdgFDM" instead of "IiVnwOy_CP0")`);
                 } else {
                     console.log(`[ytDlpWrap] (${vID}) Error.`);
-                    console.error(error);
+                    console.error(error.toString());
                     // shouldn't here
                 }
             })
@@ -1319,6 +1337,7 @@ class YoutubeCore {
         });
 
         const video = this.streamList.get(vID);
+        let onLive = video?.snippet.liveBroadcastContent == 'live';
         let startTime = null;
         if (video) {
             startTime = video.liveStreamingDetails?.scheduledStartTime || video.snippet?.publishedAt || null;
@@ -1431,7 +1450,7 @@ class YoutubeCore {
             await mainMcCore.onLiveChat({ holoChannelID: this.holoChannelID, vID, auDetails, message, superchat, customEmojis: emojis, startTime });
         }
 
-        if (readFileCount % 10 == 0) { mclog(`[MC4] ${vID} -- ${indexOfLine.toString().padStart(8, ' ')} messages returned --`); }
+        if (readFileCount % (onLive ? 10 : 100) == 0) { mclog(`[MC4] ${vID} -- ${indexOfLine.toString().padStart(8, ' ')} messages returned --`); }
 
         fileStream.destroy();
 
@@ -1508,7 +1527,7 @@ class MainMemberCheckerCore {
         await YTDlpWrap.downloadFromGithub().catch(() => { });
 
         // cookie.txt
-        if (fs.existsSync('./exported-cookies.json') && !fs.existsSync('./cookies.txt')) {
+        if (fs.existsSync('./exported-cookies.json') && !fs.existsSync('./ytcookies.txt')) {
             let rawData = fs.readFileSync('./exported-cookies.json', 'utf8');
 
             let jsonData = [];
@@ -1522,18 +1541,17 @@ class MainMemberCheckerCore {
                 let cookieLine = [c.domain.replace(/^www/, ''), 'TRUE', c.path, c.secure.toString().toUpperCase(), parseInt(c.expirationDate) || 0, c.name, c.value].join('\t');
                 cookieData.push(cookieLine);
             }
-            fs.writeFileSync('./cookies.txt', cookieData.join('\n'));
+            fs.writeFileSync('./ytcookies.txt', cookieData.join('\n'));
         }
 
-        if (fs.existsSync('./cookies.txt') && !fs.existsSync('./cookies.enc')) {
-            let rawData = fs.readFileSync('./cookies.txt', 'utf8');
-            let encData = crypto.encrypt(rawData);
-            fs.writeFileSync('./cookies.enc', encData);
-
-        } else if (!fs.existsSync('./cookies.txt') && fs.existsSync('./cookies.enc')) {
+        if (fs.existsSync('./cookies.enc')) {
             let encData = fs.readFileSync('./cookies.enc', 'utf8');
             let decData = crypto.decrypt(encData);
-            fs.writeFileSync('./cookies.txt', decData);
+            fs.writeFileSync('./ytcookies.txt', decData);
+        } else if (fs.existsSync('./ytcookies.txt')) {
+            let rawData = fs.readFileSync('./ytcookies.txt', 'utf8');
+            let encData = crypto.encrypt(rawData);
+            fs.writeFileSync('./cookies.enc', encData);
         }
 
         // pg init
@@ -1923,7 +1941,7 @@ module.exports = {
                         ytCore.streamList.set(vID, video);
 
                         if (['live', 'upcoming'].includes(video?.snippet?.liveBroadcastContent)) {
-                            ytCore.traceStreamChatByYtdlp({ vID });
+                            ytCore.traceStreamChatByYtdlp({ vID, memberOnly: (video.memberOnly == 1) });
                         }
 
                         rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`手動新增直播清單`).setFooter({ text: holoChannelID }));
@@ -2009,7 +2027,7 @@ module.exports = {
                 }
 
                 ytCore.streamList.set(vID, video);
-                ytCore.traceStreamChatByYtdlp({ vID });
+                ytCore.traceStreamChatByYtdlp({ vID, memberOnly: (video.memberOnly == 1) });
                 return;
             }
         }

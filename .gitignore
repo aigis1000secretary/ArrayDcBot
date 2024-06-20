@@ -16,8 +16,8 @@ blacklist/
 
 twitter.json
 configs/login.json
-cookies.txt
+ytcookies.txt
 exported-cookies.json
 yt-dlp.exe
-*.live_chat.json.*
+*.live_chat.json*
 image/

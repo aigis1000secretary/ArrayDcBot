@@ -4,6 +4,7 @@ module.exports = {      // KTG
     perfix: /(^[\/\-!~])[\S]/,
 
     memberChecker4: [
+        // /*
         {
             holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB
 
@@ -17,7 +18,8 @@ module.exports = {      // KTG
             //     `1150843451726905375`, `1150843463420612800`, `1150843475324047401`, `1150843481095413760`,
             //     `1150843488125059143`, `1150843493254713404`, `1150843498598236240`, `1150843504738713762`
             // ],
-        },
+        },//*/
+        /*
         {
             holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
 
@@ -27,7 +29,8 @@ module.exports = {      // KTG
             expiresKey: 'kzmi_expires',
             logChannelID: '1024627281592848434',         // #⁠_log
             memberRoleID: '1110090223821520906',          // @&TEST2
-        },
+        },//*/
+        /*
         {
             holoChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // otonose,
 
@@ -37,7 +40,7 @@ module.exports = {      // KTG
             expiresKey: 'otos_expires',
             logChannelID: '1024627281592848434',         // #⁠_log
             memberRoleID: '1179351663925022850',          // @&TEST3
-        },
+        },//*/
     ],
 
     // manual bulk download img
