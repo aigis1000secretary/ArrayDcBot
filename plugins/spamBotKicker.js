@@ -303,7 +303,7 @@ module.exports = {
                 if (botPermissions.has(PermissionFlagsBits.KickMembers)) {
                     authorInGuild.kick().catch(console.log);
                 } else {
-                    console.log('[SBK] Missing Permissions: KICK_MEMBERS');
+                    console.log(`[SBK] Missing Permissions: KICK_MEMBERS in ${guild.toString()}, User: <@${authorInGuild.id}>` );
                 }
             }
         }
