@@ -18,8 +18,7 @@ const workspaceChannelIDs = [
 
     // delall
     '713623232070156309',   // #_log
-    '1008565763260551188',  // #⚫_stream
-    '1010005672152281218',  // #⚫_member
+    '1253632587226812466',  // #stream-log
 
     // delall, for DICE
     '1024627281592848434',  // #⁠_bot-test

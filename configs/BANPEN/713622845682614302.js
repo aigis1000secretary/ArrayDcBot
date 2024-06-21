@@ -11,7 +11,7 @@ module.exports = {      // KTG
             memberChannelID: '1253621682132877399',      // #⚫_member4
 
             expiresKey: 'banp_expires',
-            logChannelID: '1009645372831977482',         // #⁠_bot-test
+            logChannelID: '1253632587226812466',         // #⁠_bot-test
             memberRoleID: '1253621807139917885',          // @&BANP
         },
     ],
