@@ -261,7 +261,7 @@ class YoutubeAPI {
             });
         }
 
-        mclog(`[ytDlpWrap] (${channelId}) getVideoSearch, ${results.length} results`);
+        mclog(`[ytDlpWrap] (${channelId}) getVideoSearch(memberOnly: ${memberOnly}), ${results.length} results`);
         return results;
     };
     async getVideoStatusByYtdlp(vID) {
