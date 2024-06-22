@@ -22,6 +22,44 @@ if (fs.existsSync("./.env")) {
     process.on('SIGINT', async () => { await recentlyBootMsg.react(EMOJI_VIBRATION).catch(() => { }); process.exit(0); });
 }
 
+const configFormat = async (client, fiilepath) => {
+    const raw = fs.readFileSync(fiilepath, 'utf8');
+    const lines = raw.split(/\r?\n/);
+    const newConfig = [];
+
+    for (const _line of lines) {
+        let line = `${_line}`;
+        
+        const reg1 = /["'](\d+)["'][\S\s]+(\/\/[^\/]+)$/;
+        const reg2 = /["'](\d+)["']/;
+        
+        if (reg1.test(line) || reg2.test(line)) {
+
+            const [, id, comment] = line.match(reg1) || line.match(reg2);
+
+            const channel = await client.channels.fetch(id).catch(e => { });
+            if (channel) {
+                line = comment ?
+                    line.replace(comment, `// #${channel.name} <#${channel.id}>`) :
+                    `${line}    // #${channel.name} <#${channel.id}>`;
+                
+            } else {
+                for (const [gID, guild] of client.guilds.cache) {
+                    const role = await guild.roles.fetch(id).catch(e => { });
+                    if (role) {
+                        line = comment ?
+                            line.replace(comment, `// ${role.name} <@&${role.id}>`) :
+                            `${line}    // ${role.name} <@&${role.id}>`;
+                        break;
+                    }
+                }
+            }
+        }
+        newConfig.push(line);
+    }
+    fs.writeFileSync(fiilepath, newConfig.join('\r\n'));
+}
+
 module.exports = {
     async init(filepath) {
         // client init
@@ -99,10 +137,10 @@ module.exports = {
         // plugins
         client.commands = new Discord.Collection();
         // require plugins
-        filepath = path.join(__dirname, `./plugins/`);
-        if (fs.existsSync(filepath)) {
+        const pluginsPath = path.join(__dirname, `./plugins/`);
+        if (fs.existsSync(pluginsPath)) {
             // get all js file list
-            const pluginFiles = fs.readdirSync(filepath)
+            const pluginFiles = fs.readdirSync(pluginsPath)
                 .filter(file => file.endsWith('.js'));
 
             for (const file of pluginFiles) {
@@ -112,7 +150,7 @@ module.exports = {
                 // in debug mode, only run plugin in list
                 if (!client.mainConfig.plugins.includes(name)) { continue; }
 
-                const plugin = require(`${filepath}${file}`);
+                const plugin = require(`${pluginsPath}${file}`);
                 client.commands.set(name, plugin);
 
             }
@@ -344,6 +382,16 @@ module.exports = {
 
         // dc login
         await client.login(client.mainConfig.discordToken);  //.then(console.log);
+
+        if (fs.existsSync("./.env")) {
+            for (const file of configFiles) {
+                const { name } = path.parse(file);
+                if (!/^\d+$/.test(name)) { continue; }
+
+                await configFormat(client, `${filepath}${file}`);
+            }
+        }
+
         for (let i = 0; i < 10; ++i) { if (recentlyBootMsg) { break; } else { await sleep(500); } }
         return client;
     },

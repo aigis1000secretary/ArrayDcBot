@@ -6,7 +6,7 @@ module.exports = {      // KTG
     twitterListener3: [
         // #_aigis_retweet
         {
-            RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: [
+            RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: [    // #_aigis_retweet <#977860525830586379>
                 '#アイギスお絵かき', '#アイギス10周年アートコン',
                 'filter:links (from:Aigis1000)', '(from:aigis2014)',
                 'filter:links (from:AtedayoAigis)', 'filter:links (from:Aigis_PhotoMemo)',
@@ -20,7 +20,7 @@ module.exports = {      // KTG
         },
         // #sao
         {
-            RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: [
+            RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: [    // #sao <#1054284227375542333>
                 '(#ししらーと OR #ししデコ)', '#いろはにも絵を', '#ほしまちぎゃらりー',
                 '#towart', '#百鬼絵巻', '#祭絵', '#絵フブキ', '#ルーナート',
                 '(#サロメ百万展 OR #かな絵)', '(#いぬいらすと OR #フレン見て)',
@@ -29,7 +29,7 @@ module.exports = {      // KTG
         },
         // #sao2
         {
-            RETWEET_CHANNEL_ID: '1113369067177381918', RETWEET_KEYWORD: [
+            RETWEET_CHANNEL_ID: '1113369067177381918', RETWEET_KEYWORD: [    // #sao2 <#1113369067177381918>
                 '(#レトロノーブル OR #猫神奉納品)', '(#見てよねぇ七瀬 OR #ヌォンタート)',
                 '(#Yuuriart OR #jooin_art)', '#iwa_art',
             ],
@@ -38,26 +38,26 @@ module.exports = {      // KTG
 
     rssbot: [
         // #hentai-voice-音声
-        { RSS_CHANNEL_ID: '979765968727310336', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-voice/feed/` },
+        { RSS_CHANNEL_ID: '979765968727310336', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-voice/feed/` },    // #hentai-voice-音声 <#979765968727310336>
         // #hentai-game
-        { RSS_CHANNEL_ID: '979815303749967932', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-game/feed/` },
+        { RSS_CHANNEL_ID: '979815303749967932', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-game/feed/` },    // #hentai-game <#979815303749967932>
         // #hentai-anime
-        { RSS_CHANNEL_ID: '979808194710880266', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-animation/feed/` },
+        { RSS_CHANNEL_ID: '979808194710880266', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-animation/feed/` },    // #hentai-anime <#979808194710880266>
         // #dlsite
-        { RSS_CHANNEL_ID: '1156057315829624933', RSS_FEEDURL: `https://rsshub.app/dlsite/maniax/new` },
+        { RSS_CHANNEL_ID: '1156057315829624933', RSS_FEEDURL: `https://rsshub.app/dlsite/maniax/new` },    // #dlsite <#1156057315829624933>
     ],
 
 
 
     spamBotKicker: {
-        LOG_CHANNEL_ID: '713623232070156309',      // #_log
-        PERMISSION_ROLE_ID: '1009001004454383656',      // @&TEST
-        BAN_CHANNEL_ID: '928570341448626176'      // #_ban
+        LOG_CHANNEL_ID: '713623232070156309',      // #_log <#713623232070156309>
+        PERMISSION_ROLE_ID: '1009001004454383656',      // TEST1 <@&1009001004454383656>
+        BAN_CHANNEL_ID: '928570341448626176'      // #_ban <#928570341448626176>
     },
 
     timeTag2: {
-        TIME_TAG_CHANNEL_ID: '827069773039796245',      // #直播時間軸tag
-        DEBUG_TAG_LOG_CHANNEL_ID: '851618481350770738',      // #_time-tag-log
+        TIME_TAG_CHANNEL_ID: '827069773039796245',      // #_time-tag <#827069773039796245>
+        DEBUG_TAG_LOG_CHANNEL_ID: '851618481350770738',      // #_time-tag-log <#851618481350770738>
     },
 
 

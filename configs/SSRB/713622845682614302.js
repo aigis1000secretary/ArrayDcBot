@@ -7,12 +7,12 @@ module.exports = {      // KTG
         {
             holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB
 
-            streamChannelID: '1008565763260551188',      // #⚫_stream
-            memberChannelID: '1010005672152281218',      // #⚫_member
+            streamChannelID: '1008565763260551188',      // #⚫_stream <#1008565763260551188>
+            memberChannelID: '1010005672152281218',      // #⚫_member <#1010005672152281218>
 
             expiresKey: 'ssrb_expires',
-            logChannelID: '1253632587226812466',         // #⁠_bot-test
-            memberRoleID: '927501058484371487',          // @&SSRB
+            logChannelID: '1253632587226812466',         // #stream-log <#1253632587226812466>
+            memberRoleID: '927501058484371487',          // SSRB <@&927501058484371487>
         },
         // {
         //     holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB
