@@ -40,7 +40,7 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
             // if no any embed, try fix
             if (!embeds || !embeds[0]) {
                 let { author, content } = message;
-                if (author.id == client.user.id) {
+                if (author.id == channel.client.user.id) {
                     donelog.push(`message.edit ${content}`);
                     ++editCount;
                     // content = content.replace('twitter.com', 'fxtwitter.com');   // use fxtwitter
