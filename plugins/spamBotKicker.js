@@ -6,7 +6,8 @@ const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 // regex
 const regexToken = /(mfa\.[\w-]{84}|[\w-]{24}\.[\w-]{6}\.[\w-]{27})/;
 const regexMentions = /(@here|@everyone)/i;
-const regexInviteUrl = /(https?:\/\/)?discord.gg\/\S+/;
+const regexInviteUrl = /(https?:\/\/)?discord.gg\/\S+/i;
+const regexPhishing = /\[steamcommunity.+\]\(https/i;
 const blacklistUser = ['GrastonBerry', '_CMRA_', 'sui1911', '_fromCanadaorg', 'CannabisEDCA', 'cannabisORGca', 'CannabisCDN', 'gochidesu459', 'PagallKhana'];
 const blacklistWord = ['PagallKhana'];
 const regexTweet = new RegExp(`twitter\.com\/([^\/\s]+)\/?`);
@@ -139,6 +140,22 @@ const spamChecker = [
         }
     },
 
+    // Phishing
+    ({ message }) => {
+        const { content } = message;
+
+        // regex
+        const match = content.match(regexPhishing);
+        if (!match) { return null; }
+
+        // result
+        return {
+            content,
+            reason: `偽裝連結`,
+            delete: true, kick: true, forceDel: true,
+        }
+    },
+
     // spam tweet
     ({ message }) => {
         if (!regexTweet) { return null; }   // unknown regex
@@ -258,6 +275,19 @@ module.exports = {
             // roleList.sort(RoleManager.comparePositions).reverse();
             for (let role of roleList) { roleLog.push(role.name); }
 
+            const fields = [
+                { name: `Reason:`, value: punish.reason.join('\n') },
+                { name: `Channel:`, value: message.url },
+                { name: `Roles:`, value: roleLog.join('\n') || 'null' }
+            ];
+
+            // punish
+            let punishText = [];
+            if (punish.delete) { punishText.push('刪除'); }
+            if (!PERMISSION_ROLE_ID && punish.kick) { punishText.push('踢出'); }
+            if (PERMISSION_ROLE_ID && punish.kick) { punishText.push('刪除身分組'); }
+            if (punishText.length > 0) { fields.push({ name: `Punish:`, value: punishText.join(', ') }); }
+
             // log
             let embed = new EmbedBuilder()
                 .setColor('#FF0000')
@@ -267,11 +297,7 @@ module.exports = {
                     iconURL: author.displayAvatarURL({ format: 'png', size: 256 })
                 })
                 .setTitle(`洗頻訊息:`).setDescription(punish.content)
-                .addFields([
-                    { name: `Reason:`, value: punish.reason.join('\n') },
-                    { name: `Channel:`, value: message.url },
-                    { name: `Roles:`, value: roleLog.join('\n') || 'null' }
-                ])
+                .addFields(fields)
                 .setTimestamp();
 
             // log to log channel
@@ -303,7 +329,7 @@ module.exports = {
                 if (botPermissions.has(PermissionFlagsBits.KickMembers)) {
                     authorInGuild.kick().catch(console.log);
                 } else {
-                    console.log(`[SBK] Missing Permissions: KICK_MEMBERS in ${guild.toString()}, User: <@${authorInGuild.id}>` );
+                    console.log(`[SBK] Missing Permissions: KICK_MEMBERS in ${guild.toString()}, User: <@${authorInGuild.id}>`);
                 }
             }
         }
