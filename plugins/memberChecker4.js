@@ -176,7 +176,7 @@ class YoutubeAPI {
                 result.memberOnly = ((res.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
             }
 
-            return result;
+            return data.items[0];
             // return {
             //     id: '3gH2la1zZ3A', kind: 'youtube#video', etag: 'ktzgCNL-70YVg2aP-FcihaZ_vKA',
             //     snippet: {
@@ -216,6 +216,25 @@ class YoutubeAPI {
             //     reason: error.errors[0].reason,
             //     variabale: { vID }
             // }
+            return null;
+        }
+    };
+    async getVideoIsMemberOnly(vID) {
+        try {
+            // get isMemberOnly by  yt.lemnoslife.com
+            // https://yt.lemnoslife.com/videos?part=isMemberOnly&id=U_7Pn04cip4
+            const url = 'https://yt.lemnoslife.com/videos';
+            const params = {
+                part: 'isMemberOnly',
+                id: vID
+            }
+            const res = await get({ url, qs: params, json: true });
+
+            const memberOnly = ((res.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
+
+            return memberOnly;
+
+        } catch (error) {
             return null;
         }
     };
@@ -1095,6 +1114,11 @@ class YoutubeCore {
                 await this.youtubeAPI.getVideoStatusByYtdlp(vID) :
                 await this.youtubeAPI.getVideoStatus(vID);
 
+            if (byYtdlp) {
+                const _memberOnly = await this.youtubeAPI.getVideoIsMemberOnly(vID);
+                if ([0, 1].includes(_memberOnly)) { videoStatus.memberOnly = _memberOnly; }
+            }
+
             streamList.push([vID, video, videoStatus]);
         }
         // promise.all
@@ -1171,6 +1195,10 @@ class YoutubeCore {
             // return;
 
             let videoStatus = await this.youtubeAPI.getVideoStatus(vID);
+
+            const _memberOnly = await this.youtubeAPI.getVideoIsMemberOnly(vID);
+            if ([0, 1].includes(_memberOnly)) { videoStatus.memberOnly = _memberOnly; }
+
             this.streamList.set(vID, videoStatus);
         }
 
