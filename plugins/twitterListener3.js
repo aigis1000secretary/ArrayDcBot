@@ -21,7 +21,9 @@ const getTimeFromTwitterSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 
 const { chromeDriver, webLog } = require('./webdriver.js');
 
 const findLastTwitterMessage = async (channel, uID) => {
-    let oldMessages = await channel.messages.fetch().catch(() => { });
+    let oldMessages = await channel.messages.fetch().catch((e) => {
+        console.log(channel, uID, e.message)
+    });
     for (let key of Array.from(oldMessages.keys()).sort().reverse()) {
         let oldMessage = oldMessages.get(key);
         // only check bot message

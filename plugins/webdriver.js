@@ -351,7 +351,6 @@ class ChromeDriver {
             let done = false;
             let lastTweetID = null;
             let lastElement = null;
-            let errorCount = 0;
             while (1) {
 
                 // get all tweet
@@ -429,6 +428,8 @@ class ChromeDriver {
                 // search done, break
                 if (done) { break; }
 
+                // webLog(`${await lastElement?.getAttribute('href').catch(() => 'null')}, ${lastTweetID}`)
+
                 // scroll
                 if (!lastElement) {
                     // error?
@@ -448,20 +449,24 @@ class ChromeDriver {
                     let [, username, tID] = href.match(regUrl) || []; if (!tID) { await sleep(500); continue; }
 
                     if (lastTweetID == tID) {
-                        ++errorCount;
-                        if (errorCount > 30) { await sleepr(30000); }
 
-                        // loading stuck
-                        await this.driver.actions()
-                            .sendKeys(Key.PAGE_UP)
-                            .sendKeys(Key.END)
-                            .perform()
-                            .catch(() => { });
-                        webLog('Key.PAGE_UP')
+                        const retryButton = 'div[data-testid="primaryColumn"] button[role="button"]';
+                        const ele = await this.findElementByText(By.css(retryButton), `重試`);
+                        // sleep 60sec & retry
+                        if (ele) {
+                            await sleepr(60000);
+                            await ele.click().catch(() => { })
+                        } else {
+                            // loading stuck
+                            await this.driver.actions()
+                                .sendKeys(Key.PAGE_UP)
+                                .sendKeys(Key.END)
+                                .perform()
+                                .catch(() => { });
+                            webLog('Key.PAGE_UP')
+                        }
 
                     } else {
-                        errorCount = 0;
-
                         lastTweetID = tID;
                         await this.scrollToElement(lastElement);
                         webLog('scrollToElement')
