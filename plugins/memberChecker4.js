@@ -1,6 +1,7 @@
 
 // node base
 const fs = require('fs');
+const compressing = require('compressing');
 const debug = fs.existsSync("./.env");
 const isLinux = (require("os").platform() == 'linux');
 
@@ -14,7 +15,7 @@ const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms)); 
 const md5 = (source) => require('crypto').createHash('md5').update(source).digest('hex');
 
 // discord
-const { EmbedBuilder, PermissionFlagsBits, Colors } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder, PermissionFlagsBits, Colors } = require('discord.js');
 
 
 // http request
@@ -355,6 +356,41 @@ class Pg {
             }
         }
     };
+
+    static async backup(client) {
+        if (this.dataCache.size < 300) { return; }
+
+        const jsonFile = `./pgdbBackup.json`;
+        const zipFile = `./pgdbBackup.zip`;
+
+        if (fs.existsSync(jsonFile)) { fs.unlinkSync(jsonFile); }
+        if (fs.existsSync(zipFile)) { fs.unlinkSync(zipFile); }
+
+        const dataArray = [];
+        for (const [key, pgUser] of this.dataCache) {
+            dataArray.push(JSON.stringify(pgUser).replace(/,/g, ', ').replace('{', '{ ').replace('}', ' }'));
+        }
+        fs.writeFileSync(jsonFile, `[\r\n${dataArray.join(',\r\n')}\r\n]`);
+
+        // get channel/message by id
+        const channel = await client.channels.fetch(`872122458545725451`).catch(() => { return null; });
+        if (!channel) { return; }
+        const msg = await channel.messages.fetch({ message: `1055852678913196042`, force: true }).catch(() => { return null; });
+        if (!msg) { return; }
+
+        // zip db files
+        const nowDate = (new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }))
+            .replace(/[\/:]/g, '').replace(', ', '_');
+        const filePath = `${nowDate}.zip`;
+        await compressing.zip.compressFile(jsonFile, zipFile).catch(() => { });
+
+        // upload zip file
+        let files = [new AttachmentBuilder(zipFile, { name: zipFile })];
+        await msg.edit({ files }).catch(console.log);
+
+        fs.unlinkSync(jsonFile);
+        fs.unlinkSync(zipFile);
+    }
 
     static async initColumn(expiresKey) {
         // check column
@@ -1528,23 +1564,10 @@ class MainMemberCheckerCore {
     roleManagers = new Map();
     guildManagers = new Map();
 
-    constructor() { this.init(); };
+    constructor() { this.preInit(); };
     initialization = 0;
 
-    async init(client) {
-
-        // pick SSRB bot for emoji manager
-        if (client && [`713624995372466179`, `427025310291197954`].includes(client.user.id)) {
-            this.emojiManager = new EmojiManager(client);
-        }
-
-        // hold second init until done
-        if (this.initialization != 0) {
-            while (this.initialization != 2) {
-                await sleep(500);
-            }
-            return;
-        }
+    async preInit() {
         this.initialization = 1;
 
         // download yt-dlp-wrap
@@ -1593,6 +1616,25 @@ class MainMemberCheckerCore {
         for (const file of livechatFiles) { fs.unlinkSync(file); }
 
         this.initialization = 2;
+    }
+
+    // set discord emoji manager & upload db backup
+    async init(client) {
+
+        // pick SSRB bot for emoji manager
+        if (client && [`713624995372466179`, `427025310291197954`].includes(client.user.id)) {
+            this.emojiManager = new EmojiManager(client);
+        }
+
+        // hold until pre init done
+        while (this.initialization != 2) {
+            await sleep(500);
+        }
+
+        // pick DLS bot for emoji manager
+        if (client && [`920485085935984641`].includes(client.user.id)) {
+            await Pg.backup(client);
+        }
     }
 
     configs = [];
