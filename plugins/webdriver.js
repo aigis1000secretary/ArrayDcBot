@@ -454,6 +454,7 @@ class ChromeDriver {
                         const ele = await this.findElementByText(By.css(retryButton), `重試`);
                         // sleep 60sec & retry
                         if (ele) {
+                            webLog('retryButton')
                             await sleepr(60000);
                             await ele.click().catch(() => { })
                         } else {
@@ -539,7 +540,7 @@ class ChromeDriver {
             // get data object
             const suspendedText = 'div[data-testid="emptyState"]';
             const userDataScript = 'script[type="application/ld+json"]';
-            const userProfileLock = 'svg.r-og9te1 > g';
+            const userProfileLock = 'a[href="https://support.x.com/articles/14016"]';
             const retryButton = 'div[data-testid="primaryColumn"] button[role="button"]';
             const loadingMark = 'div[aria-label="Loading…"]';
 
@@ -613,7 +614,7 @@ class ChromeDriver {
         return result;
     }
 
-    async reportUser({ username }) {
+    async reportUser({ username, fakeuser }) {
         if (!this.active) { return {}; }
 
         // register Task
@@ -629,7 +630,8 @@ class ChromeDriver {
         // get data object
         const suspendedText = 'div > div.r-18u37iz.r-13qz1uu > div.r-14lw9ot.r-1jgb5lz.r-13qz1uu:first-child > div > div:last-child > div > div.r-1jgb5lz.r-13qz1uu > div.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div > div.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.r-poiln3.r-bcqeeo.r-qvutc0';
         const userDataScript = 'script[type="application/ld+json"]';
-        const userProfileLock = 'svg.r-og9te1 > g';
+        const userProfileLock = 'a[href="https://support.x.com/articles/14016"]';
+        const userProfileBlock = 'a[href="https://support.x.com/articles/110763"]';
         const retryButton = 'div[data-testid="primaryColumn"] div[role="button"].r-ymttw5 svg.r-1d4mawv';
         // wait page load
         await Promise.race([
@@ -660,9 +662,12 @@ class ChromeDriver {
             ]);
         }
 
-        // locked profile
-        ele = await this.driver.findElement(By.css(userProfileLock)).catch(() => null);
-        if (ele) { result.locked = true; }
+        // locked profil
+        if (await this.driver.findElement(By.css(userProfileLock)).catch(() => null) || await this.driver.findElement(By.css(userProfileBlock)).catch(() => null)) {
+            this.idle();
+            // task done
+            this.taskManager.taskDone(taskID);
+        }
 
         // read profile data
         // const userAction = 'button[data-testid="userActions"]';
@@ -675,27 +680,57 @@ class ChromeDriver {
             let _ele;
             const userMenuitem = 'div[data-testid="Dropdown"] div[role="menuitem"] > div > div > span';
             const userMenuReport = 'div[role="dialog"] div[role="group"] label > div > div > span';
-            const userMenuButton = 'div[role="dialog"] div[role="group"] Button';
+            const userMenuButton = 'div[role="dialog"] div[role="group"] button';
+            const userMenuInput = 'div[role="dialog"] div[role="group"] input';
 
             _ele = await this.waitElementByText(By.css(userMenuitem), '檢舉', 10000);
             if (!_ele) { continue; }
             await _ele.click().catch(() => { });
             await sleepr(370);
 
-            _ele = await this.waitElementByText(By.css(userMenuReport), '垃圾訊息', 10000);
-            if (!_ele) { continue; }
-            await _ele.click().catch(() => { });
-            await sleepr(370);
+            if (!fakeuser || fakeuser == 'null') {
+                _ele = await this.waitElementByText(By.css(userMenuReport), '垃圾訊息', 10000);
+                if (!_ele) { continue; } await _ele.click().catch(() => { }); await sleepr(370);
 
-            _ele = await this.waitElementByText(By.css(userMenuButton), '下一步', 10000);
-            if (!_ele) { continue; }
-            await _ele.click().catch(() => { });
-            await sleepr(370);
+                _ele = await this.waitElementByText(By.css(userMenuButton), '下一步', 10000);
+                if (!_ele) { continue; } await _ele.click().catch(() => { }); await sleepr(370);
 
-            _ele = await this.waitElementByText(By.css(userMenuButton), '完成', 10000);
-            if (!_ele) { continue; }
-            await _ele.click().catch(() => { });
-            await sleepr(370);
+                _ele = await this.waitElementByText(By.css(userMenuButton), '完成', 10000);
+                if (!_ele) { continue; } await _ele.click().catch(() => { }); await sleepr(370);
+
+            } else {
+                _ele = await this.waitElementByText(By.css(userMenuReport), '冒充', 10000);
+                if (!_ele) { continue; } await _ele.click().catch(() => { }); await sleepr(370);
+
+                _ele = await this.waitElementByText(By.css(userMenuButton), '下一步', 10000);
+                if (!_ele) { continue; } await _ele.click().catch(() => { }); await sleepr(370);
+
+                _ele = await this.waitElementByText(By.css(userMenuReport), '其他人', 10000);
+                if (!_ele) { continue; } await _ele.click().catch(() => { }); await sleepr(370);
+
+                _ele = await this.waitElementByText(By.css(userMenuButton), '下一步', 10000);
+                if (!_ele) { continue; } await _ele.click().catch(() => { }); await sleepr(370);
+
+                _ele = await this.driver.wait(until.elementLocated(By.css(userMenuInput)), 10000).catch(() => null)
+                if (!_ele) { continue; }
+                await _ele.clear().catch(() => { }); await _ele.sendKeys(fakeuser).catch(() => { }); await sleepr(370);
+
+                let i = 0;
+                for (; i < 5; ++i) {
+                    _ele = await this.waitElementByText(By.css(`${userMenuButton} button`), `@${fakeuser}`, 10000);
+                    if (_ele) { await sleepr(370); await _ele.click().catch((e) => { console.log(e); }); await sleepr(370); }
+
+                    _ele = await this.waitElementByText(By.css(`${userMenuButton} > div > span`), `${fakeuser}`, 3000);
+                    if (_ele) { break; }
+                }
+                if (i >= 5) { continue; }
+
+                _ele = await this.waitElementByText(By.css(userMenuButton), '下一步', 10000);
+                if (!_ele) { continue; } await _ele.click().catch(() => { }); await sleepr(370);
+
+                _ele = await this.waitElementByText(By.css(userMenuButton), '完成', 10000);
+                if (!_ele) { continue; } await _ele.click().catch(() => { }); await sleepr(370);
+            }
 
             break;
         }

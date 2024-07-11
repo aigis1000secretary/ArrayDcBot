@@ -319,11 +319,33 @@ module.exports = {
                 return;
             }
 
-        } else if (command == 'report' && args[0]) {
+        } else if (command == 'report') {
 
-            for (let username of args) {
-                // !report <username>
-                await chromeDriver.reportUser({ username });
+            let userList = ['null'];
+            // get usernames
+            if (fs.existsSync(`./blacklist`) && fs.existsSync(`./blacklist/fakeuser`)) {
+                userList = userList.concat(fs.readdirSync(`./blacklist/fakeuser`));
+            }
+
+            if (args.length > 1 && userList.includes(args[0])) {
+                let names = args.concat();
+                let fakeuser = names.shift();
+
+                for (let username of names) {
+                    // !report <username>
+                    await chromeDriver.reportUser({ username, fakeuser });
+                }
+                return;
+
+            } else if (userList.length > 0) {
+                let description = [];
+                for (let username of userList) {
+                    description.push(`!report ${username} ${args.join(' ')}`)
+                }
+
+                let embed = new EmbedBuilder()
+                    .setTitle(`fakeuser list:`).setDescription(description.join('\n\n'))
+                await channel.send({ embeds: [embed] });
             }
 
         } else if (command == 'fixembed') {
