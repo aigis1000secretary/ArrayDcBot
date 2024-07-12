@@ -135,7 +135,7 @@ class ChromeDriver {
 
         webLog('Chrome driver login done.');
 
-        this.taskManager.taskDone(taskID);
+        this.idle(taskID);
     }
 
     async getLoginData() {
@@ -312,7 +312,8 @@ class ChromeDriver {
         return logged;
     }
 
-    async idle() {
+    async idle(taskID) {
+        this.taskManager.taskDone(taskID);
         await sleepr(3000);
         if (!this.taskManager.queue.find(task => [taskStatus.none, taskStatus.waiting, taskStatus.running].includes(task.status))) {
             // all task done
@@ -478,9 +479,8 @@ class ChromeDriver {
             }
         }
 
-        this.idle();
         // task done
-        this.taskManager.taskDone(taskID);
+        this.idle(taskID);
         webLog(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
 
         return searchResult;
@@ -527,7 +527,7 @@ class ChromeDriver {
             // not force search & verify data exist
             if (this.mainUserDB.get(username).suspended || this.mainUserDB.get(username).uID) {
                 // task done
-                this.taskManager.taskDone(taskID);
+                this.idle(taskID);
                 return this.mainUserDB.get(username);
             }
         }
@@ -605,10 +605,9 @@ class ChromeDriver {
             }
         }
 
-        await sleepr(getUserDelay);
-        this.idle();
+
         // task done
-        this.taskManager.taskDone(taskID);
+        setTimeout(async () => { await sleepr(getUserDelay); this.idle(taskID); }, 10);
 
         this.mainUserDB.set(username, result);
         return result;
@@ -664,9 +663,8 @@ class ChromeDriver {
 
         // locked profil
         if (await this.driver.findElement(By.css(userProfileLock)).catch(() => null) || await this.driver.findElement(By.css(userProfileBlock)).catch(() => null)) {
-            this.idle();
             // task done
-            this.taskManager.taskDone(taskID);
+            this.idle(taskID);
         }
 
         // read profile data
@@ -735,9 +733,8 @@ class ChromeDriver {
             break;
         }
 
-        this.idle();
         // task done
-        this.taskManager.taskDone(taskID);
+        this.idle(taskID);
 
         return;
     }
@@ -771,9 +768,8 @@ class ChromeDriver {
 
                 ele = await this.driver.findElement(By.css(`div[data-testid="error-detail"]`)).catch(() => null);
                 if (ele) {
-                    this.idle();
                     // task done
-                    this.taskManager.taskDone(taskID);
+                    this.idle(taskID);
                     return null;
                 }
 
@@ -805,9 +801,8 @@ class ChromeDriver {
             }
         }
 
-        this.idle();
         // task done
-        this.taskManager.taskDone(taskID);
+        this.idle(taskID);
 
         return searchResult.has(tID) ? searchResult.get(tID) : null;
     }
