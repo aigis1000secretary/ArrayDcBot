@@ -25,19 +25,20 @@ module.exports = {
         // reboot flag
         let reboot = false;
 
+
+        if (!(minutes == 55 && seconds == 0)) { return; }
+
         // reboot at 01:55, 09:55, 17:55 (every 8hr)
-        if ([1, 9, 17].includes(hours) && minutes == 55 && seconds == 0) { reboot = true; }
+        if ([1, 9, 17].includes(hours)) { reboot = true; }
 
-        // check uptime
         const uptimeInSec = parseInt(client.uptime / 1000);
+        const uptimeInHour = (uptimeInSec / 3600).toFixed(1);
 
-        // // uptime < 3.5hr skip this reboot
-        // if (uptimeInSec < 12600) { reboot = false; }
+        // 8.5hr < uptime < 12.5hr(16-3.5)
+        if (30600 < uptimeInSec && uptimeInSec < 45000) { reboot = true; }
 
-        // uptime > 8.5hr 
-        if (uptimeInSec > 30600 && minutes == 55 && seconds == 0) { reboot = true; }
-
-        if (!reboot) { return; }
+        // check uptime, uptime < 3.5hr skip this reboot
+        if (uptimeInSec < 12600) { reboot = false; }
 
         if (reboot) {
             // get log channel            
@@ -50,13 +51,12 @@ module.exports = {
                 // await channel.send({ content: `<${hours}:${minutes}> BOT reboot!` });
 
                 const nowDate = parseInt(Date.now() / 1000);
-                let content = `<t:${nowDate}>  <t:${nowDate}:R> ${EMOJI_REPEAT}!`;
+                let content = `<t:${nowDate}>  <t:${nowDate}:R> ${EMOJI_REPEAT}! \`\`Uptime: ${uptimeInHour} hr\`\``;
 
-                let rebootMsg;
-                if (recentlyRebootMsg) {
+                let rebootMsg = recentlyRebootMsg ? (await channel.messages.fetch({ message: recentlyRebootMsg })) : null;
+                if (rebootMsg) {
                     // delete old reboot log
-                    rebootMsg = await channel.messages.fetch({ message: recentlyRebootMsg });
-                    content = `${rebootMsg?.content || ''}\n${content}`.trim();
+                    content = ((rebootMsg.content || '') + '\n' + content).trim();
                     await rebootMsg.delete().catch(() => { });
                 }
 
@@ -67,7 +67,7 @@ module.exports = {
             // reboot
             console.log(`=====BOT reboot!=====`);
             require('../index.js').terminate();
-        }
+        } else { { return; } }
     },
 
 
