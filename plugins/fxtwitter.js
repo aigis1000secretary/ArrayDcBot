@@ -1,6 +1,9 @@
 
 const EMOJI_SMALL_BLUE_DIAMOND = '🔹';
+const EMOJI_SMALL_ORANGE_DIAMOND = '🔸';
 const EMOJI_RECYCLE = '♻️';
+
+const editUserMessage = require(`../modules/editUserMessage.js`).editUserMessage;
 
 const regUrl = /https?:\/\/(?:www\.|mobile\.)?(?:twitter|x)\.com\/(\S+)\/status\/(\d+)/;
 
@@ -52,6 +55,22 @@ module.exports = {
                 .catch(() => { });
 
             // message.suppressEmbeds(true).catch(() => { });
+
+        } else if (reaction.emoji.name == EMOJI_SMALL_ORANGE_DIAMOND) {
+            // 🔸
+
+            if (message.author.id != user.id) { return; }
+
+            // check message target
+            if (!regUrl.test(content)) { return; }
+            const [, userID, tweetID] = content.match(regUrl);
+
+            const fxUrl = `https://fxtwitter.com/${userID}/status/${tweetID}`;
+
+            // reply new embed
+            editUserMessage(message, { content: fxUrl });
+
+            message.delete().catch(() => { });
 
         } else if (reaction.emoji.name == EMOJI_RECYCLE) {
             // ♻️
