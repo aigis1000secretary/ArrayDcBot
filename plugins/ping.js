@@ -23,6 +23,10 @@ module.exports = {
 
             message.reply({ content: `pong! ${args[0]}`, components: [actionRow], allowedMentions: { repliedUser: false } }).catch(() => { });
         }
+        if (command == 'echo') {
+            channel.send({ content: args.join(' ') }).catch(() => { });
+            return;
+        }
 
         // pong!
         if (!channel || channel.id != channelID) { return; }

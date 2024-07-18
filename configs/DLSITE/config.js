@@ -10,6 +10,7 @@ module.exports = {
         // 'delall',
         'dlimg',
         // 'dlsitebot',
+        // 'fxtwitter',
         'ip',
         // 'memberChecker4',
         // `ping`,
