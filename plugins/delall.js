@@ -142,12 +142,14 @@ module.exports = {
 
     async interactionCreate(interaction, pluginConfig) {
         let { message, user } = interaction;
-        let { channel } = message;
 
         if (!user || user.bot) { return; }
 
         if (!interaction.isButton()) { return false; }
         if (interaction.customId != 'delall') { return false; }
+
+        if (!message) { return; }
+        let { channel } = message;
 
         // mute reply
         interaction.reply({ content: ' ' }).catch(() => { });
