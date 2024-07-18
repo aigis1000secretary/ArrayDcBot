@@ -39,11 +39,13 @@ module.exports = {
         // delete origin message
         if (message.deletable) { message.delete().catch(() => { }); }
 
+        const guildMember = await channel.guild.members.fetch(message.author.id).catch(() => null);
 
         // send message by webhook
         // payload.username = (author.globalName || author.displayName || author.username) + ` <@${author.id}>`;
-        payload.username = author.globalName || author.displayName || author.username || `<@${author.id}>`;
-        payload.avatarURL = author.displayAvatarURL({ format: 'png', size: 1024 }).replace(/\.webp/, '.png') // size: 4096
+        payload.username = guildMember?.nickname || author.globalName || author.displayName || author.username || `<@${author.id}>`;
+        payload.avatarURL = (guildMember?.displayAvatarURL({ format: 'png', size: 1024 }) || author.displayAvatarURL({ format: 'png', size: 1024 }))
+            .replace(/\.webp/, '.png') // size: 4096
         await hook.send(payload)
             // .then(message => { console.log(`Sent message: ${message.content}`); return message; })
             .catch(console.error);
