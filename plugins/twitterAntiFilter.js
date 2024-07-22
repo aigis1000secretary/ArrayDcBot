@@ -11,6 +11,9 @@ const [EMOJI_LABEL] = ['🏷️']
 
 const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
 const md5 = (source) => require('crypto').createHash('md5').update(source).digest('hex');
+const logs = [];
+const tafLog = (msg) => { if (!logs.includes(msg)) { console.log(msg); logs.push(msg); } }
+
 
 // const { twitter } = require('./twitterListener2.js');
 let imagesList = [];
@@ -678,7 +681,7 @@ const messageExecute = async (message) => {
             let { ssim, image } = result;
 
             // image in blacklist
-            console.log(`[TAF] image in blacklist. ${username} ${tID} ${ssim} ${image}`);
+            tafLog(`[TAF] image in blacklist. ${username} ${tID} ${ssim} ${image}`);
 
             // image in blacklist but username not, add to blacklist
             if (!spamUserList.userIDList.has(username) && !spamUserList.userList.has(tID)) {
