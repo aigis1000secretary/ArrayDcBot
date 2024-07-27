@@ -84,7 +84,7 @@ module.exports.getBotIDs = () => {
     server.init();
 
     for (const bot of [
-        'DLSITE', 'SSRB', 'POKOBE', 'OTOSE', 'BANPEN',    /*
+        'DLSITE', 'SSRB', 'POKOBE', 'OTOSE', 'BANPEN', 'RIRIKA',    /*
         'DICE'   //*/
     ]) {
         const configPath = `./configs/${bot}/`;
