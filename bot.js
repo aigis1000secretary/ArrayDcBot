@@ -29,10 +29,10 @@ const configFormat = async (client, fiilepath) => {
 
     for (const _line of lines) {
         let line = `${_line}`;
-        
+
         const reg1 = /["'](\d+)["'][\S\s]+(\/\/[^\/]+)$/;
         const reg2 = /["'](\d+)["']/;
-        
+
         if (reg1.test(line) || reg2.test(line)) {
 
             const [, id, comment] = line.match(reg1) || line.match(reg2);
@@ -42,7 +42,7 @@ const configFormat = async (client, fiilepath) => {
                 line = comment ?
                     line.replace(comment, `// #${channel.name} <#${channel.id}>`) :
                     `${line}    // #${channel.name} <#${channel.id}>`;
-                
+
             } else {
                 for (const [gID, guild] of client.guilds.cache) {
                     const role = await guild.roles.fetch(id).catch(e => { });
@@ -286,7 +286,9 @@ module.exports = {
                 // const minutes = nowDate.getMinutes().toString().padStart(2, '0');
                 // await channel.send({ content: `<${hours}:${minutes}> ${botName} is online!` })
 
-                const channel = await client.channels.fetch(DEBUG_CHANNEL_ID);
+                const channel = await client.channels.fetch(DEBUG_CHANNEL_ID)
+                    .catch((e => { console.log(e.message); console.log(`Can't read channel <#${DEBUG_CHANNEL_ID}>`); return null; }));
+                if (!channel) { return; }
 
                 const nowHours = new Date(Date.now()).getHours();
                 const nowMinutes = new Date(Date.now()).getMinutes();
