@@ -19,7 +19,7 @@ module.exports = {
         // 'reactionRole',
         // 'reactionVote',
         // 'reboot',
-        // 'reportThread',
+        'reportThread',
         // 'rssbot',
         'spamBotKicker',
         'streamStartTime',
