@@ -3,6 +3,7 @@ module.exports = {      // KTG
     name: 'KTG',
     perfix: /(^[\/\-!~])[\S]/,
 
+    /*
     memberChecker4: [
         {
             holoChannelID: 'UCtyWhCj3AqKh2dXctLkDtng',   // todoroki
@@ -14,5 +15,5 @@ module.exports = {      // KTG
             logChannelID: '1253632587226812466',         // #stream-log <#1253632587226812466>
             memberRoleID: '1266710080955486308',          // RRKA <@&1266710080955486308>
         },
-    ],
+    ],//*/
 }

@@ -11,7 +11,7 @@ module.exports = {
         // 'delall',
         // 'fxtwitter',
         // 'hook',
-        'memberChecker4',
+        // 'memberChecker4',
         // 'memberCounter',
         'messageLogger',
         // 'permissionSwitch',

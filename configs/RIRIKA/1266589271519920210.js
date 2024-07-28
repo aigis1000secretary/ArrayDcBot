@@ -3,6 +3,7 @@ module.exports = {      // 一条株式會社
     name: '一条株式會社',
     perfix: /^[\/\-!][\S]/,
 
+    /*
     memberChecker4: [
         {
             holoChannelID: 'UCtyWhCj3AqKh2dXctLkDtng',   // ririka,
@@ -14,7 +15,7 @@ module.exports = {      // 一条株式會社
             logChannelID: '1266707330372735033',      // #會員驗證紀錄 <#1266707330372735033>
             memberRoleID: '1266660671941120062',      // 正社員 <@&1266660671941120062>
         },
-    ],
+    ],//*/
 
 
 
