@@ -348,6 +348,22 @@ module.exports = {
                 await channel.send({ embeds: [embed] });
             }
 
+        } else if (command == 'mute' && args.length > 0) {
+
+            for (let username of args) {
+                // !mute <username> <username>
+                await chromeDriver.muteUser({ username });
+            }
+            return;
+
+        } else if (command == 'block' && args.length > 0) {
+
+            for (let username of args) {
+                // !mute <username> <username>
+                await chromeDriver.blockUser({ username });
+            }
+            return;
+
         } else if (command == 'fixembed') {
 
             await message.delete().catch(() => { });

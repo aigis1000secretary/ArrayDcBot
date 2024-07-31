@@ -352,6 +352,7 @@ class ChromeDriver {
             let done = false;
             let lastTweetID = null;
             let lastElement = null;
+            let _403count = 0;
             while (1) {
 
                 // get all tweet
@@ -455,21 +456,38 @@ class ChromeDriver {
                         const ele = await this.findElementByText(By.css(retryButton), `重試`);
                         // sleep 60sec & retry
                         if (ele) {
+
                             webLog('retryButton')
                             await sleepr(60000);
                             await ele.click().catch(() => { })
+
                         } else {
-                            // loading stuck
-                            await this.driver.actions()
-                                .sendKeys(Key.PAGE_UP)
-                                .sendKeys(Key.END)
-                                .perform()
-                                .catch(() => { });
-                            webLog('Key.PAGE_UP')
+                            ++_403count;
+
+                            if (_403count > 30) {
+                                _403count = 0;
+                                await sleepr(60000);
+                                await this.driver.actions()
+                                    .sendKeys(Key.F5)
+                                    .perform()
+                                    .catch(() => { });
+                                webLog('Key.F5')
+
+                            } else {
+
+                                // loading stuck
+                                await this.driver.actions()
+                                    .sendKeys(Key.PAGE_UP)
+                                    .sendKeys(Key.END)
+                                    .perform()
+                                    .catch(() => { });
+                                webLog('Key.PAGE_UP', _403count)
+                            }
                         }
 
                     } else {
                         lastTweetID = tID;
+                        _403count = 0;
                         await this.scrollToElement(lastElement);
                         webLog('scrollToElement')
                     }
@@ -482,7 +500,6 @@ class ChromeDriver {
         // task done
         this.idle(taskID);
         webLog(`Chrome search ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
-
         return searchResult;
     }
     async searchKeywords(keywords, { dataNum, after, before }) {
@@ -540,34 +557,11 @@ class ChromeDriver {
             // get data object
             const suspendedText = 'div[data-testid="emptyState"]';
             const userDataScript = 'script[type="application/ld+json"]';
-            const userProfileLock = 'a[href="https://support.x.com/articles/14016"]';
-            const retryButton = 'div[data-testid="primaryColumn"] button[role="button"]';
-            const loadingMark = 'div[aria-label="Loading…"]';
 
-            // twitter APi error
-            let ele = true;
-            while (ele) {
-                // crawle user page
-                if (uID) {
-                    await this.driver.get(`https://twitter.com/i/user/${uID}`);
-                } else {
-                    await this.driver.get(`https://twitter.com/${username}`);
-                }
-
-                // wait page load
-                await Promise.race([
-                    this.driver.wait(until.elementLocated(By.css(suspendedText)), 10000).catch(() => null),
-                    this.driver.wait(until.elementLocated(By.css(userDataScript)), 10000).catch(() => null),
-                    this.driver.wait(until.elementLocated(By.css(loadingMark)), 10000).catch(() => null)
-                ]);
-
-                ele = await this.findElementByText(By.css(retryButton), `重試`) || await this.driver.findElement(By.css(loadingMark)).catch(() => { });
-
-                // sleep 60sec & retry
-                if (ele) { await sleepr(60000); }
-            }
+            await _waitUserProfile({ uID, username });
 
             // locked profile
+            const userProfileLock = 'a[href="https://support.x.com/articles/14016"]';
             ele = await this.driver.findElement(By.css(userProfileLock)).catch(() => null);
             if (ele) { result.locked = true; }
 
@@ -608,11 +602,9 @@ class ChromeDriver {
 
         // task done
         setTimeout(async () => { await sleepr(getUserDelay); this.idle(taskID); }, 10);
-
         this.mainUserDB.set(username, result);
         return result;
     }
-
     async reportUser({ username, fakeuser }) {
         if (!this.active) { return {}; }
 
@@ -623,48 +615,15 @@ class ChromeDriver {
         // start search
         // get user obj
         // crawle user page
-        await this.driver.get(`https://twitter.com/${username}`);
+        await this._waitUserProfile({ username });
 
-
-        // get data object
-        const suspendedText = 'div > div.r-18u37iz.r-13qz1uu > div.r-14lw9ot.r-1jgb5lz.r-13qz1uu:first-child > div > div:last-child > div > div.r-1jgb5lz.r-13qz1uu > div.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div > div.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.r-poiln3.r-bcqeeo.r-qvutc0';
-        const userDataScript = 'script[type="application/ld+json"]';
+        // locked profile
         const userProfileLock = 'a[href="https://support.x.com/articles/14016"]';
         const userProfileBlock = 'a[href="https://support.x.com/articles/110763"]';
-        const retryButton = 'div[data-testid="primaryColumn"] div[role="button"].r-ymttw5 svg.r-1d4mawv';
-        // wait page load
-        await Promise.race([
-            this.driver.wait(until.elementLocated(By.css(suspendedText)), 10000).catch(() => null),
-            this.driver.wait(until.elementLocated(By.css(userDataScript)), 10000).catch(() => null),
-            this.driver.wait(until.elementLocated(By.css(retryButton)), 10000).catch(() => null)
-        ]);
-
-        // twitter APi error
-        let ele = await this.driver.findElement(By.css(retryButton)).catch(() => null);
-        if (ele) {
-            // sleep 30sec
-            await sleepr(30000);
-
-            // retry
-            // crawle user page
-            if (uID) {
-                await this.driver.get(`https://twitter.com/i/user/${uID}`);
-            } else {
-                await this.driver.get(`https://twitter.com/${username}`);
-            }
-
-            // wait page load
-            await Promise.race([
-                this.driver.wait(until.elementLocated(By.css(suspendedText)), 10000).catch(() => null),
-                this.driver.wait(until.elementLocated(By.css(userDataScript)), 10000).catch(() => null),
-                this.driver.wait(until.elementLocated(By.css(retryButton)), 10000).catch(() => null)
-            ]);
-        }
-
-        // locked profil
         if (await this.driver.findElement(By.css(userProfileLock)).catch(() => null) || await this.driver.findElement(By.css(userProfileBlock)).catch(() => null)) {
             // task done
             this.idle(taskID);
+            return;
         }
 
         // read profile data
@@ -735,8 +694,142 @@ class ChromeDriver {
 
         // task done
         this.idle(taskID);
-
         return;
+    }
+    async muteUser({ username }) {
+        if (!this.active) { return {}; }
+
+        // register Task
+        const taskID = this.taskManager.registerTask(`muteUser ${username}`);
+        await this.taskManager.waitingTask(taskID);                                 // waiting task queue
+
+        // start search
+        // get user obj
+        // crawle user page
+        await this._waitUserProfile({ username });
+
+        // locked profile
+        const userProfileLock = 'a[href="https://support.x.com/articles/14016"]';
+        const userProfileBlock = 'a[href="https://support.x.com/articles/110763"]';
+        if (await this.driver.findElement(By.css(userProfileLock)).catch(() => null) || await this.driver.findElement(By.css(userProfileBlock)).catch(() => null)) {
+            // task done
+            this.idle(taskID);
+            return;
+        }
+
+        // read profile data
+        const userAction = 'button[data-testid="userActions"]';
+        await this.driver.wait(until.elementLocated(By.css(userAction)), 10000).catch(() => null)
+        const elements = await this.driver.findElements(By.css(userAction)).catch(() => null);
+        for (const ele of elements) {
+            await ele.click().catch(() => { });
+
+            let _ele;
+            const userMenuitem = 'div[data-testid="Dropdown"] div[role="menuitem"] > div > div > span';
+
+            _ele = await this.waitElementByText(By.css(userMenuitem), '靜音', 10000);
+            if (!_ele) { break; }   // shuoldn't here
+            await _ele.click().catch(() => { });
+            await sleepr(370);
+
+            break;
+        }
+
+        // task done
+        this.idle(taskID);
+        return;
+    }
+    async blockUser({ username }) {
+        if (!this.active) { return {}; }
+
+        // register Task
+        const taskID = this.taskManager.registerTask(`blockUser ${username}`);
+        await this.taskManager.waitingTask(taskID);                                 // waiting task queue
+
+        // start search
+        // get user obj
+        // crawle user page
+        await this._waitUserProfile({ username });
+
+        // locked profile
+        const userProfileLock = 'a[href="https://support.x.com/articles/14016"]';
+        const userProfileBlock = 'a[href="https://support.x.com/articles/110763"]';
+        if (await this.driver.findElement(By.css(userProfileLock)).catch(() => null) || await this.driver.findElement(By.css(userProfileBlock)).catch(() => null)) {
+            // task done
+            this.idle(taskID);
+            return;
+        }
+
+        // read profile data
+        const userAction = 'button[data-testid="userActions"]';
+        await this.driver.wait(until.elementLocated(By.css(userAction)), 10000).catch(() => null)
+        const elements = await this.driver.findElements(By.css(userAction)).catch(() => null);
+        for (const ele of elements) {
+            await ele.click().catch(() => { });
+
+            let _ele;
+            const userMenuitem = 'div[data-testid="Dropdown"] div[role="menuitem"] > div > div > span';
+            const blockMenuitem = 'button[data-testid="confirmationSheetConfirm"]';
+
+            _ele = await this.waitElementByText(By.css(userMenuitem), ' 封鎖', 10000);  // avoid 解除封鎖
+            if (!_ele) { break; }   // shuoldn't here
+            await _ele.click().catch(() => { });
+            await sleepr(370);
+
+            _ele = await this.waitElementByText(By.css(blockMenuitem), '封鎖', 10000);
+            if (!_ele) { break; }   // shuoldn't here
+            await _ele.click().catch(() => { });
+            await sleepr(370);
+
+            break;
+        }
+
+        // task done
+        this.idle(taskID);
+        return;
+    }
+    async _waitUserProfile({ uID, username }) {
+
+        // get data object
+        // const suspendedText = 'div[data-testid="emptyState"]';
+        const suspendedText = 'div > div.r-18u37iz.r-13qz1uu > div.r-14lw9ot.r-1jgb5lz.r-13qz1uu:first-child > div > div:last-child > div > div.r-1jgb5lz.r-13qz1uu > div.r-1kihuf0.r-14lw9ot.r-1jgb5lz.r-764hgp.r-jzhu7e.r-d9fdf6.r-10x3wzx.r-13qz1uu:last-child > div > div.r-37j5jr.r-1yjpyg1.r-1vr29t4.r-ueyrd6.r-5oul0u.r-bcqeeo.r-fdjqy7.r-qvutc0:first-child > span.r-poiln3.r-bcqeeo.r-qvutc0';
+        const userDataScript = 'script[type="application/ld+json"]';
+        const retryButton = 'div[data-testid="primaryColumn"] div[role="button"].r-ymttw5 svg.r-1d4mawv';
+        const loadingMark = 'div[aria-label="Loading…"]';
+
+        // for (let i = 0; i < 5; ++i) {
+        while (true) {
+
+            // crawle user page
+            if (uID && i != 0) {
+                await this.driver.get(`https://twitter.com/i/user/${uID}`);
+            } else {
+                await this.driver.get(`https://twitter.com/${username}`);
+            }
+
+            // wait page load
+            await Promise.race([
+                this.driver.wait(until.elementLocated(By.css(suspendedText)), 10000).catch(() => null),
+                this.driver.wait(until.elementLocated(By.css(userDataScript)), 10000).catch(() => null),
+                this.driver.wait(until.elementLocated(By.css(retryButton)), 10000).catch(() => null),
+                this.driver.wait(until.elementLocated(By.css(loadingMark)), 10000).catch(() => null)
+            ]);
+
+            // twitter APi error
+            let ele = await this.findElementByText(By.css(retryButton), `重試`) || await this.driver.findElement(By.css(loadingMark)).catch(() => { });
+            if (ele) {
+
+                // sleep 60sec
+                await sleepr(60000);
+                // retry
+                continue;
+
+            } else {
+                // success
+                return true;;
+            }
+        }
+        return false;
     }
 
 
@@ -803,7 +896,6 @@ class ChromeDriver {
 
         // task done
         this.idle(taskID);
-
         return searchResult.has(tID) ? searchResult.get(tID) : null;
     }
 
