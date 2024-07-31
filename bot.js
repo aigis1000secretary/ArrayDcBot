@@ -106,7 +106,7 @@ module.exports = {
 
         // check bot token
         if (!client.mainConfig.discordToken) {
-            console.log(`[Discord] bot init fail: undefined token`);
+            console.log(`[Discord] bot <${filepath}> init fail: undefined login token`);
             return null;
         }
 

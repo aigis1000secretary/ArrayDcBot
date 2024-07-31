@@ -34,7 +34,7 @@ module.exports = {      // SSRB的聚集地
 
 
     reportThread: {
-        REPORT_CHANNEL_ID: '850912764967780372',      // #舉報區 <#850912764967780372>
+        REPORT_CHANNEL_ID: '850912764967780372',      // #舉報區-封存 <#850912764967780372>
         ADMIN_ROLE_ID: '766316861427023882',      // Staff~ <@&766316861427023882>
     },
 
@@ -90,7 +90,7 @@ module.exports = {      // SSRB的聚集地
 
 
     messageLogger: { LOG_CHANNEL_ID: '888239393716981830' },      // #訊息刪除監視區 <#888239393716981830>
-    memberCounter: { COUNTER_CHANNEL_ID: '860528144367878154', },      // #群組人數-4,912 <#860528144367878154>
+    memberCounter: { COUNTER_CHANNEL_ID: '860528144367878154', },      // #群組人數-4,906 <#860528144367878154>
     reactionRole: { RULE_CHANNEL_ID: '775754378736173087' },      // #身份組領取區-role <#775754378736173087>
     reactionVote: { VOTE_CHANNELS: ['827129069178978324'] },      // #投票區 <#827129069178978324>
 
