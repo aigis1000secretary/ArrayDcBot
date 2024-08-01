@@ -110,7 +110,7 @@ const replacer = (key, value) => {
 }
 
 // [, username, , tID]
-const regUrl = /https?:\/\/(?:twitter|x)\.com(?:\/([^\/]+)(?:\/status\/(\d+))?)?/i;
+const regTwitterUrl = /https?:\/\/(?:twitter|x)\.com(?:\/([^\/]+)(?:\/status\/(\d+))?)?/i;
 const regUsername = /\(@([A-Za-z0-9_]+)\)$/;
 const CODE_CHANNEL = '872122458545725451';
 const LOG1_CHANNEL = '713623232070156309';
@@ -619,12 +619,16 @@ const messageExecute = async (message) => {
     const [, authorName] = (author?.name)?.match(regUsername) || [, null];
     // get username, tweetID
     let uID;
-    let [, username, tID] = (content.match(regUrl) || [, null, null]);
+    let [, username, tID] = (content.match(regTwitterUrl) || [, null, null]);
 
 
 
     // embed without image or tweet embed wrong?
     if ((!imageUrl && !imageProxyURL) || !authorName) {
+        if (spamUserList.userIDList.has(username)) {
+            message.delete().catch(() => { });
+            return true;
+        }
         // can't found image or embed
         // retrun false to call refresh method
         return false;
@@ -826,7 +830,7 @@ module.exports = {
         const { client, content, channel, embeds, id } = message;
 
         // is twitter url
-        if (regUrl.test(content) && command != 'getuid') {
+        if (regTwitterUrl.test(content) && command != 'getuid') {
 
             let embedChecked = await messageExecute(message);
 
@@ -1074,7 +1078,7 @@ module.exports = {
 
     async messageUpdate(oldMessage, message, pluginConfig) {
         // is twitter url
-        if (regUrl.test(message.content || '')) {
+        if (regTwitterUrl.test(message.content || '')) {
             messageExecute(message);
         }
     },
@@ -1109,7 +1113,7 @@ module.exports = {
         if (reaction.emoji.toString() != EMOJI_LABEL) { return; }
 
         // is twitter url or not
-        if (!regUrl.test(content)) { return; }
+        if (!regTwitterUrl.test(content)) { return; }
 
 
 
@@ -1125,7 +1129,7 @@ module.exports = {
         const [, authorName] = (author?.name)?.match(regUsername) || [, null];
         // get username, tweetID
         let uID, username;
-        const [, urlUsername, tID] = (content.match(regUrl) || [, null, null]);
+        const [, urlUsername, tID] = (content.match(regTwitterUrl) || [, null, null]);
 
 
         if (authorName) {

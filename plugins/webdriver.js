@@ -558,11 +558,11 @@ class ChromeDriver {
             const suspendedText = 'div[data-testid="emptyState"]';
             const userDataScript = 'script[type="application/ld+json"]';
 
-            await _waitUserProfile({ uID, username });
+            await this._waitUserProfile({ uID, username });
 
             // locked profile
             const userProfileLock = 'a[href="https://support.x.com/articles/14016"]';
-            ele = await this.driver.findElement(By.css(userProfileLock)).catch(() => null);
+            let ele = await this.driver.findElement(By.css(userProfileLock)).catch(() => null);
             if (ele) { result.locked = true; }
 
             // read profile data
