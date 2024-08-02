@@ -177,8 +177,10 @@ class ChromeDriver {
         const elements = await this.driver.findElements(options).catch(() => { });
 
         for (let ele of elements) {
-            const eleText = await ele.getText().catch(() => 'error');
-            if (eleText == text || eleText.includes(text)) {
+            const eleText = (await ele.getText().catch(() => 'error')).trim();
+            if (typeof (text) == 'string' && (eleText == text || eleText.includes(text))) {
+                return ele;
+            } else if (text instanceof RegExp && (text.test(eleText))) {
                 return ele;
             }
         }
@@ -727,7 +729,18 @@ class ChromeDriver {
             let _ele;
             const userMenuitem = 'div[data-testid="Dropdown"] div[role="menuitem"] > div > div > span';
 
-            _ele = await this.waitElementByText(By.css(userMenuitem), '靜音', 10000);
+            await Promise.race([
+                this.waitElementByText(By.css(userMenuitem), / 靜音$/, 10000),
+                this.waitElementByText(By.css(userMenuitem), / 取消靜音$/, 10000),
+                this.waitElementByText(By.css(userMenuitem), /^解除封鎖/, 10000)
+            ]);
+
+            _ele = await this.findElementByText(By.css(userMenuitem), /^解除封鎖/);
+            if (_ele) { break; }   // already block
+            _ele = await this.findElementByText(By.css(userMenuitem), / 取消靜音$/);
+            if (_ele) { break; }   // already mute
+
+            _ele = await this.waitElementByText(By.css(userMenuitem), / 靜音$/, 10000);
             if (!_ele) { break; }   // shuoldn't here
             await _ele.click().catch(() => { });
             await sleepr(370);
@@ -771,7 +784,15 @@ class ChromeDriver {
             const userMenuitem = 'div[data-testid="Dropdown"] div[role="menuitem"] > div > div > span';
             const blockMenuitem = 'button[data-testid="confirmationSheetConfirm"]';
 
-            _ele = await this.waitElementByText(By.css(userMenuitem), ' 封鎖', 10000);  // avoid 解除封鎖
+            await Promise.race([
+                this.waitElementByText(By.css(userMenuitem), /^封鎖/, 10000),
+                this.waitElementByText(By.css(userMenuitem), /^解除封鎖/, 10000)
+            ]);
+
+            _ele = await this.findElementByText(By.css(userMenuitem), /^解除封鎖/);
+            if (_ele) { break; }   // already block
+
+            _ele = await this.findElementByText(By.css(userMenuitem), /^封鎖/);
             if (!_ele) { break; }   // shuoldn't here
             await _ele.click().catch(() => { });
             await sleepr(370);
