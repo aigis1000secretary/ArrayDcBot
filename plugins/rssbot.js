@@ -331,14 +331,42 @@ const sendRssItems = async (client, channel, hostColor, items) => {
     // set rss embed
     const embeds = await itemsToEmbeds(items, hostColor);
     // sort
-    embeds.sort((eA, eB) => {
-        const tA = eA.timestamp; const coA = parseInt(eA.footer?.text.replace('RJ', '')); const caA = eA.author?.name;
-        const tB = eB.timestamp; const coB = parseInt(eB.footer?.text.replace('RJ', '')); const caB = eB.author?.name;
-        if (tA != tB) { return (tA > tB) ? 1 : -1; }    // sort by time
-        if (caA != caB) { return (caA > caB) ? 1 : -1; }    // sort by type (for dl)
-        if (coA != coB) { return (coA > coB) ? 1 : -1; }    // sort by rjid
-        return 0;
-    });
+    if (hostColor == 4609772) {
+        embeds.sort((eA, eB) => {
+            const tA = eA.timestamp; const coA = parseInt(eA.footer?.text.replace('RJ', ''));
+            const tB = eB.timestamp; const coB = parseInt(eB.footer?.text.replace('RJ', ''));
+            const getCT = (name) => {
+                let categoryLists = [
+                    ['音素材', '画像素材', '音楽', 'ツール/アクセサリ', 'その他'],
+                    ['ノベル', 'デジタルノベル'],
+                    ['CG・イラスト', 'マンガ', 'ボイスコミック', '動画'],
+                    ['ロールプレイング', 'シミュレーション', 'アドベンチャー', 'アクション', 'シューティング', 'パズル', 'クイズ', 'テーブル', 'その他ゲーム'],
+                    ['ボイス・ASMR'],
+                ]
+                for (let i in categoryLists) {
+                    for (let category of categoryLists[i]) {
+                        if (name.includes(category)) { return i; break; }
+                    }
+                }
+                return -1;
+            }
+            const caA = getCT(eA.author?.name);
+            const caB = getCT(eB.author?.name);
+            if (tA != tB) { return (tA > tB) ? 1 : -1; }    // sort by time
+            if (caA != caB) { return (caA > caB) ? 1 : -1; }    // sort by type (for dl)
+            if (coA != coB) { return (coA > coB) ? 1 : -1; }    // sort by rjid
+            return 0;
+        });
+    } else {
+        embeds.sort((eA, eB) => {
+            const tA = eA.timestamp; const coA = parseInt(eA.footer?.text.replace('RJ', '')); const caA = eA.author?.name;
+            const tB = eB.timestamp; const coB = parseInt(eB.footer?.text.replace('RJ', '')); const caB = eB.author?.name;
+            if (tA != tB) { return (tA > tB) ? 1 : -1; }    // sort by time
+            if (caA != caB) { return (caA > caB) ? 1 : -1; }    // sort by type (for dl)
+            if (coA != coB) { return (coA > coB) ? 1 : -1; }    // sort by rjid
+            return 0;
+        });
+    }
 
     // debug
     if (require('fs').existsSync("./.env")) {
