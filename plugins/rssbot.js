@@ -9,7 +9,7 @@ const xml2js = require(`xml2js`);
 // let client = null;
 
 const requestGet = require('util').promisify(require('request').get);
-const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms)); };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms, null));
 
 // check rss and send embeds
 const checkRss = async (client, nowMinutes) => {
@@ -315,11 +315,7 @@ const checkLastRss = async (client, channel, hostColor) => {
         if (!message.deletable) { continue; }
 
         // delete
-        setTimeout(async () => {
-            await message.suppressEmbeds(true).catch(() => { });
-            // await message.delete().catch(() => { });
-            addBulkDelete(channel.id, message);
-        }, 250);
+        setTimeout(async () => { addBulkDelete(channel.id, message); }, 250);
     };
 
     return await channel.messages.fetch({ message: lastMsgID });
@@ -409,17 +405,33 @@ const sendRssItems = async (client, channel, hostColor, items) => {
 }
 
 
-let bulkDelete = new Map(); // [cID, new Set()]
+let bulkDeleteList = new Map(); // [cID, new Set()]
 let bulkDeleteSize = new Map(); // [cID, size]
-const addBulkDelete = (cID, message) => {
+const addBulkDelete = async (cID, message) => {
 
+    // try 99 times;
+    // for (let i = 1; i <= 6; ++i) {
+    for (let i = 1; i <= 100; ++i) {
+        let suppressed = await Promise.race([
+            message.suppressEmbeds(true).then(() => true).catch(() => false),
+            sleep(30000 * Math.min(i, 6))
+        ]);
+        // true: suppressed
+        // false: suppress fail
+        // null: timeout 30 sec
+        if (suppressed) { break; }
+        if (i == 99) { return; }
+    }
+
+    // old msg can't bulk delete
     if (Date.now() - (Number(BigInt(message.id) >> 22n) + 14200704e5) > 1192320000) {   // 1192320000 = 1000 * 60 * 60 * 24 * 13.8 = 13.8day
         message.delete().catch((e) => console.log(e.message));
         return;
     }
 
-    if (!bulkDelete.has(cID)) { bulkDelete.set(cID, new Set()); }
-    bulkDelete.get(cID).add(message);
+    if (!bulkDeleteSize.has(cID)) { bulkDeleteSize.set(cID, 0); }
+    if (!bulkDeleteList.has(cID)) { bulkDeleteList.set(cID, new Set([message])); }
+    else { bulkDeleteList.get(cID).add(message); }
 }
 
 let client = null;
@@ -429,18 +441,27 @@ module.exports = {
 
     async clockMethod(client, { hours, minutes, seconds }) {
 
-        if (seconds % 15 == 0 && bulkDelete.size > 0) {
+        if (seconds % 15 == 0) {
 
-            for (let [cID, msgSet] of bulkDelete) {
+            for (let [cID, msgSet] of bulkDeleteList) {
 
-                const size = bulkDeleteSize.get(cID);
-                if (size == msgSet.size) {
+                // if (msgSet.size == 0) {
+                //     bulkDeleteList.delete(cID);
+                //     bulkDeleteSize.delete(cID);
+                //     continue;
+                // }
 
-                    if (msgSet.size > 0) {
-                        let _bulkDelete = Array.from(msgSet);
+                if (msgSet.size == bulkDeleteSize.get(cID)) {
 
-                        msgSet.clear();
-                        bulkDeleteSize.set(cID, 0);
+                    while (msgSet.size > 0) {
+
+                        let _bulkDelete = (msgSet.size > 50) ? Array.from(msgSet).slice(0, 50) : Array.from(msgSet);
+                        if ((msgSet.size > 50)) {
+                            msgSet = new Set(Array.from(msgSet).slice(50));
+                        } else {
+                            msgSet.clear();
+                        }
+                        bulkDeleteSize.set(cID, msgSet.size);
 
                         let channel = _bulkDelete[0].channel;
                         await channel.bulkDelete(_bulkDelete)
@@ -495,11 +516,7 @@ module.exports = {
                 // embed.thumbnail == dlsiteIcon
                 embed.thumbnail?.url != rssIcon
             ) {
-                setTimeout(async () => {
-                    await message.suppressEmbeds(true).catch(() => { });
-                    // await message.delete().catch(() => { });
-                    addBulkDelete(message.channel.id, message);
-                }, 250);
+                setTimeout(async () => { addBulkDelete(message.channel.id, message); }, 250);
                 return;
             }
 
@@ -580,11 +597,7 @@ module.exports = {
                     let msg = await message.channel.messages.fetch({ message: mID.toString() });
 
                     // delete
-                    setTimeout(async () => {
-                        await msg.suppressEmbeds(true).catch(() => { });
-                        // await message.delete().catch(() => { });
-                        addBulkDelete(message.channel.id, msg);
-                    }, 250);
+                    setTimeout(async () => { addBulkDelete(message.channel.id, msg); }, 250);
                 };
             }
             return;
@@ -654,11 +667,7 @@ module.exports = {
                     let msg = await message.channel.messages.fetch({ message: mID.toString() });
 
                     // delete
-                    setTimeout(async () => {
-                        await msg.suppressEmbeds(true).catch(() => { });
-                        // await message.delete().catch(() => { });
-                        addBulkDelete(message.channel.id, msg);
-                    }, 250);
+                    setTimeout(async () => { addBulkDelete(message.channel.id, msg); }, 250);
                 };
             }
 
