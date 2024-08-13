@@ -271,55 +271,95 @@ const xmlTojson = (xml) => {
 }
 
 // get last rss message
-const checkLastRss = async (client, channel, hostColor) => {
+const checkLastRss = async (client, channel, hostColor = null, wastebasket = false) => {
 
-    // get message log
-    let messages = await channel.messages.fetch().catch(() => { });
-    if (!messages) { return null; }
+    // get messages
+    const rssMessages = new Map();  // [hexcolor, [mID, message]];
+    let before = null;
+    while (true) {
+        const messages = await channel.messages.fetch({ before });
+        if (messages.size == 0) { break; }  //channel start point
 
-    // filter target messages
-    let tarMsgIDs = [];
-    for (let key of messages.keys()) {
-        let message = messages.get(key);
+        for (const [mID, message] of messages) {
+            before = mID;
 
-        // only check bot message
-        if (message.author?.id != client.user.id) { continue; }
-        // only check message with embed;
-        if (!message.embeds[0]) { continue; }
+            // filter target messages
+            // only check bot message
+            if (message.author?.id != client.user.id) { continue; }
+            // check deletable
+            if (!message.deletable) { continue; }
 
-        // only check embed is rss embed
-        if (message.embeds[0].thumbnail?.url != rssIcon) { continue; }
+            // check message target
+            let [embed] = message.embeds || [];
+            if (!embed && !message.content) {
+                // empty message
+                // delete
+                addBulkDelete(channel.id, message);
+                // console.log('empty', mID);
+                continue;
+            }
 
-        // only check embed url in same host by host color
-        if (message.embeds[0].color != hostColor) { continue; }
+            // only check message with embed;
+            if (!embed) { continue; }
+            // only check embed is rss embed
+            if (embed.thumbnail?.url != rssIcon) { continue; }
 
-        // skip error log message
-        if (message.embeds[0].url.includes('127.0.0.1')) { continue; }
+            // only check embed url in same host by host color, if hostColor exist
+            if (embed.color != hostColor && hostColor !== null) { continue; }
+            const color = embed.color;
 
-        // keep msg
-        tarMsgIDs.push(BigInt(message.id));
+            // skip error log message
+            if (embed.url.includes('127.0.0.1')) { continue; }
+
+
+            if (!rssMessages.has(color)) { rssMessages.set(color, new Map()); }
+            rssMessages.get(color).set(mID, message);
+            // console.log('fetch', color, mID);
+        }
+    }
+    if (rssMessages.size == 0) { return null; }
+
+    let lastMsgID = null;
+    const colors = Array.from(rssMessages.keys());
+    for (const color of colors) {
+
+        const msgs = Array.from(rssMessages.get(color).values());
+
+        const _lastMsg = msgs.shift();
+        if (hostColor != null && hostColor == color) {
+            lastMsgID = _lastMsg.id;
+        }
+
+        // 
+
+        // get react count
+        for (let msg of msgs) {
+
+            let message = msg;
+            if (message.partial) {
+                message = await channel.messages.fetch({ message: mID });
+            }
+            const reacts = message.reactions.cache.get(EMOJI_RECYCLE);
+            if (!reacts) { continue; }
+
+            const reactsCount = reacts.count || 0;
+            const reactsMe = reacts.me || false;
+
+            if (!message.deletable) { continue; }
+            if (wastebasket === false && reactsCount <= 1) { continue; }    // in normal mode, skip msg what: (A. only bot reacted, B. bot reaction removed. )
+            if (wastebasket === true && !reactsMe) { continue; }            // in wastebasket mode, skip msg without bot reaction, keep bot reacted msg wait to delete.
+
+            // delete
+            setTimeout(async () => { addBulkDelete(channel.id, message); }, 250);
+            // console.log('addBulkDelete', color, mID);
+        };
+
     }
 
-    if (tarMsgIDs.length <= 0) { return null; }
-
-    tarMsgIDs.sort((a, b) => a > b || -(a < b));
-    let lastMsgID = tarMsgIDs.pop().toString();
-
-    // get react count
-    for (let mID of tarMsgIDs) {
-        let message = await channel.messages.fetch({ message: mID.toString() });
-        let reacts = message.reactions.cache.get(EMOJI_RECYCLE);
-        let reactsCount = reacts?.count || 0;
-
-        if (reactsCount <= 1) { continue; }
-        if (!message.deletable) { continue; }
-
-        // delete
-        setTimeout(async () => { addBulkDelete(channel.id, message); }, 250);
-    };
-
-    return await channel.messages.fetch({ message: lastMsgID });
+    return lastMsgID ? await channel.messages.fetch({ message: lastMsgID }) : null;
 }
+
+
 
 // send embeds
 const sendRssItems = async (client, channel, hostColor, items) => {
@@ -405,22 +445,30 @@ const sendRssItems = async (client, channel, hostColor, items) => {
 }
 
 
+
+
+
 let bulkDeleteList = new Map(); // [cID, new Set()]
 let bulkDeleteSize = new Map(); // [cID, size]
-const addBulkDelete = async (cID, message) => {
+const addBulkDelete2 = async (cID, message) => {
 
-    // try 99 times;
-    // for (let i = 1; i <= 6; ++i) {
-    for (let i = 1; i <= 100; ++i) {
-        let suppressed = await Promise.race([
-            message.suppressEmbeds(true).then(() => true).catch(() => false),
-            sleep(30000 * Math.min(i, 6))
-        ]);
-        // true: suppressed
-        // false: suppress fail
-        // null: timeout 30 sec
-        if (suppressed) { break; }
-        if (i == 99) { return; }
+
+    const [embed] = message.embeds || [];
+    if (embed) {
+        // try 99 times;
+        // for (let i = 1; i <= 6; ++i) {
+        for (let i = 1; i <= 100; ++i) {
+            let suppressed = await Promise.race([
+                message.suppressEmbeds(true).then(() => true).catch(() => false),
+                sleep(30000 * Math.min(i, 6))
+            ]);
+            console.log('suppressEmbeds', suppressed);
+            // true: suppressed
+            // false: suppress fail
+            // null: timeout 30 sec
+            if (suppressed) { break; }
+            if (i == 99) { return; }
+        }
     }
 
     // old msg can't bulk delete
@@ -434,6 +482,158 @@ const addBulkDelete = async (cID, message) => {
     else { bulkDeleteList.get(cID).add(message); }
 }
 
+
+let bulkDeleteTimeout = null;
+
+let bulkDeletePoolA = new Map(); // [cID, new Map()]    raw message
+let bulkDeletePoolB = new Map(); // [cID, new Map()]    empty message
+
+
+const addBulkDelete = async (cID, message) => {
+
+    if (bulkDeleteTimeout == null) {
+        bulkDeleteTimeout = setTimeout(bulkDelete, 0);
+    }
+
+    const mID = message.id;
+
+    // move raw message to pool A
+    if (!bulkDeletePoolA.has(cID)) { bulkDeletePoolA.set(cID, new Map()); }
+    bulkDeletePoolA.get(cID).set(mID, message);
+
+    // remove message embed from pool A
+    const result = await suppressEmbeds(message);
+    if (!result) {
+        // remove fail, throw out
+        bulkDeletePoolA.get(cID).delete(mID);
+        return;
+    }
+
+    // old msg can't bulk delete
+    if (Date.now() - (Number(BigInt(mID) >> 22n) + 14200704e5) > 1192320000) {   // 1192320000 = 1000 * 60 * 60 * 24 * 13.8 = 13.8day
+        message.delete().catch((e) => console.log(e.message));
+        bulkDeletePoolA.get(cID).delete(mID);
+        return;
+    }
+
+    // move empty message to pool B
+    if (!bulkDeletePoolB.has(cID)) { bulkDeletePoolB.set(cID, new Map()); }
+    bulkDeletePoolB.get(cID).set(mID, message);
+    bulkDeletePoolA.get(cID).delete(mID);
+}
+
+const suppressEmbeds = async (message) => {
+    // try 99 times;
+    // for (let i = 1; i <= 6; ++i) {
+    for (let i = 1; i <= 100; ++i) {
+
+        const [embed] = message.embeds || [];
+        if (!embed) {
+            // console.log('suppressEmbeds', true);
+            return true;
+        }
+
+        let suppressed = await Promise.race([
+            message.suppressEmbeds(true).then(() => true).catch(() => false),
+            sleep(30000 * Math.min(i, 4))
+        ]);
+        // console.log('suppressEmbeds', suppressed);
+        // true: suppressed
+        // false: suppress fail
+        // null: timeout 30 sec
+        if (suppressed) { return true; }
+    }
+    return false;
+}
+
+
+
+
+
+
+
+
+
+const bulkDelete = async () => {
+
+    while (true) {
+
+        let loop = false;
+
+        for (const [cID, messagesA] of bulkDeletePoolA) {
+            if (bulkDeletePoolA.get(cID).size > 0 || bulkDeletePoolB.get(cID).size > 0) { loop = true; }
+        }
+
+        //     // messages in pool A
+        //     for (const [mID, message] of messagesA) {
+
+        //         const [embed] = message.embeds || [];
+        //         if (!embed) {
+        //             // move empty message to pool B
+        //             if (!bulkDeletePoolB.has(cID)) { bulkDeletePoolB.set(cID, new Map()); }
+        //             bulkDeletePoolB.get(cID).set(mID, message);
+        //             bulkDeletePoolA.get(cID).delete(mID);
+        //             continue;
+        //         }
+
+        //         // remove embed if exist
+        //         // console.log('Promise.race');
+        //         Promise.race([
+        //             message.suppressEmbeds(true).then(() => true).catch(() => false),
+        //             sleep(1000 * 20)   // timeout after 1min 
+        //         ]).then(suppressed => {
+        //             if (suppressed) {
+        //                 // console.log('suppressEmbeds', suppressed);
+        //                 // move empty message to pool B
+        //                 if (!bulkDeletePoolB.has(cID)) { bulkDeletePoolB.set(cID, new Map()); }
+        //                 bulkDeletePoolB.get(cID).set(mID, message);
+        //                 bulkDeletePoolA.get(cID).delete(mID);
+        //             }
+        //         });
+        //     }
+        // }
+
+        // delete empty message
+        for (const [cID, messagesB] of bulkDeletePoolB) {
+
+            if (bulkDeletePoolB.get(cID).size < 100 && bulkDeletePoolA.get(cID).size != 0) { continue; }
+            if (bulkDeletePoolB.get(cID).size == 0) { continue; }
+
+            const keys = Array.from(messagesB.keys()).slice(0, 100);
+            const msgs = Array.from(messagesB.values()).slice(0, 100);
+
+            const channel = msgs[0].channel;
+            const result = await channel.bulkDelete(msgs)
+                .then((m) => { console.log(`Bulk deleted ${m.size} messages in ${channel.name}`); return true; })
+                .catch((e) => { console.log(e.message); return false; });
+            if (result) {
+                for (const key of keys) {
+                    messagesB.delete(key);
+                }
+            }
+        }
+
+        await sleep(15 * 1000);
+        if (loop) { continue; }
+        else { break; }
+    }
+
+    bulkDeleteTimeout = null;
+    return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 let client = null;
 module.exports = {
     name: 'rssbot',
@@ -443,37 +643,35 @@ module.exports = {
 
         if (seconds % 15 == 0) {
 
-            for (let [cID, msgSet] of bulkDeleteList) {
+            // for (let [cID, msgSet] of bulkDeleteList) {
 
-                // if (msgSet.size == 0) {
-                //     bulkDeleteList.delete(cID);
-                //     bulkDeleteSize.delete(cID);
-                //     continue;
-                // }
+            //     // if (msgSet.size == 0) {
+            //     //     bulkDeleteList.delete(cID);
+            //     //     bulkDeleteSize.delete(cID);
+            //     //     continue;
+            //     // }
 
-                if (msgSet.size == bulkDeleteSize.get(cID)) {
+            //     if (msgSet.size == bulkDeleteSize.get(cID)) {
 
-                    while (msgSet.size > 0) {
+            //         let _bulkDelete = (msgSet.size > 100) ? Array.from(msgSet).slice(0, 100) : Array.from(msgSet);
+            //         if ((msgSet.size > 100)) {
+            //             msgSet = new Set(Array.from(msgSet).slice(100));
+            //         } else {
+            //             msgSet.clear();
+            //         }
+            //         bulkDeleteSize.set(cID, msgSet.size);
 
-                        let _bulkDelete = (msgSet.size > 50) ? Array.from(msgSet).slice(0, 50) : Array.from(msgSet);
-                        if ((msgSet.size > 50)) {
-                            msgSet = new Set(Array.from(msgSet).slice(50));
-                        } else {
-                            msgSet.clear();
-                        }
-                        bulkDeleteSize.set(cID, msgSet.size);
+            //         let channel = _bulkDelete[0].channel;
+            //         await channel.bulkDelete(_bulkDelete)
+            //             .then(() => console.log(`Bulk deleted ${_bulkDelete.length} messages in ${channel.name}`))
+            //             .catch((e) => console.log(e.message));
+            //         // } else {
+            //         //     bulkDelete.delete(cID);
 
-                        let channel = _bulkDelete[0].channel;
-                        await channel.bulkDelete(_bulkDelete)
-                            .then(() => console.log(`Bulk deleted ${_bulkDelete.length} messages in ${channel.name}`))
-                            .catch((e) => console.log(e.message));
-                        // } else {
-                        //     bulkDelete.delete(cID);
-                    }
-                } else {
-                    bulkDeleteSize.set(cID, msgSet.size);
-                }
-            }
+            //     } else {
+            //         bulkDeleteSize.set(cID, msgSet.size);
+            //     }
+            // }
         }
 
         if (require('fs').existsSync("./.env")) { return; }
@@ -499,8 +697,10 @@ module.exports = {
         if (reaction.emoji.name == EMOJI_RECYCLE) {
             // ♻️
 
+            // only check bot message
+            if (message.author?.id != client.user.id) { return; }
             // check deletable
-            if (message.author.id != client.user.id || !message.deletable) { return; }
+            if (!message.deletable) { return; }
 
             // skip not target channel. to-do: change rule
             if (!pluginConfig.find((cfg) => (channel.id == cfg.RSS_CHANNEL_ID))) { return; }
@@ -509,12 +709,11 @@ module.exports = {
             let [embed] = message.embeds || [];
             if (!embed) { return; }
 
-            // check host
+            // delete dlsite embed msg
             let host = (new URL(embed.url)).host;
-            if (
-                host == 'www.dlsite.com' &&
-                // embed.thumbnail == dlsiteIcon
+            if (host == 'www.dlsite.com' &&
                 embed.thumbnail?.url != rssIcon
+                // embed.thumbnail == dlsiteIcon
             ) {
                 setTimeout(async () => { addBulkDelete(message.channel.id, message); }, 250);
                 return;
@@ -553,53 +752,8 @@ module.exports = {
         // EMOJI_WASTEBASKET
         if (reaction.emoji.name == EMOJI_WASTEBASKET) {
 
-            // get message log
-            let msgs = await message.channel.messages.fetch().catch(() => { });
-            // filter target messages
-            let hexColors = [];
-            let tarMsgIDs = {};
-            for (let key of msgs.keys()) {
-                let msg = msgs.get(key);
+            let lastMessage = await checkLastRss(client, channel, null, true);
 
-                // only check bot message
-                if (!msg.deletable) { continue; }
-                if (msg.author?.id != client.user.id) { continue; }
-                // skip msg without embed
-                let embed = (msg.embeds || [])[0];
-                if (embed) {
-                    // skip msg without rss data
-                    if (embed.thumbnail?.url != rssIcon) { continue; }
-
-                    // skip error log message
-                    if (embed.url.includes('127.0.0.1')) { continue; }
-                    // if (embed.url.includes('www.dlsite.com')) { continue; }
-                }
-
-                // skip msg without recycle emoji
-                let reacts = msg.reactions.cache.get(EMOJI_RECYCLE);
-                let reactsCount = reacts?.count || 0;
-                if (reactsCount < 1) { continue; }
-
-                let color = embed?.color || 0;
-                if (!hexColors.includes(color)) { hexColors.push(color); }
-                if (!tarMsgIDs[color]) { tarMsgIDs[color] = []; }
-
-                // keep msg
-                tarMsgIDs[color].push(BigInt(msg.id));
-            }
-
-            for (let color of hexColors) {
-                tarMsgIDs[color].sort((a, b) => a > b || -(a < b));
-                let lastMsgID = tarMsgIDs[color].pop();
-
-                // get react count
-                for (let mID of tarMsgIDs[color]) {
-                    let msg = await message.channel.messages.fetch({ message: mID.toString() });
-
-                    // delete
-                    setTimeout(async () => { addBulkDelete(message.channel.id, msg); }, 250);
-                };
-            }
             return;
         }
 
@@ -619,65 +773,16 @@ module.exports = {
             checkRss(client);
             return true;
 
-        } else if (EMOJI_RECYCLE == command) {
-
-            await message.delete().catch(() => { });
-
-            // get message log
-            let msgs = await message.channel.messages.fetch().catch(() => { });
-            // filter target messages
-            let hexColors = [];
-            let tarMsgIDs = {};
-            for (let key of msgs.keys()) {
-                let msg = msgs.get(key);
-
-                // only check bot message
-                if (!msg.deletable) { continue; }
-                if (msg.author?.id != client.user.id) { continue; }
-                // skip msg without embed
-                let embed = (msg.embeds || [])[0];
-                if (embed) {
-                    // skip msg without rss data
-                    if (embed.thumbnail?.url != rssIcon) { continue; }
-
-                    // skip error log message
-                    if (embed.url.includes('127.0.0.1')) { continue; }
-                    // if (embed.url.includes('www.dlsite.com')) { continue; }
-                }
-
-                // skip msg without recycle emoji
-                let reacts = msg.reactions.cache.get(EMOJI_RECYCLE);
-                let reactsCount = reacts?.count || 0;
-                if (reactsCount < 1) { continue; }
-
-                let color = embed?.color || 0;
-                if (!hexColors.includes(color)) { hexColors.push(color); }
-                if (!tarMsgIDs[color]) { tarMsgIDs[color] = []; }
-
-                // keep msg
-                tarMsgIDs[color].push(BigInt(msg.id));
-            }
-
-            for (let color of hexColors) {
-                tarMsgIDs[color].sort((a, b) => a > b || -(a < b));
-                let lastMsgID = tarMsgIDs[color].pop();
-
-                // get react count
-                for (let mID of tarMsgIDs[color]) {
-                    let msg = await message.channel.messages.fetch({ message: mID.toString() });
-
-                    // delete
-                    setTimeout(async () => { addBulkDelete(message.channel.id, msg); }, 250);
-                };
-            }
-
-            return true;
-
         }
         return false;
     },
 
-    setup(_client) { client = _client; }
+    async setup(_client) {
+        client = _client;
+
+        // const channel = await client.channels.fetch('1156057315829624933');
+        // checkLastRss(client, channel, null, true);
+    }
 }
 
 
