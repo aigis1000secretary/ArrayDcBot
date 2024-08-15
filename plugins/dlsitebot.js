@@ -258,8 +258,7 @@ module.exports = {
 
         // keep message space
         let embed = new EmbedBuilder().setDescription('Loading...');
-        let replyMsg = (message.author.bot && message.author.id == message.client.user.id) ?
-            message : await message.channel.send({ embeds: [embed] }).catch(console.log);
+        let replyMsg = await message.channel.send({ embeds: [embed] }).catch(console.log);
 
         // download dlsite page
         let result = await getDLsitePage(index.toUpperCase());
@@ -288,6 +287,38 @@ module.exports = {
         }
 
         return true;
+    },
+
+    async messageReactionAdd(reaction, user, pluginConfig) {
+        // skip bot reaction
+        if (user.bot) { return; }
+
+        // skip other emoji
+        if (![EMOJI_ENVELOPE_WITH_ARROW].includes(reaction.emoji.toString())) { return; }
+
+        // get msg data
+        const { message } = reaction;
+
+        // EMOJI_ENVELOPE_WITH_ARROW
+        if (reaction.emoji.name == EMOJI_ENVELOPE_WITH_ARROW) {
+
+            let [embed] = message.embeds || [{ fields: [] }];
+            if (!indexReg.test(embed?.footer?.text || '')) { return; }
+
+            let productID = embed.footer.text;
+
+            const _msg = {
+                channel: message.channel,
+                member: message.member,
+                author: message.author,
+                suppressEmbeds: () => { }
+            }
+
+            module.exports.execute(_msg, pluginConfig, productID, [], [])
+            return;
+        }
+
+        return;
     },
 
     async interactionCreate(interaction, pluginConfig) {

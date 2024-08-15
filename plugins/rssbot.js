@@ -1,6 +1,5 @@
 const [EMOJI_RECYCLE, EMOJI_ENVELOPE_WITH_ARROW, EMOJI_WASTEBASKET] = ['♻️', '📩', '🗑️'];
 const rssIcon = 'https://www.rssboard.org/images/rss-feed-icon-96-by-96.png';
-const dlsiteIcon = 'https://media.discordapp.net/attachments/947064593329557524/1156438574997184562/RBIlIWRJ2HEHkWiTV4ng_gt_icon020.png';
 
 const { EmbedBuilder } = require('discord.js');
 // const server = require('../server');
@@ -735,18 +734,6 @@ module.exports = {
                 //     return;
                 // }
             }
-        }
-
-        // EMOJI_ENVELOPE_WITH_ARROW
-        if (reaction.emoji.name == EMOJI_ENVELOPE_WITH_ARROW) {
-
-            let [embed] = message.embeds || [{ fields: [] }];
-            if (!embed) { return; }
-            if (!reg1.test(embed.footer?.text)) { return; }
-
-            let productID = embed.footer.text;
-            channel.send({ content: `!${productID}` });
-            return;
         }
 
         // EMOJI_WASTEBASKET
