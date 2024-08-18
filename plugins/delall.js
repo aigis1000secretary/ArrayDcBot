@@ -152,7 +152,8 @@ module.exports = {
         let { channel } = message;
 
         // mute reply
-        interaction.reply({ content: ' ' }).catch(() => { });
+        // interaction.reply({ content: ' ' }).catch(() => { });
+        interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(console.error);
 
         deleteAllMessage({ channel, author: user });
     },

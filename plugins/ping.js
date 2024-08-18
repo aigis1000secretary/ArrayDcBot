@@ -80,7 +80,8 @@ module.exports = {
             let { message } = interaction;
 
             // emtpy reply
-            interaction.reply({ content: ' ' }).catch(() => { });
+            // interaction.reply({ content: ' ' }).catch(() => { });
+            interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(console.error);
 
             // pong!
             message.reply({ content: `interactionCreate isButton`, allowedMentions: { repliedUser: false } })

@@ -118,7 +118,8 @@ module.exports = {
             thread.send(replyMsg);
 
             // mute reply
-            interaction.reply({ content: ' ' }).catch(() => { });
+            // interaction.reply({ content: ' ' }).catch(() => { });
+            interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(console.error);
             return true;
         }
 
@@ -155,7 +156,8 @@ module.exports = {
             await message.edit({ embeds, components: [actionRow] });
 
             // mute reply
-            interaction.reply({ content: ' ' }).catch(() => { });
+            // interaction.reply({ content: ' ' }).catch(() => { });
+            interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(console.error);
             return true;
         }
 
@@ -203,7 +205,8 @@ module.exports = {
             channel.send({ embeds: [new EmbedBuilder().setDescription(description)] }).catch(() => { });
 
             // mute reply
-            interaction.reply({ content: ' ' }).catch(() => { });
+            // interaction.reply({ content: ' ' }).catch(() => { });
+            interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(console.error);
 
             if (interaction.customId == 'authorize') {
                 setTimeout(() => { channel.setArchived(true).catch(() => { }); }, 20000);

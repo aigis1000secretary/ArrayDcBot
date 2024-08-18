@@ -330,7 +330,8 @@ module.exports = {
         const { message } = interaction;
 
         // mute reply
-        interaction.reply({ content: ' ' }).catch(() => { });
+        // interaction.reply({ content: ' ' }).catch(() => { });
+        interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(console.error);
 
 
         // get RJ index

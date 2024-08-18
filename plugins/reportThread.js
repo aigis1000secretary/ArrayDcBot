@@ -119,7 +119,8 @@ module.exports = {
         if (message.channel?.id != pluginConfig.REPORT_CHANNEL_ID) { return false; }
 
         // mute reply
-        interaction.reply({ content: ' ' }).catch(() => { });
+        // interaction.reply({ content: ' ' }).catch(() => { });
+        interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(console.error);
 
         // check channel & cmd
         if (command == 'report') {
