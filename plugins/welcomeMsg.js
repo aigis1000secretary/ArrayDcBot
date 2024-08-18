@@ -17,7 +17,7 @@ module.exports = {
                 let channel = guild.channels.cache.get(pluginConfig.WELCOME_CHANNEL_ID);
 
                 // welcome message
-                channel.send(welcomeMsg);
+                channel.send(welcomeMsg).catch(e => console.log(e.message));
             });
     }
 }

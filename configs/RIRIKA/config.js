@@ -29,7 +29,7 @@ module.exports = {
         // 'twitterListener3',
         // 'uptimer',
         // 'verifyThread',
-        // 'welcomeMsg',
+        'welcomeMsg',
     ],
 
     youtube: {
