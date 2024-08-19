@@ -3,11 +3,11 @@ module.exports = {      // KTG
     name: 'K島同人音聲',
     perfix: /^[!][\S]/,
 
-    spamBotKicker: {
-        LOG_CHANNEL_ID: '713623232070156309',      // #_log <#713623232070156309>
-        PERMISSION_ROLE_ID: null,
-        BAN_CHANNEL_ID: null
-    },
+    // spamBotKicker: {
+    //     LOG_CHANNEL_ID: '713623232070156309',      // #_log <#713623232070156309>
+    //     PERMISSION_ROLE_ID: null,
+    //     BAN_CHANNEL_ID: null
+    // },
 
 
 
