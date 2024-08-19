@@ -317,7 +317,7 @@ module.exports = {
             if (PERMISSION_ROLE_ID && punish.kick) {
                 let role = guild.roles.cache.get(PERMISSION_ROLE_ID);  // 已驗證V粉
 
-                if (role && botPermissions.has(PermissionFlagsBits.ManageRoles)) {
+                if (role && botInGuild.permissions.has(PermissionFlagsBits.ManageRoles)) {
                     authorInGuild.roles.remove(role).catch(console.log);
                 } else {
                     console.log(`[SBK] Missing Permissions: MANAGE_ROLES, role: ${role}`);
@@ -326,7 +326,7 @@ module.exports = {
 
             // kick author
             if (!PERMISSION_ROLE_ID && punish.kick) {
-                if (botPermissions.has(PermissionFlagsBits.KickMembers)) {
+                if (botInGuild.permissions.has(PermissionFlagsBits.KickMembers)) {
                     authorInGuild.kick().catch(console.log);
                 } else {
                     console.log(`[SBK] Missing Permissions: KICK_MEMBERS in ${guild.toString()}, User: <@${authorInGuild.id}>`);
@@ -357,7 +357,7 @@ module.exports = {
                         iconURL: author.displayAvatarURL({ format: 'png', size: 256 })
                     })
                     .addFields(fields);
-                channel.send({ embeds: [embed] });
+                channel.send({ embeds: [embed] }).catch(console.log);
             } else {
                 console.log('[SBK] Missing Permissions: MANAGE_MESSAGES');
             }
