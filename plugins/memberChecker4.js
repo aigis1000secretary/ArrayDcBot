@@ -1972,7 +1972,24 @@ module.exports = {
                 channel.send({ content: "```js\n" + dID + `\nResult: 0` + "```" });
                 return;
             }
+            // remove user db data
+            if (isLogChannel && command == 'removeuser') {
+                let dID = args[0];
+                if (!dID) {
+                    channel.send({ embeds: [new EmbedBuilder().setDescription(`!removeuser <user discord ID>`)] });
+                    return;
+                }
 
+                let data = ((await Pg.deleteData(dID.trim()))?.rows || [])[0];
+                if (data) {
+                    channel.send({ content: `\`\`\`js\n${dID}\n${JSON.stringify(data, null, 2)}\`\`\`` });
+                    return;
+                }
+
+                channel.send({ content: "```js\n" + dID + `\nResult: 0` + "```" });
+                return;
+            }
+            
             // clear member cache
             if (isLogChannel && command == 'membercache') {
                 rCore.memberCache = new Map();
