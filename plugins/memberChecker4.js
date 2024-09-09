@@ -1160,6 +1160,27 @@ class YoutubeCore {
         // promise.all
         for (let [, , promise] of streamList) { await promise; }
 
+        // for out-of-memory
+        if (streamList.length > 2) {
+            let maxDate = 0;
+            let minDate = Infinity;
+            for (let [vID, video, videoStatus] of streamList) {
+                let startDate = Date.parse(videoStatus.liveStreamingDetails.scheduledStartTime);
+                maxDate = Math.max(maxDate, startDate);
+                minDate = Math.min(minDate, startDate);
+            }
+            streamList = streamList.filter(([vID, video, videoStatus]) => [maxDate, minDate].includes(Date.parse(videoStatus.liveStreamingDetails.scheduledStartTime)));
+
+            let delKeys = Array.from(this.streamList.keys()).filter((_vID) => {
+                for (let [vID, ,] of streamList) { if (_vID == vID) { return false; } }
+                return true;
+            })
+            for (let key of delKeys) {
+                this.streamList.delete(key);
+                newStreamList.delete(key);
+            }
+        }
+
         for (let [vID, video, videoStatus] of streamList) {
 
             // get REALLY video data & liveStreamingDetails
@@ -1989,7 +2010,7 @@ module.exports = {
                 channel.send({ content: "```js\n" + dID + `\nResult: 0` + "```" });
                 return;
             }
-            
+
             // clear member cache
             if (isLogChannel && command == 'membercache') {
                 rCore.memberCache = new Map();
