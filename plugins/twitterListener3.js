@@ -175,6 +175,8 @@ module.exports = {
 
     async execute(message, pluginConfig, command, args, lines) {
 
+        const { channel, client } = message;
+
         if (command == 'tldebug' && message.client.user.id == client.user.id) {
             tllog = (tllog == console.log) ? () => { } : console.log;
             webLog();
@@ -182,8 +184,6 @@ module.exports = {
         }
 
         if (!chromeDriver.active) { return; }
-
-        const { channel, client } = message;
 
         if (command == 'tl3') {
 
@@ -373,15 +373,17 @@ module.exports = {
                 let msgs = await channel.messages.fetch({ before, force: true });
                 if (msgs.size <= 0) { break; };
 
+                msgs = msgs.reverse();
+
                 for (let [mID, msg] of msgs) {
                     before = mID;
                     console.log(mID, msg.content)
 
                     const { content, embeds } = msg;
+                    if (embeds && embeds[0] && !embeds[0].color) { continue; }  // skip msg with embed
                     if (!content || !content.match(regUrl)) { continue; }   // skip not tweet url msg
                     // if (content.startsWith('<') || content.endsWith('>')) { continue; } // skip non-embed msg
                     // if (embeds && embeds[0]) { continue; }  // skip msg with embed
-                    if (embeds && embeds[0] && !!embeds[0].color) { continue; }  // skip msg with embed
 
                     // get username & tID
                     let [, username, tID] = content.match(regUrl) || [null, null];
@@ -425,12 +427,12 @@ module.exports = {
                         let payload = { content: `<${url}>`, embeds, files: [], allowedMentions: { repliedUser: false } };
                         // tweetEmbedsCache.set(tID, payload);
                         if (msg.author.id == client.user.id) {
-                            await msg.edit(payload).catch((e) => console.error(e));
+                            // await msg.edit(payload).catch((e) => console.error(e));
+                            await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE)).catch((e) => console.error(e));
                         } else {
                             // await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
                             // await msg.delete().catch(() => { });
-
-                            await msg.reply(payload).catch(() => { });
+                            await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE)).catch((e) => console.error(e));
                         }
                     }
                 }
@@ -473,7 +475,7 @@ module.exports = {
         let [, , delTweetID] = content.match(regUrl);
         let [, , oldTweetID] = lastMessage.content.match(regUrl);
         if (BigInt(oldTweetID) > BigInt(delTweetID)) {
-            setTimeout(() => message.delete().catch(() => { }), 250);
+            setTimeout(() => message.delete().catch(console.log), 250);
         }
     },
 

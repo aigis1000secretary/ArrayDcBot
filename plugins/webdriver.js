@@ -952,7 +952,7 @@ class ChromeDriver {
         let isAdvertisement = !!(placementTracking.length > 0);
 
         // get tweet text
-        if (textEle) { textEle = await textEle.getText().catch(() => null); }
+        if (textEle) { textEle = await textEle.getText().catch(() => null) || 'null'; }
         // get tweet author image
         if (authorImage) { authorImage = await authorImage.getAttribute('src').catch(() => null); }
 
