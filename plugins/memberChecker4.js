@@ -2059,7 +2059,7 @@ module.exports = {
                 } else if (isLogChannel) {
 
                     if (ytCore.getVideoList == null) { continue; }
-                    ytCore.getVideoList(true).then(() => {
+                    await ytCore.getVideoList(true).then(() => {
                         rCore.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`更新直播清單`).setFooter({ text: holoChannelID }));
                     });
                     continue;
