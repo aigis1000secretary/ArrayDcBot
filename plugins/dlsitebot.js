@@ -279,7 +279,7 @@ module.exports = {
         } else {
             // check manager permissions
             if (!permissions.has(PermissionFlagsBits.ManageMessages)) {
-                console.log('Missing Permissions: MANAGE_MESSAGES');
+                console.log(`Missing Permissions: MANAGE_MESSAGES <#${message.channel.toString()}> <@${message.client.user.id}>`);
                 return true;
             } else {
                 message.suppressEmbeds(true).catch(() => { });
