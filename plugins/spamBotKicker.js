@@ -39,10 +39,11 @@ const spamChecker = [
         let spamMessage = [];
 
         const spamFilter = (count, sec, blurMode = false) => {
-            let tempMessage = guildMessagesCache[client.user.id][gID].filter(
-                (msg) => (
+            let tempMessage = guildMessagesCache[client.user.id][gID]
+                .filter((msg) => (
                     msg.author.id == author.id &&   // same author
-                    (msg.content == content || blurMode) && // same message
+                    msg.author.displayName == author.displayName &&  // same author for wehhook msg
+                    (msg.content == content || blurMode) && // same message  or  random spam message
                     (Math.abs(msg.createdTimestamp - createdTimestamp) < (sec * 1000))  // in time
                 ));
 
@@ -52,18 +53,22 @@ const spamChecker = [
 
         // 3 same message in 20.000 sec
         // 6 same message in 60.000 sec
-        // 10 message in 4.000 sec
-        const judge = [spamFilter(3, 20), spamFilter(6, 60), (spamFilter(10, 4, true) && client.user.id != author.id)];
+        // 20 message in 4.000 sec
+        const judge = [spamFilter(3, 20), spamFilter(6, 60), (spamFilter(20, 4, true) && client.user.id != author.id)];
         if (!(judge[0] || judge[1] || judge[2])) { return null; }
 
         // additional delete
         // filter target messages, pick all same message in 5 min
         spamMessage = guildMessagesCache[client.user.id][gID].filter(
             (msg) => (
-                msg.author.id == author.id && msg.content == content && msg.deletable &&
+                msg.author.id == author.id &&   // same author
+                msg.author.displayName == author.displayName &&  // same author for wehhook msg
+                msg.content == content && msg.deletable &&
                 msg.createdTimestamp != createdTimestamp &&
                 (Math.abs(msg.createdTimestamp - createdTimestamp) < (5 * 60 * 1000))
             ));
+
+        // Prepare to delete
         // sort by channel
         let bulkDelMessage = {};
         for (let msg of spamMessage) {
@@ -220,7 +225,7 @@ module.exports = {
         if (!guildMessagesCache[client.user.id][guild.id].find((msg) => (msg.id == message.id))) {
             let dammyMessage = {}
             dammyMessage.id = message.id;
-            dammyMessage.author = { id: message.author.id };
+            dammyMessage.author = { id: message.author.id, displayName: message.author.displayName };
             dammyMessage.content = message.content;
             dammyMessage.channel = message.channel;
             dammyMessage.deletable = message.deletable;
