@@ -1504,8 +1504,14 @@ class YoutubeCore {
             let runs = renderer.message?.runs || [];
             let emojis = new Map();
             let message = '';
-            for (const { text, emoji } of runs) {
-                if (text) { message += text; }
+            for (const { text, emoji, navigationEndpoint } of runs) {
+                if (text) {
+                    // get url if exist
+                    let url = navigationEndpoint?.commandMetadata?.webCommandMetadata?.url || navigationEndpoint?.urlEndpoint?.url || null;
+                    
+                    if (url) { message += `[${text}](${url})`; }
+                    else { message += text; }
+                }
                 if (emoji) {
                     let name;
 
