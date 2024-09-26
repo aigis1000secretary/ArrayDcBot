@@ -172,9 +172,9 @@ class YoutubeAPI {
                     part: 'isMemberOnly',
                     id: vID
                 }
-                const res = await get({ url, qs: params, json: true });
+                const res = await get({ url, qs: params, json: true }).catch(() => null);
 
-                result.memberOnly = ((res.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
+                result.memberOnly = ((res?.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
             }
 
             return data.items[0];
@@ -229,9 +229,9 @@ class YoutubeAPI {
                 part: 'isMemberOnly',
                 id: vID
             }
-            const res = await get({ url, qs: params, json: true });
+            const res = await get({ url, qs: params, json: true }).catch(() => null);;
 
-            const memberOnly = ((res.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
+            const memberOnly = ((res?.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
 
             return memberOnly;
 
@@ -1508,7 +1508,7 @@ class YoutubeCore {
                 if (text) {
                     // get url if exist
                     let url = navigationEndpoint?.commandMetadata?.webCommandMetadata?.url || navigationEndpoint?.urlEndpoint?.url || null;
-                    
+
                     if (url) { message += `[${text}](${url})`; }
                     else { message += text; }
                 }
