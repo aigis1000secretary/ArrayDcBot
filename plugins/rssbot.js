@@ -385,10 +385,11 @@ const sendRssItems = async (client, channel, hostColor, items) => {
                 }
                 return -1;
             }
-            const caA = getCT(eA.author?.name);
-            const caB = getCT(eB.author?.name);
+            const caA1 = getCT(eA.author?.name); const caA2 = eA.author?.name;
+            const caB1 = getCT(eB.author?.name); const caB2 = eB.author?.name;
             if (tA != tB) { return (tA > tB) ? 1 : -1; }    // sort by time
-            if (caA != caB) { return (caA > caB) ? 1 : -1; }    // sort by type (for dl)
+            if (caA1 != caB1) { return (caA1 > caB1) ? 1 : -1; }    // sort by type (for dl)
+            if (caA2 != caB2) { return (caA2 > caB2) ? 1 : -1; }    // sort by type (for dl)
             if (coA != coB) { return (coA > coB) ? 1 : -1; }    // sort by rjid
             return 0;
         });
