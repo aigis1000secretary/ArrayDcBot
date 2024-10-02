@@ -1034,7 +1034,11 @@ class GuildManager {
         if (startTime) {
             let timestamp;
 
-            if (auDetails.timestampText) {                      // for archive
+            if (auDetails.timestampUsec) {
+                timestamp = parseInt(auDetails.timestampUsec) / 1000;
+                if (Date.now() - timestamp > 30 * 1000) { return; }
+
+            } else if (auDetails.timestampText) {                      // for archive
                 let timeText = '00:00:' + auDetails.timestampText;
                 let [, hrs, min, sec] = timeText.match(/(\d+):(\d+):(\d+)$/) || [, '00', '00', '00'];
                 timeText = `${hrs}h${min}m${sec}s`.replace(/^[0hm]+/, '');
@@ -1053,7 +1057,15 @@ class GuildManager {
             const timestampString = new Date(timestamp).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' });
             embed.setFooter({ text: `${vID} - ${timestampString}` });
 
-        } else { embed.setFooter({ text: `${vID} - ${now}` }); }
+        } else {
+            if (auDetails.timestampUsec) {
+                let timestamp = parseInt(auDetails.timestampUsec) / 1000;
+                if (Date.now() - timestamp > 30 * 1000) { return; }
+
+            }
+
+            embed.setFooter({ text: `${vID} - ${now}` });
+        }
 
         channel.send({ embeds: [embed] }).catch(console.log);
     }
@@ -1468,6 +1480,7 @@ class YoutubeCore {
                 isChatSponsor: false, isVerified: false,
                 sponsorLevel: -1,
                 profileImageUrl: '',
+                timestampUsec: renderer.timestampUsec || null,
                 timestampText: renderer.timestampText?.simpleText || null,
                 videoOffsetTimeMsec: chatItem.replayChatItemAction.videoOffsetTimeMsec || chatItem.videoOffsetTimeMsec || null
             }
