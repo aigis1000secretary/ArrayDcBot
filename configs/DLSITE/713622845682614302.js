@@ -7,7 +7,7 @@ module.exports = {      // KTG
         // #_aigis_retweet
         {
             RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: [    // #_aigis_retweet <#977860525830586379>
-                '#アイギスお絵かき', '#アイギス10周年アートコン',
+                '#アイギスお絵かき', '#アイギス11周年アートコン',
                 'filter:links (from:Aigis1000)', '(from:aigis2014)',
                 'filter:links (from:AtedayoAigis)', 'filter:links (from:Aigis_PhotoMemo)',
                 'filter:links (from:akagi_huyu)', 'filter:links (from:inoshishi4)',
@@ -38,11 +38,11 @@ module.exports = {      // KTG
 
     rssbot: [
         // #hentai-voice-音声
-        { RSS_CHANNEL_ID: '979765968727310336', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-voice/feed/` },    // #hentai-voice-音声 <#979765968727310336>
+        { RSS_CHANNEL_ID: '979765968727310336', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-voice/feed/` },    // #rss-voice <#979765968727310336>
         // #hentai-game
-        { RSS_CHANNEL_ID: '979815303749967932', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-game/feed/` },    // #hentai-game <#979815303749967932>
+        { RSS_CHANNEL_ID: '979815303749967932', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-game/feed/` },    // #rss-game <#979815303749967932>
         // #hentai-anime
-        { RSS_CHANNEL_ID: '979808194710880266', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-animation/feed/` },    // #hentai-anime <#979808194710880266>
+        { RSS_CHANNEL_ID: '979808194710880266', RSS_FEEDURL: `https://www.vivahentai4u.net/category/hentai-animation/feed/` },    // #rss-anime <#979808194710880266>
         // #dlsite
         { RSS_CHANNEL_ID: '1156057315829624933', RSS_FEEDURL: `https://rsshub.app/dlsite/maniax/new` },    // #dlsite <#1156057315829624933>
     ],

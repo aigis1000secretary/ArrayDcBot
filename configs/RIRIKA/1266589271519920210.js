@@ -8,7 +8,7 @@ module.exports = {      // 一条株式會社
         {
             holoChannelID: 'UCtyWhCj3AqKh2dXctLkDtng',   // ririka,
 
-            streamChannelID: '1266613788573175869',      // #⚫社長開會中 <#1266613788573175869>
+            streamChannelID: '1266613788573175869',      // #🌃社長開會中 <#1266613788573175869>
             memberChannelID: '1266640894430285914',      // #社長的秘密會議 <#1266640894430285914>
 
             expiresKey: 'rrka_expires',

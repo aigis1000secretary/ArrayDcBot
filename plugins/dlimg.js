@@ -129,7 +129,7 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
             }
 
             if (emptyEmbed) {
-                donelog.push(`${color.FgYellow}mmessage without image ${message.content}${color.Reset}`);
+                donelog.push(`${color.FgYellow}mmessage without image ${message.content.replace(/[<>]/g, "")}${color.Reset}`);
                 if (embed) { donelog.push(`${color.FgCyan}${embed.description}${color.Reset}`); }
 
                 ++emptyCount;
