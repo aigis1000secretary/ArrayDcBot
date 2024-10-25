@@ -1043,7 +1043,7 @@ class ChromeDriver {
             if (video) {
                 // medias.push({ video: { url: `https://twitter.com/i/videos/tweet/${tID}` } });
 
-                let src = await video.getAttribute('poster').catch(() => '');
+                let src = await video.getAttribute('poster').catch(() => console.log('video poster error') || null);
                 if (src) {
                     tweet.media.push({ video: { url: `${src}` } });
                 }
@@ -1052,7 +1052,7 @@ class ChromeDriver {
 
             let image = await ele.findElement(By.css(`img`)).catch(() => null);
             if (image) {
-                let src = await image.getAttribute('src').catch(() => '');
+                let src = await image.getAttribute('src').catch(() => console.log('img src error') || null);
                 if (src) {
                     if (regImage.test(src)) {
                         let [, url, ext] = src.match(regImage);
