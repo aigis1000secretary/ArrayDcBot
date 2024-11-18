@@ -4,7 +4,7 @@
 #
 
 app = 'arraydcbot'
-primary_region = 'hkg'
+primary_region = 'ewr'
 kill_signal = 'SIGINT'
 kill_timeout = '5s'
 
