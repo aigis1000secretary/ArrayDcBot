@@ -1100,6 +1100,9 @@ class YoutubeCore {
     async getVideoList(byYtdlp = true) {
 
         let newStreamList = new Set();
+        
+        // Out of memory
+        byYtdlp = false;
 
         let _videos = [];
         if (byYtdlp) {
