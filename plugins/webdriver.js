@@ -131,7 +131,7 @@ class ChromeDriver {
 
         webLog('Chrome driver init.');
 
-        while (!await this.login()) { };
+        while (!await this.login()) { await sleep(500); };
 
         webLog('Chrome driver login done.');
 
@@ -213,18 +213,20 @@ class ChromeDriver {
         const loginBar = `input[autocomplete='username']`;
         const userBtn = 'header[role="banner"] div[role="presentation"]';
 
-        // home page
+        // await home page
+        await this.driver.get('https://twitter.com/home');
+        await this.driver.wait(until.elementLocated(By.css(userBtn)), 5000).catch(() => null);
+        let logged = (await this.driver.getCurrentUrl().catch(() => '')).includes('/home');
+        if (logged) { return true; }
+
+
+        // login page
         await this.driver.get('https://twitter.com/i/flow/login');
         let ele = await Promise.race([
             this.driver.wait(until.elementLocated(By.css(userBtn)), 5000).catch(() => null),
             this.driver.wait(until.elementLocated(By.css(loginBar)), 5000).catch(() => null)
         ]);
         if (ele === null) { return false; }
-
-        let logged = (await this.driver.getCurrentUrl().catch(() => '')).includes('/home');
-        if (logged) { return true; }
-
-
 
         // decrypt cookie from twitter.enc
         if (fs.existsSync('twitter.enc')) {
@@ -236,16 +238,21 @@ class ChromeDriver {
 
         // check login data
         if (fs.existsSync('./twitter.json')) {
+
             // login by cookies
+            console.log(`login by cookies`);
+
             let cookiesJson = (fs.readFileSync('./twitter.json', 'utf8') || '').split(/\s*\r?\n\s*/);
             for (let cookie of cookiesJson) {
                 await this.driver.manage().addCookie(JSON.parse(cookie));
             }
 
-            // await home page
-            await this.driver.get('https://twitter.com/home');
-            await this.driver.wait(until.elementLocated(By.css(userBtn)), 5000).catch(() => null);
+            // go next check
+            return false;
+
         } else {
+            // login by username password
+            console.log(`login by username password`);
 
             const userInput = `input[autocomplete='username']`;
             const passInput = `input[autocomplete='current-password']`;
@@ -294,24 +301,29 @@ class ChromeDriver {
         if (ele === null) { return false; }
 
         logged = !(await ele.getText().catch(() => '')).includes('Twitter');
-        if (logged) {
-            let cookies = await this.driver.manage().getCookies();
-            let cookiesJson = [];
-            for (let cookie of cookies) {
-                cookiesJson.push(JSON.stringify(cookie))
-            }
-            fs.writeFileSync('./twitter.json', cookiesJson.join('\r\n'), 'utf8');
+        if (!logged) { return false; }
+        logged = (await this.driver.getCurrentUrl().catch(() => '')).includes('/home');
+        if (!logged) { return false; }
 
-            // encrypt cookie to twitter.enc
-            if (!fs.existsSync('twitter.enc')) {
-                const key = process.env.JSONKEY;
-                let rawData = fs.readFileSync('./twitter.json', 'utf8');
-                let encData = crypto.encrypt(rawData, key);
-                fs.writeFileSync('./twitter.enc', encData);
-            }
+        // backup cookies to json
+        console.log(`backup cookies to json`);
+        let cookies = await this.driver.manage().getCookies();
+        let cookiesJson = [];
+        for (let cookie of cookies) {
+            cookiesJson.push(JSON.stringify(cookie))
+        }
+        fs.writeFileSync('./twitter.json', cookiesJson.join('\r\n'), 'utf8');
+
+        // encrypt cookies to twitter.enc
+        if (!fs.existsSync('twitter.enc')) {
+            console.log(`encrypt cookies to twitter.enc`);
+            const key = process.env.JSONKEY;
+            let rawData = fs.readFileSync('./twitter.json', 'utf8');
+            let encData = crypto.encrypt(rawData, key);
+            fs.writeFileSync('./twitter.enc', encData);
         }
 
-        return logged;
+        return true;
     }
 
     async idle(taskID) {
