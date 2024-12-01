@@ -2,7 +2,8 @@
 module.exports = {      // KTG
     name: 'KTG',
     perfix: /(^[\/\-!~])[\S]/,
-
+    
+    /*
     memberChecker4: [
         {
             holoChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // otonose
@@ -14,5 +15,5 @@ module.exports = {      // KTG
             logChannelID: '1253632587226812466',         // #stream-log <#1253632587226812466>
             memberRoleID: '1179973929289400440',          // OTOS <@&1179973929289400440>
         },
-    ],
+    ],//*/
 }
