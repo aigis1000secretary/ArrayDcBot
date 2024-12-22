@@ -42,7 +42,7 @@ module.exports = {
         'twitterAntiFilter',
         'twitterListener3',
         // 'uptimer',
-        // 'verifyThread',
+        'verifyThread',
         // 'welcomeMsg',
     ],
 
