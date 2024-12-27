@@ -22,15 +22,22 @@ module.exports = {
 
         // get channel webhook
         let hook;
-        const hooks = await channel.fetchWebhooks().catch(console.error);
-        if (hooks) {
-            // get webhook
-            for (let [key, value] of hooks) {
-                if (value.owner.id == message.client.user.id && value.name == webhookName) {
-                    hook = value;
-                    break;
+        try {
+            const hooks = await channel.fetchWebhooks().catch(console.error);
+            if (hooks) {
+                // get webhook
+                for (let [key, value] of hooks) {
+                    if (value.owner.id == message.client.user.id && value.name == webhookName) {
+                        hook = value;
+                        break;
+                    }
                 }
             }
+        }
+        catch (e) {
+            // TypeError: channel.fetchWebhooks is not a function
+            console.log(`editUserMessage CName: ${channel.name}, CID: ${channel.id}`);
+            console.log(e.message);
         }
         // create webhook if not exist
         hook = hook || await channel.createWebhook({ name: webhookName }).catch(console.error);
