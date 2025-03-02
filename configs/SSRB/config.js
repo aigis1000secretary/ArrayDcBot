@@ -7,7 +7,8 @@ module.exports = {
     clientSecret: process.env.DISCORD_713624995372466179_SECRET,
     resonance: 'ぼた',
     plugins: (process.env.HOST_TYPE == 'debug') ? [
-        // 'twitterAntiFilter',
+        // 'twitterAntiFilter',        
+        // 'memberChecker4',
         'twitterListener3',
     ] : [
         // 'delall',
