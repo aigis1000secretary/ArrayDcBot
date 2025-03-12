@@ -1100,7 +1100,7 @@ class YoutubeCore {
     async getVideoList(byYtdlp = true) {
 
         let newStreamList = new Set();
-        
+
         // Out of memory
         byYtdlp = false;
 
@@ -1523,9 +1523,17 @@ class YoutubeCore {
             for (const { text, emoji, navigationEndpoint } of runs) {
                 if (text) {
                     // get url if exist
+
                     let url = navigationEndpoint?.commandMetadata?.webCommandMetadata?.url || navigationEndpoint?.urlEndpoint?.url || null;
 
-                    if (url) { message += `[${text}](${url})`; }
+                    if (url) {
+                        let urlText = text.replace(/https?:\/\//, '');
+
+                        let redirectReg = /^https:\/\/www\.youtube\.com\/redirect\?event=live_chat&redir_token=[^&]+&q=/;
+                        if (redirectReg.test(url)) { url = decodeURIComponent(url.replace(redirectReg, '')); }
+
+                        message += `[${urlText}](${url})`;
+                    }
                     else { message += text; }
                 }
                 if (emoji) {
