@@ -40,129 +40,147 @@ const findLastTwitterMessage = async (channel, uID) => {
 let sending = new Set();
 const chromeDriverSearchTweet = async ({ dataNum, after, before, keywords, channel }) => {
     if (sending.has(channel?.id)) { return; }
-
     sending.add(channel?.id);
-    chromeDriver.searchKeywords(keywords, { dataNum, after, before })
-        .then(async (searchResult) => {
-            if (searchResult.size == 0) { return; }
 
-            // searchResult = Map(<tID>, <tweet>)
-            tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
+    let unitl = '';
+    if (!!after && !!before && getTimeFromTwitterSnowflake(before) - getTimeFromTwitterSnowflake(after) > 1 * 24 * 60 * 60 * 1000) {
+        let timeAfter = new Date(getTimeFromTwitterSnowflake(after) + 1 * 24 * 60 * 60 * 1000);
+        unitl = `until:${timeAfter.getFullYear()}-${(timeAfter.getMonth() + 1).toString().padStart(2, '0')}-${timeAfter.getDate().toString().padStart(2, '0')} `;
+    }
+    let uKeywords = [];
+    for (let keyword of keywords) {
+        uKeywords.push(unitl + keyword);
+    }
 
-            let tIDs = Array.from(searchResult.keys()).sort();
-            for (let i = 0; i < tIDs.length; ++i) {
-                let tID = tIDs[i];
+    let searchResult = await chromeDriver.searchKeywords(uKeywords, { dataNum, after, before });
+    if (searchResult.size == 0) { sending.delete(channel?.id); return; }
 
-                tllog(`Discord send. [${(i + 1).toString().padStart(4, ' ')}/${tIDs.length.toString().padStart(4, ' ')}]`);
+    // searchResult = Map(<tID>, <tweet>)
+    tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })}`);
 
-                let { url, timestamp, description, author, media } = searchResult.get(tID);
-                media = media || [];
+    let tIDs = Array.from(searchResult.keys()).sort();
 
-                if (EMBED_BY_DISCORD) {
-                    // embed by discord
-                    await channel.send({ content: url }).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
-                } else {
-                    // embed from crawler data
-                    // /*
+    let lastTID = tIDs.length > 0 ? tIDs[tIDs.length - 1] : null;
+
+    for (let i = 0; i < tIDs.length; ++i) {
+        let tID = tIDs[i];
+
+        tllog(`Discord send. [${(i + 1).toString().padStart(4, ' ')}/${tIDs.length.toString().padStart(4, ' ')}]`);
+
+        let { url, timestamp, description, author, media } = searchResult.get(tID);
+        media = media || [];
+
+        if (EMBED_BY_DISCORD) {
+            // embed by discord
+            await channel.send({ content: url }).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+        } else {
+            // embed from crawler data
+            // /*
+            // tl3-dlimg
+            // let images = [];
+
+            let embeds = [];
+            if (author) {
+                try {
+                    let embed = new EmbedBuilder()
+                        .setURL(url).setDescription(description)
+                        .setTimestamp(timestamp).setAuthor(author)
+                        // .setColor(1942002);
+                        .setColor(0);
+                    embed.data.type = 'rich';
+
+                    embed.setFooter({ text: `Twitter`, iconURL: `https://abs.twimg.com/icons/apple-touch-icon-192x192.png` });
+
+                    embeds.push(embed);
+                } catch (e) {
+                    console.log(`/plugins/twitterListener3.js:65:42`, e.message);
+                    console.log('url', url);
+                    console.log('description', description);
+                    console.log('timestamp', timestamp);
+                    console.log('author', author);
+                }
+            }
+            for (let i = 0; i < media.length; ++i) {
+
+                if (!embeds[i]) {
+                    embeds[i] = new EmbedBuilder().setURL(url);
+                    embeds[i].data.type = 'rich';
+                }
+
+                let m = media[i];
+                if (m.image) {
+                    embeds[i].setImage(m.image.url);
                     // tl3-dlimg
-                    // let images = [];
-
-                    let embeds = [];
-                    if (author) {
-                        try {
-                            let embed = new EmbedBuilder()
-                                .setURL(url).setDescription(description)
-                                .setTimestamp(timestamp).setAuthor(author)
-                                // .setColor(1942002);
-                                .setColor(0);
-                            embed.data.type = 'rich';
-
-                            embed.setFooter({ text: `Twitter`, iconURL: `https://abs.twimg.com/icons/apple-touch-icon-192x192.png` });
-
-                            embeds.push(embed);
-                        } catch (e) {
-                            console.log(`/plugins/twitterListener3.js:65:42`, e.message);
-                            console.log('url', url);
-                            console.log('description', description);
-                            console.log('timestamp', timestamp);
-                            console.log('author', author);
-                        }
-                    }
-                    for (let i = 0; i < media.length; ++i) {
-
-                        if (!embeds[i]) {
-                            embeds[i] = new EmbedBuilder().setURL(url);
-                            embeds[i].data.type = 'rich';
-                        }
-
-                        let m = media[i];
-                        if (m.image) {
-                            embeds[i].setImage(m.image.url);
-                            // tl3-dlimg
-                            // images.push(m.image.url);
-                        }
-                        if (m.video) {
-                            embeds[i].setImage(m.video.url);
-                            embeds[0].setThumbnail(`https://media.discordapp.net/attachments/947064593329557524/1160521922828832859/video.png`);
-                        }
-                    }
-
-                    let payload = { content: `<${url}>`, embeds, files: [] };
-                    // tweetEmbedsCache.set(tID, payload);
-
-                    /*
-                    // tl3-dlimg
-                    if (images.length > 0) {
-
-                        const username = author.url.replace('https://twitter.com/', '');
-                        const nowDate = (new Date(timestamp).toLocaleString('en-ZA'))
-                            .replace(/[\/:]/g, '').replace(', ', '_');
-
-                        let j = 0, lastTID = '';
-                        for (const image of images) {
-                            if (lastTID != tID) {
-                                j = 1;
-                                lastTID = tID;
-                            } else {
-                                ++j;
-                            }
-
-                            const [, ext] = image.match(/([^\.]+)$/) || [, null];
-                            if (!image || !ext) { continue; }
-                            let dlImage = image.replace(`.${ext}`, `?format=${ext}&name=orig`);
-
-                            let folderPath = `./image/${username}`;
-                            let filename = `${username}-${tID}-${nowDate}-img${j}.${ext}`
-                            let filePath = `${folderPath}/${filename}`;
-
-                            // set folder
-                            if (!fs.existsSync(folderPath)) { fs.mkdirSync(folderPath, { recursive: true }); }
-
-                            // download
-                            if (!fs.existsSync(filePath)) {
-
-                                await downloadFile(dlImage, filePath);
-                                if (!fs.statSync(filePath)?.size) {
-                                    fs.unlinkSync(filePath);
-                                    await downloadFile(image, filePath);
-                                }
-
-                                console.log(`donwload image ${filename}`);
-                            } else {
-                                console.log(`    skip image ${filename}`);
-                            }
-                        }
-                        contniue;
-                    }//*/
-
-                    await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
-                    //*/
+                    // images.push(m.image.url);
+                }
+                if (m.video) {
+                    embeds[i].setImage(m.video.url);
+                    embeds[0].setThumbnail(`https://media.discordapp.net/attachments/947064593329557524/1160521922828832859/video.png`);
                 }
             }
 
-            tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
-            sending.delete(channel?.id);
-        });
+            let payload = { content: `<${url}>`, embeds, files: [] };
+            // tweetEmbedsCache.set(tID, payload);
+
+            /*
+            // tl3-dlimg
+            if (images.length > 0) {
+
+                const username = author.url.replace('https://twitter.com/', '');
+                const nowDate = (new Date(timestamp).toLocaleString('en-ZA'))
+                    .replace(/[\/:]/g, '').replace(', ', '_');
+
+                let j = 0, lastTID = '';
+                for (const image of images) {
+                    if (lastTID != tID) {
+                        j = 1;
+                        lastTID = tID;
+                    } else {
+                        ++j;
+                    }
+
+                    const [, ext] = image.match(/([^\.]+)$/) || [, null];
+                    if (!image || !ext) { continue; }
+                    let dlImage = image.replace(`.${ext}`, `?format=${ext}&name=orig`);
+
+                    let folderPath = `./image/${username}`;
+                    let filename = `${username}-${tID}-${nowDate}-img${j}.${ext}`
+                    let filePath = `${folderPath}/${filename}`;
+
+                    // set folder
+                    if (!fs.existsSync(folderPath)) { fs.mkdirSync(folderPath, { recursive: true }); }
+
+                    // download
+                    if (!fs.existsSync(filePath)) {
+
+                        await downloadFile(dlImage, filePath);
+                        if (!fs.statSync(filePath)?.size) {
+                            fs.unlinkSync(filePath);
+                            await downloadFile(image, filePath);
+                        }
+
+                        console.log(`donwload image ${filename}`);
+                    } else {
+                        console.log(`    skip image ${filename}`);
+                    }
+                }
+                contniue;
+            }//*/
+
+            await channel.send(payload).then(msg => msg.react(EMOJI_RECYCLE).catch(() => { }));
+            //*/
+        }
+    }
+
+    tllog(`Discord send. ${new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })} done`);
+    sending.delete(channel?.id);
+
+    if (unitl != '' && !!lastTID) {
+        // sending.delete(channel?.id);
+        let _after = after;
+        if (lastTID) { _after = BigInt(lastTID); }
+        chromeDriverSearchTweet({ dataNum, after: _after, before, keywords, channel });
+    }
 }
 
 
