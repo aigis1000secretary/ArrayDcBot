@@ -97,7 +97,7 @@ module.exports = {      // SSRB的聚集地
 
 
     messageLogger: { LOG_CHANNEL_ID: '888239393716981830' },      // #訊息刪除監視區 <#888239393716981830>
-    memberCounter: { COUNTER_CHANNEL_ID: '860528144367878154', },      // #群組人數-4,909 <#860528144367878154>
+    memberCounter: { COUNTER_CHANNEL_ID: '860528144367878154', },      // #群組人數-4,922 <#860528144367878154>
     reactionRole: { RULE_CHANNEL_ID: '775754378736173087' },      // #身份組領取區-role <#775754378736173087>
     reactionVote: { VOTE_CHANNELS: ['827129069178978324'] },      // #投票區 <#827129069178978324>
 
