@@ -9,29 +9,34 @@ module.exports = {      // KTG
             RETWEET_CHANNEL_ID: '977860525830586379', RETWEET_KEYWORD: [    // #_aigis_retweet <#977860525830586379>
                 '#アイギスお絵かき', '#アイギス11周年アートコン',
                 'filter:links (from:Aigis1000)', '(from:aigis2014)',
-                'filter:links (from:AtedayoAigis)', 'filter:links (from:Aigis_PhotoMemo)',
                 'filter:links (from:akagi_huyu)', 'filter:links (from:inoshishi4)',
-                'filter:links (from:koyaki93874607)', 'filter:links (from:nemui_)',
-                'filter:links (from:tami_na2)', 'filter:links (from:yomerinne)',
-                'filter:links (from:yuasa_akira)',
-                // 'filter:links (from:sighaz)', 'filter:links (from:BadhabhCath)',
+                'filter:links (from:koyaki93874607)', 'filter:links (from:tami_na2)',
+                'filter:links (from:yomerinne)', 'filter:links (from:yuasa_akira)',
+                'filter:links (from:sighaz)',
+                // '(from:aigis2014)',
+                // 'filter:links (from:AtedayoAigis)', 'filter:links (from:Aigis_PhotoMemo)',
+                // 'filter:links (from:BadhabhCath)', 'filter:links (from:nemui_)',
                 // 'filter:links (from:Applesyrup14g)', // uID: 2545528232 ｱｲｷﾞｽ/邦ﾛｯｸ🤘⚠RT多め⚠ 🎨https://t.co/EKvrlujZVS ✏https://t.co/mfCSWb1Y7W 日常と雑多☞＠sakananoniboshi
             ],
         },
         // #sao
         {
             RETWEET_CHANNEL_ID: '1054284227375542333', RETWEET_KEYWORD: [    // #sao <#1054284227375542333>
-                '(#ししらーと OR #ししデコ)', '#いろはにも絵を', '#ほしまちぎゃらりー',
-                '#towart', '#百鬼絵巻', '#祭絵', '#絵フブキ', '#ルーナート',
-                '(#サロメ百万展 OR #かな絵)', '(#いぬいらすと OR #フレン見て)',
-                '(#詩子あーと OR #ジョー設展)', '(#絵こころ OR #泡色模様)', '(#べにっき OR #空澄絵)',
+                `(${[
+                    '#ししらーと', '#ししデコ', '#いろはにも絵を', '#ほしまちぎゃらりー',
+                    '#towart', '#百鬼絵巻', '#祭絵', '#絵フブキ', '#ルーナート',
+                    '#サロメ百万展', '#かな絵', '#いぬいらすと', '#フレン見て',
+                    '#詩子あーと', '#ジョー設展', '#絵こころ', '#泡色模様', '#べにっき', '#空澄絵'
+                ].join(` OR `)})`
             ],
         },
         // #sao2
         {
             RETWEET_CHANNEL_ID: '1113369067177381918', RETWEET_KEYWORD: [    // #sao2 <#1113369067177381918>
-                '(#レトロノーブル OR #猫神奉納品)', '(#見てよねぇ七瀬 OR #ヌォンタート)',
-                '(#Yuuriart OR #jooin_art)', '#iwa_art',
+                `(${[
+                    '#レトロノーブル', '#猫神奉納品', '#見てよねぇ七瀬', '#ヌォンタート',
+                    '#Yuuriart', '#jooin_art', '#iwa_art',
+                ].join(` OR `)})`
             ],
         },
     ],
