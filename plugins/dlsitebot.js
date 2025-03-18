@@ -10,173 +10,216 @@ const cheerio = require("cheerio");
 
 const indexReg = /([RBV]J\d{6,})/i;
 
-const getDLsitePage = async (index) => {
-    let req, url;
+const getDLsiteHtml = async (index) => {
+
+    let res, url;
+    try {
+        // request
+        url = `https://www.dlsite.com/home/announce/=/product_id/${index}.html`;
+        res = await get({ url });
+        if (res?.statusCode == 200 && !!res?.body) { return res; }
+
+        // retry for work type
+        url = `https://www.dlsite.com/home/work/=/product_id/${index}.html`;
+        res = await get({ url });
+        if (res?.statusCode == 200 && !!res?.body) { return res; }
+
+        // retry for proxy
+        url = `https://dl.xn--4qs.club/maniax/work/=/product_id/${index}`;
+        res = await get({ url });
+        if (res?.statusCode == 200 && !!res?.body) { return res; }
+
+    } catch (e) { }
+
+    return null;
+}
+const getDLsiteMakerPage = async (makerUrl) => {
 
     try {
-        url = `https://www.dlsite.com/home/announce/=/product_id/${index}.html`;
-
         // request
-        req = await get({ url });
-        // retry
-        if (!req || (req.body && req.statusCode != 200)) {
-            url = url.replace('announce', 'work')
-            req = await get({ url });
-        };
-        if (!req?.body || req.statusCode != 200) return null;
-        // fs.writeFileSync(`./${index}.html`, req.body);  // save data
+        const url = makerUrl.replace('=/', '=/per_page/100/');
+        let res = await get({ url });
 
-        let result = { index, url };
-
-        // load html body
-        let html = req.body;
-        let $ = cheerio.load(html);
-        let res;
-
-        // price
-        res = $('#right .work_buy_content .price');
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.text().trim();
-            if (!temp || temp[0] == '{') { continue; }
-            result.price = temp;
-        }
-
-        // schedule
-        res = $('#right .work_buy_content .work_date_ana');
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.text().trim();
-            if (!temp || temp[0] == '{') { continue; }
-            result.schedule = temp;
-        }
-
-        // images
-        result.thumb = [];
-        res = $(".product-slider-data div");
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.attr('data-src');
-            if (!temp) { continue; }
-            result.thumb.push(`https:${temp}`);
-        }
-        if (result.thumb.length == 0) {
-            res = $("script");
-            for (let i = 0; i < res.length; i++) {
-                const ele = res.eq(i);
-
-                let temp = ele.html();
-                if (!temp || !temp.includes('var contents')) { continue; }
-
-                try { eval(temp.replace('var contents', 'temp')); } catch (error) { temp = null; }
-                if (!temp || !temp.detail[0] || !temp.detail[0].image_main) { continue; }
-
-                [, temp] = temp.detail[0].image_main.match(/([RBV]J\d{6,})_img/) || [, null];
-                if (!temp || temp == index) { continue; }
-
-                temp = await getDLsitePage(temp);
-                if (!temp) { continue; }
-
-                result.thumb = temp.thumb;
-                break;
-            }
-        }
-
-        // title
-        res = $("#work_name");
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.html();
-            if (!temp) { continue; }
-            result.title = temp;
-        }
-
-        // maker
-        result.table = [];
-        res = $("#work_right_inner tr");
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.html().replace(/(\<[^\>]+\>)+/g, '\n').trim().split(/\s+/);
-            if (!temp) { continue; }
-            let head = temp.shift();
-            let body = temp.join(' ').replace('&nbsp;', ' ');
-            if (head == 'サークル名') { body = body.replace(' フォローする', ''); }
-            result.table.push([head, body]);
-        }
-
-        // maker url
-        res = $("#work_maker a");
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.attr('href');
-            if (!temp) { continue; }
-            result.makerUrl = temp;
-        }
-
-        // check price again from maker page
-        url = result.makerUrl.replace('=/', '=/per_page/100/');
-        req = await get({ url });
-        if (req?.body && req.statusCode == 200) {
+        if (res?.statusCode == 200 && !!res?.body) {
             // let [, mIndex] = url.match(/(RG\d{5})/);
             // fs.writeFileSync(`./${mIndex}.html`, req.body);  // save data
 
             // load html body
             let html = req.body;
             let $ = cheerio.load(html);
+            let result = {};
 
             let ele = $(`.search_result_img_box_inner > div[data-product_id=${index}]`).eq(0).prev();
-            result.price = ele.find('.work_price_wrap .work_price').eq(0).text().trim() || result.price;
+            result.price = ele.find('.work_price_wrap .work_price').eq(0).text().trim();
             result.strike = ele.find('.work_price_wrap .strike').eq(0).text().trim();
             result.point = ele.find('.work_price_wrap .work_point').eq(0).text().trim();
             result.deals = ele.children('.work_deals').eq(0).text().trim();
+
+            return result;
         }
 
-        return result;
-    } catch (e) {
-        console.log(`statusCode = ${req?.statusCode}`);
-        console.log(e);
+    } catch (e) { }
 
-        if (req?.body) {
-            let html = req.body;
-            let [, title] = (temp = html.match(/\<title\>(.*)\<\/title\>/)) ? temp : [, null];
-            if (title) {
-                console.log(`title= ${title}`);
-                return null;
-            }
-        }
-        return null;
+    return null;
+}
+
+const getDLsitePage = async (index) => {
+    // result object
+    let result = { index };
+
+    // get html
+    let raw = await getDLsiteHtml(index);
+    if (!raw) { return null; }
+    result.url = `https://${raw.req.host}${raw.req.path}`;
+
+    // load html body
+    let html = raw.body;
+    let $ = cheerio.load(html);
+    // DOM
+    let elements;
+
+    // price
+    elements = $('#right .work_buy_content .price');
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.text().trim();
+        if (!temp || temp[0] == '{') { continue; }
+        result.price = temp;
     }
+
+    // schedule
+    elements = $('#right .work_buy_content .work_date_ana');
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.text().trim();
+        if (!temp || temp[0] == '{') { continue; }
+        result.schedule = temp;
+    }
+
+    // images
+    result.thumb = [];
+    elements = $(".product-slider-data div");
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.attr('data-src');
+        if (!temp) { continue; }
+        result.thumb.push(`https:${temp}`);
+    }
+    if (result.thumb.length == 0) {
+        elements = $("script");
+        for (let i = 0; i < elements.length; i++) {
+            const ele = elements.eq(i);
+
+            let temp = ele.html();
+            if (!temp || !temp.includes('var contents')) { continue; }
+
+            try { eval(temp.replace('var contents', 'temp')); } catch (error) { temp = null; }
+            if (!temp || !temp.detail[0] || !temp.detail[0].image_main) { continue; }
+
+            [, temp] = temp.detail[0].image_main.match(/([RBV]J\d{6,})_img/) || [, null];
+            if (!temp || temp == index) { continue; }
+
+            temp = await getDLsitePage(temp);
+            if (!temp) { continue; }
+
+            result.thumb = temp.thumb;
+            break;
+        }
+    }
+
+    // title
+    elements = $("#work_name");
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.html();
+        if (!temp) { continue; }
+        result.title = temp;
+    }
+
+    // maker
+    result.table = [];
+    elements = $("#work_right_inner tr");
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.html().replace(/(\<[^\>]+\>)+/g, '\n').trim().split(/\s+/);
+        if (!temp) { continue; }
+        let head = temp.shift();
+        let body = temp.join(' ').replaceAll('&nbsp;', ' ');
+        if (head == 'サークル名') { body = body.replace(' フォローする', ''); }
+        result.table.push([head, body]);
+    }
+
+    // maker url
+    elements = $("#work_maker a");
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.attr('href');
+        if (!temp) { continue; }
+        result.makerUrl = temp;
+        break;
+    }
+
+    // check price again from maker page
+    let makerPage = await getDLsiteMakerPage(result.makerUrl);
+    if (makerPage) {
+        result.price = makerPage.price || result.price;
+        result.strike = makerPage.strike || result.strike;
+        result.point = makerPage.point || result.point;
+        result.deals = makerPage.deals || result.deals;
+    }
+
+    return result;
 }
 
 const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
 
     // build result embed
-    let description = '';
+    // let description = '';
+    let field0 = [];
+    let field1 = [];
+    let field2 = [];
+    let field3 = 'null';
+
     if (result.schedule) {
-        description += `発売予定日： ${result.schedule}`;
-        description += `\n**予定価格： ${result.price}**`;
+        field0.push(`発売予定日：\n-# ${result.schedule.replace(/(\d{4})年(\d{2})月(\d{2})日(?!中旬)/g, "$1/$2/$3")}`);
+        field0.push(`予定価格：\n-# ${result.price}`);
     } else {
-        description += `**価格： ${result.price}**`;
+        field0.push(`価格：\n-# ${result.price}`);
     }
-    if (result.strike) { description += `　  ~~${result.strike}~~`; } // 原価
+    if (result.strike) { field0.push(`　　~~${result.strike}~~`); } // 原価
     if (result.deals || result.point) {
-        description += '```css\n'
-        if (result.deals) { description += ` [${result.deals}]`; }
-        if (result.point) { description += ` ${result.point}還元`; }
-        description += '```';
+        let des = '```css '
+        if (result.deals) { des += ` [${result.deals}]`; }
+        if (result.point) { des += ` ${result.point}還元`; }
+        des += '```';
+        field0.push(des);
     }
+
     for (let pair of result.table) {
-        if (pair[0] == 'サークル名') {
-            description += `\n${pair[0]}： [${pair[1]}](${result.makerUrl})`;
-            continue;
+        let des = pair.join(`：\n-# `);
+        if (/\d{4}年\d{2}月\d{2}日/.test(pair[1])) { des = pair[0] + `：\n-# ` + pair[1].replace(/(\d{4})年(\d{2})月(\d{2})日(?!中旬)/g, "$1/$2/$3"); }
+
+        if ([`予告開始日`, `販売日`].includes(pair[0])) {
+            field0.push(des);
+
+        } else if ([`サークル名`, `作者`].includes(pair[0])) {
+            field0.push(`${pair[0]}：\n-# [${pair[1]}](${result.makerUrl})`);
+
+        } else if ([`シナリオ`, `イラスト`, `声優`, `音楽`, `シリーズ名`].includes(pair[0])) {
+            field1.push(des);
+
+        } else if (pair[0] == `ジャンル`) {
+            field3 = `-# ${pair[1]}`;
+
+        } else {
+            field2.push(des);
         }
-        description += `\n${pair[0]}： ${pair[1]}`;
     }
 
     imageIndex = Math.min(Math.max(imageIndex, 0), result.thumb.length - 1);
@@ -185,11 +228,16 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
         .setColor('#010d85')
         .setTitle(`${result.title} [${result.index}]`)
         .setURL(result.url)
-        .setDescription(description)
+        // .setDescription(description)
         .setThumbnail(dlsiteIcon)
         .setImage(result.thumb[imageIndex] || null);
     // embed0.data.type = 'rich';
-    // embed0.data.url = result.url;
+    // embed0.data.url = result.url;  
+
+    embed0.addFields({ name: '　', value: field0.join('\n'), inline: true });
+    embed0.addFields({ name: '　', value: field1.join('\n'), inline: true });
+    embed0.addFields({ name: '　', value: field2.join('\n'), inline: true });
+    embed0.addFields({ name: 'ジャンル', value: field3, inline: false });
 
     let embeds = [embed0];
     for (let i = 1; i < 4; ++i) {
@@ -257,7 +305,7 @@ module.exports = {
         }
 
         // keep message space
-        let embed = new EmbedBuilder().setDescription('Loading...');
+        let embed = new EmbedBuilder().setDescription(`Loading ${index.toUpperCase()}...`);
         let replyMsg = await message.channel.send({ embeds: [embed] }).catch(console.log);
 
         // download dlsite page
@@ -331,7 +379,7 @@ module.exports = {
 
         // mute reply
         // interaction.reply({ content: ' ' }).catch(() => { });
-        interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(console.error);
+        interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(() => { });
 
 
         // get RJ index
