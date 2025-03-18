@@ -15,7 +15,7 @@ module.exports = {
         const js = content.substring(5).trim();
         console.log(js);
         try {
-            eval(js);
+            eval("(async () => {" + js + "})()");
         } catch (error) {
             console.log(error);
         }

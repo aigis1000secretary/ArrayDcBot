@@ -5,178 +5,256 @@ const dlsiteIcon = 'https://media.discordapp.net/attachments/947064593329557524/
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, PermissionFlagsBits, ButtonStyle } = require('discord.js');
 
 // web crawler
-const get = require('util').promisify(require('request').get);
+const debugGet = async (args) => {
+    let res = await utilGet(args);
+    console.log(args.url);
+    console.log(`statusCode:`, res?.statusCode, !!res?.body);
+    return res;
+}
+const utilGet = require('util').promisify(require('request').get);
+let get = utilGet;
 const cheerio = require("cheerio");
 
 const indexReg = /([RBV]J\d{6,})/i;
 
-const getDLsitePage = async (index) => {
-    let req, url;
+const getDLsiteAjax = async (index) => {
+
+    let res, url;
+    try {
+        // request
+        url = `https://www.dlsite.com/home/product/info/ajax?product_id=${index}`;
+        res = await get({ url, json: true });
+        if (res?.statusCode == 200 && !!res?.body && !!res.body[index]) { return res; }
+
+        // retry for proxy
+        url = `https://dl.xn--4qs.club/home/product/info/ajax?product_id=${index}`;
+        res = await get({ url, json: true });
+        if (res?.statusCode == 200 && !!res?.body && !!res.body[index]) { return res; }
+
+    } catch (e) { }
+
+    return null;
+}
+const getDLsiteMakerPage = async (makerUrl) => {
 
     try {
-        url = `https://www.dlsite.com/home/announce/=/product_id/${index}.html`;
-
         // request
-        req = await get({ url });
-        // retry
-        if (!req || (req.body && req.statusCode != 200)) {
-            url = url.replace('announce', 'work')
-            req = await get({ url });
-        };
-        if (!req?.body || req.statusCode != 200) return null;
-        // fs.writeFileSync(`./${index}.html`, req.body);  // save data
+        const url = makerUrl.replace('=/', '=/per_page/100/');
+        let res = await get({ url });
 
-        let result = { index, url };
-
-        // load html body
-        let html = req.body;
-        let $ = cheerio.load(html);
-        let res;
-
-        // price
-        res = $('#right .work_buy_content .price');
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.text().trim();
-            if (!temp || temp[0] == '{') { continue; }
-            result.price = temp;
-        }
-
-        // schedule
-        res = $('#right .work_buy_content .work_date_ana');
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.text().trim();
-            if (!temp || temp[0] == '{') { continue; }
-            result.schedule = temp;
-        }
-
-        // images
-        result.thumb = [];
-        res = $(".product-slider-data div");
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.attr('data-src');
-            if (!temp) { continue; }
-            result.thumb.push(`https:${temp}`);
-        }
-        if (result.thumb.length == 0) {
-            res = $("script");
-            for (let i = 0; i < res.length; i++) {
-                const ele = res.eq(i);
-
-                let temp = ele.html();
-                if (!temp || !temp.includes('var contents')) { continue; }
-
-                try { eval(temp.replace('var contents', 'temp')); } catch (error) { temp = null; }
-                if (!temp || !temp.detail[0] || !temp.detail[0].image_main) { continue; }
-
-                [, temp] = temp.detail[0].image_main.match(/([RBV]J\d{6,})_img/) || [, null];
-                if (!temp || temp == index) { continue; }
-
-                temp = await getDLsitePage(temp);
-                if (!temp) { continue; }
-
-                result.thumb = temp.thumb;
-                break;
-            }
-        }
-
-        // title
-        res = $("#work_name");
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.html();
-            if (!temp) { continue; }
-            result.title = temp;
-        }
-
-        // maker
-        result.table = [];
-        res = $("#work_right_inner tr");
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.html().replace(/(\<[^\>]+\>)+/g, '\n').trim().split(/\s+/);
-            if (!temp) { continue; }
-            let head = temp.shift();
-            let body = temp.join(' ').replace('&nbsp;', ' ');
-            if (head == 'サークル名') { body = body.replace(' フォローする', ''); }
-            result.table.push([head, body]);
-        }
-
-        // maker url
-        res = $("#work_maker a");
-        for (let i = 0; i < res.length; i++) {
-            const ele = res.eq(i);
-
-            let temp = ele.attr('href');
-            if (!temp) { continue; }
-            result.makerUrl = temp;
-        }
-
-        // check price again from maker page
-        url = result.makerUrl.replace('=/', '=/per_page/100/');
-        req = await get({ url });
-        if (req?.body && req.statusCode == 200) {
+        if (res?.statusCode == 200 && !!res?.body) {
             // let [, mIndex] = url.match(/(RG\d{5})/);
             // fs.writeFileSync(`./${mIndex}.html`, req.body);  // save data
 
             // load html body
             let html = req.body;
             let $ = cheerio.load(html);
+            let result = {};
 
             let ele = $(`.search_result_img_box_inner > div[data-product_id=${index}]`).eq(0).prev();
-            result.price = ele.find('.work_price_wrap .work_price').eq(0).text().trim() || result.price;
+            result.price = ele.find('.work_price_wrap .work_price').eq(0).text().trim();
             result.strike = ele.find('.work_price_wrap .strike').eq(0).text().trim();
             result.point = ele.find('.work_price_wrap .work_point').eq(0).text().trim();
             result.deals = ele.children('.work_deals').eq(0).text().trim();
+
+            return result;
         }
+
+    } catch (e) { }
+
+    return null;
+}
+
+const getDLsitePage = async (index) => {
+    // get ajax
+    let ajax = await getDLsiteAjax(index);
+    if (!ajax) { return null; }
+    let host = ajax.req.host;
+    let siteID = ajax.body[index].site_id || 'work';
+
+    // set url
+    let urls = [];
+    urls.push(`https://${host}/${siteID}/announce/=/product_id/${index}.html`);
+    urls.push(`https://${host}/${siteID}/work/=/product_id/${index}.html`);
+    if (host != 'dl.xn--4qs.club') {
+        urls.push(`https://dl.xn--4qs.club/${siteID}/announce/=/product_id/${index}.html`);
+        urls.push(`https://dl.xn--4qs.club/${siteID}/work/=/product_id/${index}.html`);
+    }
+
+    // get html
+    for (let url of urls) {
+        let res = await get({ url });
+        if (res?.statusCode != 200 || !res?.body) { continue; }
+
+        let result = await getDLsiteResult(res, index);
+        if (!result || result.table.length == 0) { continue; }
 
         return result;
-    } catch (e) {
-        console.log(`statusCode = ${req?.statusCode}`);
-        console.log(e);
-
-        if (req?.body) {
-            let html = req.body;
-            let [, title] = (temp = html.match(/\<title\>(.*)\<\/title\>/)) ? temp : [, null];
-            if (title) {
-                console.log(`title= ${title}`);
-                return null;
-            }
-        }
-        return null;
     }
+    return null;
+}
+
+const getDLsiteResult = async (raw, index) => {
+
+    // result object
+    let result = { index };
+    result.url = `https://www.dlsite.com${raw.req.path}`;
+
+    // load html body
+    let html = raw.body;
+    let $ = cheerio.load(html);
+    // DOM
+    let elements;
+
+    // price
+    elements = $('#right .work_buy_content .price');
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.text().trim();
+        if (!temp || temp[0] == '{') { continue; }
+        result.price = temp;
+    }
+
+    // schedule
+    elements = $('#right .work_buy_content .work_date_ana');
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.text().trim();
+        if (!temp || temp[0] == '{') { continue; }
+        result.schedule = temp;
+    }
+
+    // images
+    result.thumb = [];
+    elements = $(".product-slider-data div");
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.attr('data-src');
+        if (!temp) { continue; }
+        result.thumb.push(`https:${temp}`);
+    }
+    if (result.thumb.length == 0) {
+        elements = $("script");
+        for (let i = 0; i < elements.length; i++) {
+            const ele = elements.eq(i);
+
+            let temp = ele.html();
+            if (!temp || !temp.includes('var contents')) { continue; }
+
+            try { eval(temp.replace('var contents', 'temp')); } catch (error) { temp = null; }
+            if (!temp || !temp.detail[0] || !temp.detail[0].image_main) { continue; }
+
+            [, temp] = temp.detail[0].image_main.match(/([RBV]J\d{6,})_img/) || [, null];
+            if (!temp || temp == index) { continue; }
+
+            temp = await getDLsitePage(temp);
+            if (!temp) { continue; }
+
+            result.thumb = temp.thumb;
+            break;
+        }
+    }
+
+    // title
+    elements = $("#work_name");
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.html();
+        if (!temp) { continue; }
+        result.title = temp;
+    }
+
+    // maker
+    result.table = [];
+    elements = $("#work_right_inner tr");
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let thText = ele.find("th")?.text()?.trim() || null; // 1. 取得 th 的文字
+        let body = [];
+        ele.find("td a").each((index, a) => {
+            let text = $(a).text().trim();
+            let href = $(a).attr("href");
+            if (['フォローする'].includes(text)) { return; }
+            else if (['サークル名', 'ブランド名', '作者', 'シリーズ名'].includes(thText)) { body.push(`[${text}](${href})`); }
+            else { body.push(text); }
+        });
+        let tdText = ele.find("td")?.text()?.trim() || null; // 2. 取得 td 的文字
+        if (body.length == 0) { body.push(tdText); }
+
+        result.table.push([thText, body]);
+    }
+    if (result.table == []) { return null; }
+
+    // maker url
+    elements = $("#work_maker a");
+    for (let i = 0; i < elements.length; i++) {
+        const ele = elements.eq(i);
+
+        let temp = ele.attr('href');
+        if (!temp) { continue; }
+        result.makerUrl = temp;
+        break;
+    }
+
+    // check price again from maker page
+    let makerPage = await getDLsiteMakerPage(result.makerUrl);
+    if (makerPage) {
+        result.price = makerPage.price || result.price;
+        result.strike = makerPage.strike || result.strike;
+        result.point = makerPage.point || result.point;
+        result.deals = makerPage.deals || result.deals;
+    }
+
+    return result;
 }
 
 const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
 
     // build result embed
-    let description = '';
+    // let description = '';
+    let field0 = [];
+    let field1 = [];
+    let field2 = [];
+    let field3 = 'null';
+
     if (result.schedule) {
-        description += `発売予定日： ${result.schedule}`;
-        description += `\n**予定価格： ${result.price}**`;
-    } else {
-        description += `**価格： ${result.price}**`;
+        field0.push(`発売予定日：\n-# ${result.schedule.replace(/(\d{4})年(\d{2})月(\d{2})日(?!中旬)/g, "$1/$2/$3")}`);
+        field0.push(`予定価格：\n-# ${result.price}`);
+    } else if (result.price) {
+        field0.push(`価格：\n-# ${result.price}`);
     }
-    if (result.strike) { description += `　  ~~${result.strike}~~`; } // 原価
+    if (result.strike) { field0.push(`　　~~${result.strike}~~`); } // 原価
     if (result.deals || result.point) {
-        description += '```css\n'
-        if (result.deals) { description += ` [${result.deals}]`; }
-        if (result.point) { description += ` ${result.point}還元`; }
-        description += '```';
+        let des = '```css '
+        if (result.deals) { des += ` [${result.deals}]`; }
+        if (result.point) { des += ` ${result.point}還元`; }
+        des += '```';
+        field0.push(des);
     }
-    for (let pair of result.table) {
-        if (pair[0] == 'サークル名') {
-            description += `\n${pair[0]}： [${pair[1]}](${result.makerUrl})`;
-            continue;
+
+    for (let [head, body] of result.table) {
+        let des = `${head}：\n-# ${body.join(', ')}`;
+        if (/\d{4}年\d{2}月\d{2}日/.test(des)) {
+            des = des.replace(/(\d{4})年(\d{2})月(\d{2})日(?!中旬)/g, "$1/$2/$3");
         }
-        description += `\n${pair[0]}： ${pair[1]}`;
+
+        if ([`予告開始日`, `販売日`, `ブランド名`, `サークル名`, `作者`].includes(head)) {
+            field0.push(des);
+
+        } else if ([`シナリオ`, `イラスト`, `声優`, `音楽`, `シリーズ名`].includes(head)) {
+            field1.push(des);
+
+        } else if (head == `ジャンル`) {
+            field3 = `-# ${body.join(', ')}`;
+
+        } else {
+            field2.push(des);
+        }
     }
 
     imageIndex = Math.min(Math.max(imageIndex, 0), result.thumb.length - 1);
@@ -185,11 +263,21 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
         .setColor('#010d85')
         .setTitle(`${result.title} [${result.index}]`)
         .setURL(result.url)
-        .setDescription(description)
-        .setThumbnail(dlsiteIcon)
+        // .setDescription(description)
+        // .setThumbnail(dlsiteIcon)
         .setImage(result.thumb[imageIndex] || null);
     // embed0.data.type = 'rich';
-    // embed0.data.url = result.url;
+    // embed0.data.url = result.url;  
+
+    for (let field of [
+        { name: '　', value: field0.join('\n'), inline: true },
+        { name: '　', value: field1.join('\n'), inline: true },
+        { name: '　', value: field2.join('\n'), inline: true },
+        { name: 'ジャンル', value: field3, inline: false }
+    ]) {
+        try { embed0.addFields(field); }
+        catch (e) { console.log(`addFields error`, (e.message || e)); }
+    }
 
     let embeds = [embed0];
     for (let i = 1; i < 4; ++i) {
@@ -257,7 +345,7 @@ module.exports = {
         }
 
         // keep message space
-        let embed = new EmbedBuilder().setDescription('Loading...');
+        let embed = new EmbedBuilder().setDescription(`Loading ${index.toUpperCase()}...`);
         let replyMsg = await message.channel.send({ embeds: [embed] }).catch(console.log);
 
         // download dlsite page
@@ -279,7 +367,7 @@ module.exports = {
         } else {
             // check manager permissions
             if (!permissions.has(PermissionFlagsBits.ManageMessages)) {
-                console.log(`Missing Permissions: MANAGE_MESSAGES <#${message.channel.toString()}> <@${message.client.user.id}>`);
+                console.log(`Missing Permissions: MANAGE_MESSAGES ${message.channel.toString()} <@${message.client.user.id}>`);
                 return true;
             } else {
                 message.suppressEmbeds(true).catch(() => { });
@@ -331,7 +419,7 @@ module.exports = {
 
         // mute reply
         // interaction.reply({ content: ' ' }).catch(() => { });
-        interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(console.error);
+        interaction.deferReply({ ephemeral: true }).then(({ interaction }) => interaction.deleteReply()).catch(() => { });
 
 
         // get RJ index
@@ -362,5 +450,9 @@ module.exports = {
         // edit message
         message.edit(messagePayload).catch(console.log);
         return true;
+    },
+
+    debug() {
+        get = (get == debugGet ? utilGet : debugGet);
     }
 }
