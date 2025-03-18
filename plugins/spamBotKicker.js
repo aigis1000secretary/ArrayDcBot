@@ -364,7 +364,7 @@ module.exports = {
                     .addFields(fields);
                 channel.send({ embeds: [embed] }).catch(console.log);
             } else {
-                console.log(`[SBK] Missing Permissions: MANAGE_MESSAGES <#${channel.toString()}> <@${client.user.id}>`);
+                console.log(`[SBK] Missing Permissions: MANAGE_MESSAGES ${channel.toString()} <@${client.user.id}>`);
             }
         }
     }
