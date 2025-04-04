@@ -162,11 +162,13 @@ const getDLsitePage = async (index) => {
     for (let i = 0; i < elements.length; i++) {
         const ele = elements.eq(i);
 
-        let temp = ele.html().replace(/(\<[^\>]+\>)+/g, '\n').trim().split(/\s+/);
-        if (!temp) { continue; }
-        let head = temp.shift();
-        let body = temp.join(' ').replaceAll('&nbsp;', ' ');
-        if (head == 'サークル名') { body = body.replace(' フォローする', ''); }
+        let body = ele.html().replace(/(\<[^\>]+\>)+/g, '\n').trim().split(/\s+/);
+        if (!body) { continue; }
+        let head = body.shift();
+        for (let j = 0; j < body.length; ++j) {
+            body[j] = body[j].replaceAll('&nbsp;', ' ');
+            if (head == 'サークル名') { body[j] = body[j].replace(' フォローする', ''); }
+        }
         result.table.push([head, body]);
     }
 
@@ -217,21 +219,25 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
         field0.push(des);
     }
 
-    for (let pair of result.table) {
-        let des = pair.join(`：\n-# `);
-        if (/\d{4}年\d{2}月\d{2}日/.test(pair[1])) { des = pair[0] + `：\n-# ` + pair[1].replace(/(\d{4})年(\d{2})月(\d{2})日(?!中旬)/g, "$1/$2/$3"); }
+    for (let [head, body] of result.table) {
+        // .join(' ')
+        let des = `${head}：\n-# ${body.join(' ')}`;
+        let bodyStr = body.join(' ');
+        if (/\d{4}年\d{2}月\d{2}日/.test(des)) {
+            des = des.replace(/(\d{4})年(\d{2})月(\d{2})日(?!中旬)/g, "$1/$2/$3");
+        }
 
-        if ([`予告開始日`, `販売日`].includes(pair[0])) {
+        if ([`予告開始日`, `販売日`].includes(head)) {
             field0.push(des);
 
-        } else if ([`サークル名`, `作者`].includes(pair[0])) {
-            field0.push(`${pair[0]}：\n-# [${pair[1]}](${result.makerUrl})`);
+        } else if ([`サークル名`, `作者`].includes(head)) {
+            field0.push(`${head}：\n-# [${bodyStr}](${result.makerUrl})`);
 
-        } else if ([`シナリオ`, `イラスト`, `声優`, `音楽`, `シリーズ名`].includes(pair[0])) {
+        } else if ([`シナリオ`, `イラスト`, `声優`, `音楽`, `シリーズ名`].includes(head)) {
             field1.push(des);
 
-        } else if (pair[0] == `ジャンル`) {
-            field3 = `-# ${pair[1]}`;
+        } else if (head == `ジャンル`) {
+            field3 = `-# ${body.join(', ')}`;
 
         } else {
             field2.push(des);
@@ -245,7 +251,7 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
         .setTitle(`${result.title} [${result.index}]`)
         .setURL(result.url)
         // .setDescription(description)
-        .setThumbnail(dlsiteIcon)
+        // .setThumbnail(dlsiteIcon)
         .setImage(result.thumb[imageIndex] || null);
     // embed0.data.type = 'rich';
     // embed0.data.url = result.url;  
