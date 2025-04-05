@@ -162,14 +162,18 @@ const getDLsitePage = async (index) => {
     for (let i = 0; i < elements.length; i++) {
         const ele = elements.eq(i);
 
-        let body = ele.html().replace(/(\<[^\>]+\>)+/g, '\n').trim().split(/\s+/);
-        if (!body) { continue; }
-        let head = body.shift();
-        for (let j = 0; j < body.length; ++j) {
-            body[j] = body[j].replaceAll('&nbsp;', ' ');
-            if (head == 'サークル名') { body[j] = body[j].replace(' フォローする', ''); }
-        }
-        result.table.push([head, body]);
+        let thText = ele.find("th")?.text()?.trim() || null; // 1. 取得 th 的文字
+        let body = [];
+        ele.find("td a").each((index, a) => {
+            let text = $(a).text().trim();
+            let href = $(a).attr("href");
+            if (['サークル名', '作者', 'シリーズ名'].includes(thText)) { body.push(`[${text}](${href})`); }
+            else { body.push(text); }
+        });
+        let tdText = ele.find("td")?.text()?.trim() || null; // 2. 取得 td 的文字
+        if (body.length == 0) { body.push(tdText); }
+
+        result.table.push([thText, body]);
     }
 
     // maker url
@@ -220,9 +224,7 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
     }
 
     for (let [head, body] of result.table) {
-        // .join(' ')
         let des = `${head}：\n-# ${body.join(' ')}`;
-        let bodyStr = body.join(' ');
         if (/\d{4}年\d{2}月\d{2}日/.test(des)) {
             des = des.replace(/(\d{4})年(\d{2})月(\d{2})日(?!中旬)/g, "$1/$2/$3");
         }
@@ -231,7 +233,7 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
             field0.push(des);
 
         } else if ([`サークル名`, `作者`].includes(head)) {
-            field0.push(`${head}：\n-# [${bodyStr}](${result.makerUrl})`);
+            field0.push(des);
 
         } else if ([`シナリオ`, `イラスト`, `声優`, `音楽`, `シリーズ名`].includes(head)) {
             field1.push(des);
