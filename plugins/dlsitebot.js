@@ -197,6 +197,7 @@ const getDLsitePage = async (index) => {
 
         result.table.push([thText, body]);
     }
+    if (result.table.length == 0) { return false; }
 
     // maker url
     elements = $("#work_maker a");
@@ -233,7 +234,7 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
     if (result.schedule) {
         field0.push(`発売予定日：\n-# ${result.schedule.replace(/(\d{4})年(\d{2})月(\d{2})日(?!中旬)/g, "$1/$2/$3")}`);
         field0.push(`予定価格：\n-# ${result.price}`);
-    } else {
+    } else if (result.price) {
         field0.push(`価格：\n-# ${result.price}`);
     }
     if (result.strike) { field0.push(`　　~~${result.strike}~~`); } // 原価
@@ -277,10 +278,15 @@ const createDLsitePageMessage = (result, imageIndex = 0, rich = true) => {
     // embed0.data.type = 'rich';
     // embed0.data.url = result.url;  
 
-    embed0.addFields({ name: '　', value: field0.join('\n'), inline: true });
-    embed0.addFields({ name: '　', value: field1.join('\n'), inline: true });
-    embed0.addFields({ name: '　', value: field2.join('\n'), inline: true });
-    embed0.addFields({ name: 'ジャンル', value: field3, inline: false });
+    for (let field of [
+        { name: '　', value: field0.join('\n'), inline: true },
+        { name: '　', value: field1.join('\n'), inline: true },
+        { name: '　', value: field2.join('\n'), inline: true },
+        { name: 'ジャンル', value: field3, inline: false }
+    ]) {
+        try { embed0.addFields(field); }
+        catch (e) { console.log(`addFields error`, (e.message || e)); }
+    }
 
     let embeds = [embed0];
     for (let i = 1; i < 4; ++i) {
