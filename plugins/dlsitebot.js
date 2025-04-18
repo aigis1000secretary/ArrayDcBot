@@ -35,41 +35,6 @@ const getDLsiteAjax = async (index) => {
 
     return null;
 }
-const getDLsiteWork = async (host, siteID, index) => {
-
-    let res, url;
-    try {
-        // request
-        url = `https://${host}/${siteID}/announce/=/product_id/${index}.html`;
-        res = await get({ url });
-        if (res?.statusCode == 200 && !!res?.body) { return res; }
-
-        // retry for work type
-        url = `https://${host}/${siteID}/work/=/product_id/${index}.html`;
-        res = await get({ url });
-        if (res?.statusCode == 200 && !!res?.body) { return res; }
-
-    } catch (e) { }
-
-    return null;
-}
-const getDLsiteHtml = async (index) => {
-
-    let ajax = await getDLsiteAjax(index);
-    if (!ajax) { return null; }
-    let host = ajax.req.host;
-    let siteID = ajax.body[index].site_id || 'work';
-
-    let res = await getDLsiteWork(host, siteID, index);
-    if (!!res) { return res; }
-
-    if (host != 'dl.xn--4qs.club') {
-        res = await getDLsiteWork('dl.xn--4qs.club', siteID, index);
-        if (!!res) { return res; }
-    }
-
-    return null;
-}
 const getDLsiteMakerPage = async (makerUrl) => {
 
     try {
@@ -101,12 +66,38 @@ const getDLsiteMakerPage = async (makerUrl) => {
 }
 
 const getDLsitePage = async (index) => {
-    // result object
-    let result = { index };
+    // get ajax
+    let ajax = await getDLsiteAjax(index);
+    if (!ajax) { return null; }
+    let host = ajax.req.host;
+    let siteID = ajax.body[index].site_id || 'work';
+
+    // set url
+    let urls = [];
+    urls.push(`https://${host}/${siteID}/announce/=/product_id/${index}.html`);
+    urls.push(`https://${host}/${siteID}/work/=/product_id/${index}.html`);
+    if (host != 'dl.xn--4qs.club') {
+        urls.push(`https://dl.xn--4qs.club/${siteID}/announce/=/product_id/${index}.html`);
+        urls.push(`https://dl.xn--4qs.club/${siteID}/work/=/product_id/${index}.html`);
+    }
 
     // get html
-    let raw = await getDLsiteHtml(index);
-    if (!raw) { return null; }
+    for (let url of urls) {
+        let res = await get({ url });
+        if (res?.statusCode != 200 || !res?.body) { continue; }
+
+        let result = await getDLsiteResult(res, index);
+        if (!result || result.table.length == 0) { continue; }
+
+        return result;
+    }
+    return null;
+}
+
+const getDLsiteResult = async (raw, index) => {
+
+    // result object
+    let result = { index };
     result.url = `https://www.dlsite.com${raw.req.path}`;
 
     // load html body
@@ -197,7 +188,7 @@ const getDLsitePage = async (index) => {
 
         result.table.push([thText, body]);
     }
-    if (result.table.length == 0) { return false; }
+    if (result.table == []) { return null; }
 
     // maker url
     elements = $("#work_maker a");
