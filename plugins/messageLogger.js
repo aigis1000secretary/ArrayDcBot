@@ -20,7 +20,7 @@ module.exports = {
                 .then((audit) => audit.entries.first());
 
             // Check channel and if message author deleted it
-            if (deletor.target.id === author.id &&
+            if (deletor?.target.id === author.id &&
                 // Check time and count
                 deletor.createdTimestamp > Date.now() - 5000 &&
                 deletor.extra.count >= 1
