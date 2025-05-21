@@ -28,7 +28,7 @@
     "serve-index": "^1.9.1",
     "twitter-api-v2": "^1.14.2",
     "webdav-server": "^2.6.2",
-    "xml2js": "^0.4.23",
+    "xml2js": "^0.6.2",
     "yt-dlp-wrap": "^2.3.11"
   }
 }
