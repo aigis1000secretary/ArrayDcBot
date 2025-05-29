@@ -17,7 +17,7 @@
     "cheerio": "^1.0.0-rc.10",
     "compressing": "^1.9.0",
     "cors": "^2.8.5",
-    "discord.js": "^14.19.3",
+    "discord.js": "^14.14.1",
     "dotenv": "^10.0.0",
     "express": "^4.17.2",
     "image-ssim": "^0.2.0",
@@ -28,7 +28,7 @@
     "serve-index": "^1.9.1",
     "twitter-api-v2": "^1.14.2",
     "webdav-server": "^2.6.2",
-    "xml2js": "^0.4.23",
+    "xml2js": "^0.6.2",
     "yt-dlp-wrap": "^2.3.11"
   }
 }
