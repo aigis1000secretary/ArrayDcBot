@@ -72,6 +72,14 @@ module.exports.getBotIDs = () => {
 };
 
 
+process.on('uncaughtException', function(err) {
+    console.log('Uncaught Exception');
+    console.log(err.message);
+    console.log(err.stack);
+    console.log('NOT exit...');
+});
+
+
 (async () => {
 
     // defind host
