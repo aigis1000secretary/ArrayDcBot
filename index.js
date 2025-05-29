@@ -72,6 +72,18 @@ module.exports.getBotIDs = () => {
 };
 
 
+process.on('uncaughtException', function (err) {
+    console.log('Uncaught Exception:', err.message);
+    if (![
+        `Client network socket disconnected before secure TLS connection was established`,
+        `Opening handshake has timed out`,  // (/app/node_modules/ws/lib/websocket.js:873:7)
+        `This operation was aborted`,   // (/app/node_modules/@discordjs/rest/dist/index.js:701:47)
+        `socket hang up`,
+        `Cannot read properties of null (reading 'setHeader')`,  // (/app/node_modules/ws/lib/websocket.js:1089:14)
+    ].includes(err.message)) { console.log(err.stack); }
+});
+
+
 (async () => {
 
     // defind host
