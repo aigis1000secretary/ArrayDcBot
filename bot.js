@@ -7,7 +7,7 @@ const DEBUG_CHANNEL_ID = '826992877925171250';
 
 const fs = require('fs');
 const path = require('path');
-const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); };
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // discord
 const Discord = require('discord.js');

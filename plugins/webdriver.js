@@ -14,8 +14,8 @@ const regOnlyUrl = /^https:\/\/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)(?:\/status\/)
 const regImage = /^(http[^\?]+)\?format=([^\&]+)/;
 const getUserDelay = 11000;
 
-const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
-const sleepr = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms + Math.floor(Math.random() * 100)); }); }     // ms + rand(100);
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleepr = (ms) => new Promise((resolve) => setTimeout(resolve, ms + Math.floor(Math.random() * 100)));     // ms + rand(100);
 
 const getDiscordSnowflake = (time) => (BigInt(time - 14200704e5) << 22n);
 const getTwitterSnowflake = (time) => (BigInt(time - 1288834974657) << 22n);

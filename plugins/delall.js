@@ -1,5 +1,5 @@
 
-const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); };
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 

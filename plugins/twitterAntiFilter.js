@@ -9,7 +9,7 @@ const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 const [EMOJI_LABEL] = ['🏷️']
 
-const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); }
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const md5 = (source) => require('crypto').createHash('md5').update(source).digest('hex');
 const logs = [];
 const tafLog = (msg) => { if (!logs.includes(msg)) { console.log(msg); logs.push(msg); } }

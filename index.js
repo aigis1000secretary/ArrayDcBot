@@ -3,7 +3,7 @@ require('dotenv').config();
 const server = require('./server.js');
 
 const fs = require('fs');
-const sleep = (ms) => { return new Promise((resolve) => { setTimeout(resolve, ms); }); };
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const rebootByHerokuAPI = async () => {
     if (!fs.existsSync("./.env")) {

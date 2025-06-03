@@ -1,7 +1,7 @@
 
 const DEBUG_CHANNEL_ID = '826992877925171250';
 
-const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms)); };
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // DEBUG_TAG_LOG_CHANNEL_ID perfix, TIME_TAG_CHANNEL_ID
 

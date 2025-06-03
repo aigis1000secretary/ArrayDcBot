@@ -11,7 +11,7 @@ const ytdlpPath = (isLinux ? './yt-dlp' : '.\\yt-dlp.exe');
 
 // method
 let mclog = debug ? console.log : () => { };
-const sleep = (ms) => { return new Promise(resolve => setTimeout(resolve, ms)); };
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const md5 = (source) => require('crypto').createHash('md5').update(source).digest('hex');
 
 // discord
