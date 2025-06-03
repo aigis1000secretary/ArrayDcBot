@@ -29,7 +29,7 @@ module.exports = {
         'spamBotKicker',
         'streamStartTime',
         'superChat',
-        'timeTag2',
+        // 'timeTag2',
         'twitterAntiFilter',
         'twitterListener3',
         // 'uptimer',

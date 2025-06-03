@@ -44,10 +44,10 @@ module.exports = {      // SSRB的聚集地
         BAN_CHANNEL_ID: '890150363305504798'      // #自爆按鈕 <#890150363305504798>
     },
 
-    timeTag2: {
-        TIME_TAG_CHANNEL_ID: '828259412257800222',      // #✏直播時間tag <#828259412257800222>
-        DEBUG_TAG_LOG_CHANNEL_ID: '851618481350770738', // #_time-tag-log <#851618481350770738>
-    },
+    // timeTag2: {
+    //     TIME_TAG_CHANNEL_ID: '828259412257800222',      // #✏直播時間tag <#828259412257800222>
+    //     DEBUG_TAG_LOG_CHANNEL_ID: '851618481350770738', // #_time-tag-log <#851618481350770738>
+    // },
 
     verifyThread: [
         // //                                                                                 ADMIN_ROLE_ID: '1049958100897124352',    // 人工認證通知 <@&1049958100897124352>
@@ -97,7 +97,7 @@ module.exports = {      // SSRB的聚集地
 
 
     messageLogger: { LOG_CHANNEL_ID: '888239393716981830' },      // #訊息刪除監視區 <#888239393716981830>
-    memberCounter: { COUNTER_CHANNEL_ID: '860528144367878154', },      // #群組人數-4,840 <#860528144367878154>
+    memberCounter: { COUNTER_CHANNEL_ID: '860528144367878154', },      // #群組人數-4,830 <#860528144367878154>
     reactionRole: { RULE_CHANNEL_ID: '775754378736173087' },      // #身份組領取區-role <#775754378736173087>
     reactionVote: { VOTE_CHANNELS: ['827129069178978324'] },      // #投票區 <#827129069178978324>
 
