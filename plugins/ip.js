@@ -1,8 +1,7 @@
 
 const fs = require('fs');
+const axios = require('axios');
 const { EmbedBuilder } = require('discord.js');
-
-const get = require('util').promisify(require('request').get);
 
 module.exports = {
     name: 'ip',
@@ -14,9 +13,9 @@ module.exports = {
         // reply button message
         if (command == 'ip' && user.id == '353625493876113440') {
 
-            let req = await get({ url: `https://myexternalip.com/raw`, json: true });
+            let req = await axios.get(`https://myexternalip.com/raw`);
 
-            let ip = req.statusCode == 200 ? req.body : 'Failed to obtain IP address';
+            let ip = req.status == 200 ? req.data : 'Failed to obtain IP address';
             let uptime = parseInt((Date.now() - client.uptime) / 1000);
 
             let fields = [];

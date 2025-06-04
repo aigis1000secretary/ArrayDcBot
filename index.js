@@ -1,5 +1,6 @@
 
 require('dotenv').config();
+const axios = require('axios');
 const server = require('./server.js');
 
 const fs = require('fs');
@@ -11,19 +12,15 @@ const rebootByHerokuAPI = async () => {
         const apiUrl = 'https://api.heroku.com';
         const app_id_or_name = 'arraydcbot';
         const dyno_id_or_name = 'web.1';
-        // util promisify
-        // const requestGet = require('util').promisify(require('request').get);
-        const requestDelete = require('util').promisify(require('request').delete);
 
         // restart by heroku API
-        await requestDelete({
-            url: `${apiUrl}/apps/${app_id_or_name}/dynos/${dyno_id_or_name}`,
-            headers: {
-                Accept: 'application/vnd.heroku+json; version=3',
-                Authorization: `Bearer ${process.env.HEROKU_TOKEN}`
-            },
-            json: true
-        });
+        await axios.delete(`${apiUrl}/apps/${app_id_or_name}/dynos/${dyno_id_or_name}`,
+            {
+                headers: {
+                    Accept: 'application/vnd.heroku+json; version=3',
+                    Authorization: `Bearer ${process.env.HEROKU_TOKEN}`
+                }
+            });
 
         await sleep(5000);
     }

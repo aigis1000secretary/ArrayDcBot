@@ -3,13 +3,15 @@ const [EMOJI_RECYCLE] = ['♻️']
 
 const fs = require('fs');
 const compressing = require('compressing');
+const axios = require('axios');
 const { AttachmentBuilder } = require('discord.js');
 
 const regUrl = /^\<?https:\/\/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)(?:\/status\/(\d+))?[\>\?]*$/;
 // const regUsername = /\(@([a-zA-Z0-9_]+)\)$/;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const downloadFile = (url, filepath) => new Promise((resolve) => { require('request')(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); })
+const streamPipeline = require('util').promisify(require('stream').pipeline);
+const downloadFile = (url, filepath) => axios.get(url, { responseType: 'stream' }).then((response) => streamPipeline(response.data, fs.createWriteStream(filepath))).catch(() => null);
 
 let dilog = fs.existsSync('./.env') ? console.log : () => { };
 
@@ -88,7 +90,7 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
                 if (!fs.existsSync(folderPath)) { fs.mkdirSync(folderPath, { recursive: true }); }
 
                 // check file
-                if (fs.existsSync(filePath) && !fs.statSync(filePath)?.size) { fs.unlinkSync(filePath); }
+                if (fs.existsSync(filePath) && !fs.statSync(filePath).size) { fs.unlinkSync(filePath); }
 
                 // download
                 if (!fs.existsSync(filePath)) {
@@ -98,19 +100,19 @@ const downloadImage = async ({ channel, fastmode, limit = 9999 }) => {
                     emptyEmbed = false;
 
                     // retry again if fail
-                    if (!fs.statSync(filePath)?.size) {
+                    if (fs.existsSync(filePath) && !fs.statSync(filePath).size) {
                         fs.unlinkSync(filePath);
                         await downloadFile(image, filePath);
                     }
 
                     // retry with proxyURL if fail again
-                    if (!fs.statSync(filePath)?.size && embed.image?.proxyURL) {
+                    if (fs.existsSync(filePath) && !fs.statSync(filePath).size && embed.image?.proxyURL) {
                         fs.unlinkSync(filePath);
                         await downloadFile(embed.image?.proxyURL, filePath);
                     }
 
                     // still fail
-                    if (!fs.statSync(filePath)?.size) {
+                    if (fs.existsSync(filePath) && !fs.statSync(filePath).size) {
                         fs.unlinkSync(filePath);
                         invalidImage = true;
                         emptyEmbed = true;

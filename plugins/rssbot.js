@@ -1,13 +1,13 @@
 const [EMOJI_RECYCLE, EMOJI_ENVELOPE_WITH_ARROW, EMOJI_WASTEBASKET] = ['♻️', '📩', '🗑️'];
 const rssIcon = 'https://www.rssboard.org/images/rss-feed-icon-96-by-96.png';
 
+const axios = require('axios');
 const { EmbedBuilder } = require('discord.js');
 // const server = require('../server');
 const xml2js = require(`xml2js`);
 // const express = require('express');
 // let client = null;
 
-const requestGet = require('util').promisify(require('request').get);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms, null));
 
 // check rss and send embeds
@@ -210,20 +210,20 @@ const getXML = async (url) => {
     const i = randomChoice(my_headers);
     const userAgent = my_headers[i];
     try {
-        const req = await requestGet({ url, headers: { 'User-Agent': userAgent } });
+        const req = await axios.get(url, { headers: { 'User-Agent': userAgent } });
 
         // chekc error
-        if (req && req.statusCode != 200) {
+        if (req && req.status != 200) {
             console.log(
                 `[rssbot] RSS error!`,
                 `userAgent: ${`#${i}`.padStart(3, ' ')}`,
-                req.statusCode ? `code: ${req.statusCode}` : '',
+                req.status ? `code: ${req.status}` : '',
                 `url: ${url}`
             );
             return null;
         }
 
-        const res = req.body;
+        const res = req.data;
         // console.log(`[rssbot] Got rss feed!`);
         return res;
 

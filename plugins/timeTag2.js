@@ -5,6 +5,7 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // DEBUG_TAG_LOG_CHANNEL_ID perfix, TIME_TAG_CHANNEL_ID
 
+const axios = require('axios');
 const { EmbedBuilder, Colors } = require('discord.js');
 const [EMOJI_OCTAGONAL_SIGN, EMOJI_THUMBSUP, EMOJI_INFINITY, EMOJI_QUESTION, EMOJI_CROSS, EMOJI_LABEL] = ['🛑', '👍', '♾️', '❓', '❌', '🏷️']
 
@@ -12,7 +13,6 @@ const [EMOJI_OCTAGONAL_SIGN, EMOJI_THUMBSUP, EMOJI_INFINITY, EMOJI_QUESTION, EMO
 
 
 // youtube api
-const get = require('util').promisify(require('request').get);
 class YoutubeAPI {
     apiKey = [];
     quotaExceeded = [false, false];
@@ -39,11 +39,11 @@ class YoutubeAPI {
                 id: vID,
                 key: this.apiKey[0]
             }
-            const res = await get({ url, qs: params, json: true });
+            const res = await axios.get(url, { params });
 
             // throw error
-            if (res.statusCode != 200 || (res.body && res.body.error)) {
-                if (res.statusCode == 404) {
+            if (res.status != 200 || (res.data && res.data.error)) {
+                if (res.status == 404) {
                     throw {
                         code: 404, message: 'Error 404 (Not Found)!!',
                         errors: [{
@@ -52,12 +52,12 @@ class YoutubeAPI {
                         }],
                     };
                 }
-                else if (res.body) { throw res.body.error ? res.body.error : res.body; }
+                else if (res.data) { throw res.data.error ? res.data.error : res.data; }
                 else throw res;
             }
 
             // get response data
-            const data = res.body;
+            const data = res.data;
             if (data.pageInfo.totalResults == 0) {
                 console.log(`video not found. ${vID}`);
                 // return {

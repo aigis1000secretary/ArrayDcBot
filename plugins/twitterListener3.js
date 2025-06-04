@@ -16,7 +16,9 @@ const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 
 const getTimeFromTwitterSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 1288834974657);
 
 // tl3-dlimg
-// const downloadFile = (url, filepath) => new Promise((resolve) => { require('request')(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); })
+// const axios = require('axios');
+// const streamPipeline = require('util').promisify(require('stream').pipeline);
+// const downloadFile = (url, filepath) => axios.get(url, { responseType: 'stream' }).then((response) => streamPipeline(response.data, fs.createWriteStream(filepath))).catch(() => null);
 
 const { chromeDriver, webLog } = require('./webdriver.js');
 
@@ -154,7 +156,7 @@ const chromeDriverSearchTweet = async ({ dataNum, after, before, keywords, chann
                     if (!fs.existsSync(filePath)) {
 
                         await downloadFile(dlImage, filePath);
-                        if (!fs.statSync(filePath)?.size) {
+                        if (fs.existsSync(filePath) && !fs.statSync(filePath).size) {
                             fs.unlinkSync(filePath);
                             await downloadFile(image, filePath);
                         }

@@ -1,6 +1,8 @@
 
 // node base
 const fs = require('fs');
+const axios = require('axios');
+const qs = require('qs');
 const compressing = require('compressing');
 const debug = fs.existsSync("./.env");
 const isLinux = (require("os").platform() == 'linux');
@@ -17,12 +19,6 @@ const md5 = (source) => require('crypto').createHash('md5').update(source).diges
 // discord
 const { EmbedBuilder, AttachmentBuilder, PermissionFlagsBits, Colors } = require('discord.js');
 
-
-// http request
-const request = require('request');
-const util = require('util');
-const get = util.promisify(request.get);
-const post = util.promisify(request.post);
 
 // discord webhook
 const redirectUri = process.env.HOST_URL;
@@ -65,11 +61,11 @@ class YoutubeAPI {
                 maxResults: 5, type: "video",
                 key: this.apiKey[0]
             }
-            const res = await get({ url, qs: params, json: true }); // response
+            const res = await axios.get(url, { params });
 
             // throw error
-            if (res.statusCode != 200 || (res.body && res.body.error)) {
-                if (res.statusCode == 404) {
+            if (res.status != 200 || (res.data && res.data.error)) {
+                if (res.status == 404) {
                     throw {
                         code: 404, message: 'Error 404 (Not Found)!!',
                         errors: [{
@@ -78,12 +74,12 @@ class YoutubeAPI {
                         }],
                     };
                 }
-                else if (res.body) { throw res.body.error ? res.body.error : res.body; }
+                else if (res.data) { throw res.data.error ? res.data.error : res.data; }
                 else throw res;
             }
 
             // get response data
-            const data = res.body;
+            const data = res.data;
             return data.items;
             // return [
             //     {
@@ -136,11 +132,11 @@ class YoutubeAPI {
                 id: vID,
                 key: this.apiKey[0]
             }
-            const res = await get({ url, qs: params, json: true });
+            const res = await axios.get(url, { params });
 
             // throw error
-            if (res.statusCode != 200 || (res.body && res.body.error)) {
-                if (res.statusCode == 404) {
+            if (res.status != 200 || (res.data && res.data.error)) {
+                if (res.status == 404) {
                     throw {
                         code: 404, message: 'Error 404 (Not Found)!!',
                         errors: [{
@@ -149,12 +145,12 @@ class YoutubeAPI {
                         }],
                     };
                 }
-                else if (res.body) { throw res.body.error ? res.body.error : res.body; }
+                else if (res.data) { throw res.data.error ? res.data.error : res.data; }
                 else throw res;
             }
 
             // get response data
-            const data = res.body;
+            const data = res.data;
             if (data.pageInfo.totalResults == 0) {
                 console.log(`[MC4] video not found. ${vID}`);
                 // return {
@@ -172,9 +168,9 @@ class YoutubeAPI {
                     part: 'isMemberOnly',
                     id: vID
                 }
-                const res = await get({ url, qs: params, json: true }).catch(() => null);
+                const res = await axios.get(url, { params }).catch(() => null);
 
-                result.memberOnly = ((res?.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
+                result.memberOnly = ((res?.data?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
             }
 
             return data.items[0];
@@ -229,9 +225,9 @@ class YoutubeAPI {
                 part: 'isMemberOnly',
                 id: vID
             }
-            const res = await get({ url, qs: params, json: true }).catch(() => null);;
+            const res = await axios.get(url, { params }).catch(() => null);;
 
-            const memberOnly = ((res?.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
+            const memberOnly = ((res?.data?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
 
             return memberOnly;
 
@@ -2281,7 +2277,7 @@ app.all('/callback', async (req, res) => {
 
     let rCore = rCores[0];
     try {
-        let headers = { "Content-Type": "application/x-www-form-urlencoded" };
+        let headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
         let form = {
             client_id: rCore.client.user.id,
             client_secret: rCore.client.mainConfig.clientSecret,
@@ -2292,17 +2288,17 @@ app.all('/callback', async (req, res) => {
         }
 
         // get oauth2 token
-        let tokenResponse = await post({ url: `${API_ENDPOINT}/oauth2/token`, headers, form, json: true })
-        let { access_token } = tokenResponse.body;
-        // response.body = {
+        let tokenResponse = await axios.post(`${API_ENDPOINT}/oauth2/token`, qs.stringify(form), { headers });
+        let { access_token } = tokenResponse.data;
+        // response.data = {
         //     access_token: '------------------------------', expires_in: 604800,
         //     refresh_token: '------------------------------', scope: 'connections', token_type: 'Bearer'
         // }
 
         // get user connections
         headers = { Authorization: "Bearer " + access_token }
-        let identify = await get({ url: `${API_ENDPOINT}/users/@me`, headers, json: true })
-        let connections = await get({ url: `${API_ENDPOINT}/users/@me/connections`, headers, json: true })
+        let identify = await axios.get(`${API_ENDPOINT}/users/@me`, { headers });
+        let connections = await axios.get(`${API_ENDPOINT}/users/@me/connections`, { headers });
         // get user data
         let cIDs = [];          // YT channel ID list
         let cIDstring = '';
@@ -2310,15 +2306,15 @@ app.all('/callback', async (req, res) => {
         let username = null;    // Discord user name
         let tag = null;         // Discord user tag number
 
-        if (identify.body) {
-            dID = identify.body.id;
-            username = identify.body.username;
-            tag = identify.body.discriminator;
+        if (identify.data) {
+            dID = identify.data.id;
+            username = identify.data.username;
+            tag = identify.data.discriminator;
         }
 
         // get discord user connections data
-        if (connections.body && Array.isArray(connections.body)) {
-            for (const connect of connections.body) {
+        if (connections.data && Array.isArray(connections.data)) {
+            for (const connect of connections.data) {
                 if (connect.type != 'youtube') { continue; }
                 cIDs.push(connect.id);
                 if (cIDs.length >= 3) { break; }
@@ -2401,14 +2397,14 @@ app.all('/callback', async (req, res) => {
     }
 
     // {
-    //     identify.body = {
+    //     identify.data = {
     //         accent_color: null, avatar: '0b69434e070a29d575737ed159a29224',
     //         banner: null, banner_color: null, discriminator: '8676', flags: 0,
     //         id: '353625493876113440', locale: 'zh-TW', mfa_enabled: true,
     //         public_flags: 0, username: 'K.T.710'
     //     }
 
-    //     connections.body[0] = {
+    //     connections.data[0] = {
     //         friend_sync: false, id: 'UC-JsTXzopVL28gQXEUV276w', name: 'K.T.',
     //         show_activity: true, type: 'youtube', verified: true, visibility: 1
     //     }

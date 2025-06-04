@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 const app = express();
 let server = null;
 
@@ -18,8 +19,6 @@ app.all('/uptimeinterval/', (req, res) => {
 
 // keep online
 let interval = null;
-const request = require('request');
-const get = require('util').promisify(request.get);
 
 module.exports = {
    app,
@@ -30,11 +29,7 @@ module.exports = {
          console.log(`HTTP Server is online, port: ${port}! ${nowDate}`);
       });
 
-      // const res = get({ url: `${process.env.HOST_URL}/uptimeinterval/`, json: true }).then(console.log)
-      interval = setInterval(() => {
-         const res = get({ url: `${process.env.HOST_URL}/uptimeinterval/`, json: true })
-            .catch(() => { });
-      }, 5 * 60 * 1000);  // check every 5min
+      interval = setInterval(() => axios.get(`${process.env.HOST_URL}/uptimeinterval/`).catch(() => null), 5 * 60 * 1000);  // check every 5min
    },
    terminate() {
 

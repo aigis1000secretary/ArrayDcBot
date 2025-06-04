@@ -2,16 +2,17 @@ const [EMOJI_RECYCLE, EMOJI_ENVELOPE_WITH_ARROW] = ['♻️', '📩'];
 const dlsiteIcon = 'https://media.discordapp.net/attachments/947064593329557524/1156438574997184562/RBIlIWRJ2HEHkWiTV4ng_gt_icon020.png';
 
 // const fs = require('fs');
+const axios = require('axios');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, PermissionFlagsBits, ButtonStyle } = require('discord.js');
 
 // web crawler
-const debugGet = async (args) => {
-    let res = await utilGet(args);
-    console.log(args.url);
-    console.log(`statusCode:`, res?.statusCode, !!res?.body);
+const debugGet = async (url) => {
+    let res = await utilGet(url);
+    console.log(url);
+    console.log(`statusCode:`, res?.status, !!res?.data);
     return res;
 }
-const utilGet = require('util').promisify(require('request').get);
+const utilGet = axios.get;
 let get = utilGet;
 const cheerio = require("cheerio");
 
@@ -23,13 +24,13 @@ const getDLsiteAjax = async (index) => {
     try {
         // request
         url = `https://www.dlsite.com/home/product/info/ajax?product_id=${index}`;
-        res = await get({ url, json: true });
-        if (res?.statusCode == 200 && !!res?.body && !!res.body[index]) { return res; }
+        res = await get(url);
+        if (res?.status == 200 && !!res?.data && !!res.data[index]) { return res; }
 
         // retry for proxy
         url = `https://dl.xn--4qs.club/home/product/info/ajax?product_id=${index}`;
-        res = await get({ url, json: true });
-        if (res?.statusCode == 200 && !!res?.body && !!res.body[index]) { return res; }
+        res = await get(url);
+        if (res?.status == 200 && !!res?.data && !!res.data[index]) { return res; }
 
     } catch (e) { }
 
@@ -40,14 +41,14 @@ const getDLsiteMakerPage = async (makerUrl) => {
     try {
         // request
         const url = makerUrl.replace('=/', '=/per_page/100/');
-        let res = await get({ url });
+        let res = await get(url);
 
-        if (res?.statusCode == 200 && !!res?.body) {
+        if (res?.status == 200 && !!res?.data) {
             // let [, mIndex] = url.match(/(RG\d{5})/);
-            // fs.writeFileSync(`./${mIndex}.html`, req.body);  // save data
+            // fs.writeFileSync(`./${mIndex}.html`, req.data);  // save data
 
             // load html body
-            let html = req.body;
+            let html = res.data;
             let $ = cheerio.load(html);
             let result = {};
 
@@ -69,8 +70,8 @@ const getDLsitePage = async (index) => {
     // get ajax
     let ajax = await getDLsiteAjax(index);
     if (!ajax) { return null; }
-    let host = ajax.req.host;
-    let siteID = ajax.body[index].site_id || 'work';
+    let host = ajax.request.host;
+    let siteID = ajax.data[index].site_id || 'work';
 
     // set url
     let urls = [];
@@ -83,8 +84,8 @@ const getDLsitePage = async (index) => {
 
     // get html
     for (let url of urls) {
-        let res = await get({ url });
-        if (res?.statusCode != 200 || !res?.body) { continue; }
+        let res = await get(url);
+        if (res?.status != 200 || !res?.data) { continue; }
 
         let result = await getDLsiteResult(res, index);
         if (!result || result.table.length == 0) { continue; }
@@ -98,10 +99,10 @@ const getDLsiteResult = async (raw, index) => {
 
     // result object
     let result = { index };
-    result.url = `https://www.dlsite.com${raw.req.path}`;
+    result.url = `https://www.dlsite.com${raw.request.path}`;
 
     // load html body
-    let html = raw.body;
+    let html = raw.data;
     let $ = cheerio.load(html);
     // DOM
     let elements;

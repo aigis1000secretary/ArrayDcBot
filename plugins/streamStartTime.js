@@ -1,4 +1,5 @@
 
+const axios = require('axios');
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 
 const CLOCK_A = ['<:clocka_0:895230067104440350>', '<:clocka_1:895230174382129162>', '<:clocka_2:895230190169509919>'];
@@ -11,8 +12,6 @@ const EMOJI_RECYCLE = '♻️';
 const regUrl = /(?:https?:\/\/)(?:(?:www\.|m\.)?youtube\.com|youtu\.be|holodex\.net)(?:\/(?:watch|v|embed|shorts|live|attribution_link(?:[\?&][^\/&]+)*))?\/(?:(?:(?:watch\?(?:[^\/&]*&)*)?v=)|(?:multiview\/\w{4}))?([\w-]{11})/;
 
 // youtube api
-const get = require('util').promisify(require('request').get);
-
 class YoutubeAPI {
     apiKey = [];
     quotaExceeded = [false, false];
@@ -50,11 +49,11 @@ class YoutubeAPI {
                 id: vID,
                 key: this.apiKey[0]
             }
-            const res = await get({ url, qs: params, json: true });
+            const res = await axios.get(url, { params });
 
             // throw error
-            if (res.statusCode != 200 || (res.body && res.body.error)) {
-                if (res.statusCode == 404) {
+            if (res.status != 200 || (res.data && res.data.error)) {
+                if (res.status == 404) {
                     throw {
                         code: 404, message: 'Error 404 (Not Found)!!',
                         errors: [{
@@ -63,12 +62,12 @@ class YoutubeAPI {
                         }],
                     };
                 }
-                else if (res.body) { throw res.body.error ? res.body.error : res.body; }
+                else if (res.data) { throw res.data.error ? res.data.error : res.data; }
                 else throw res;
             }
 
             // get response data
-            const data = res.body;
+            const data = res.data;
             if (data.pageInfo.totalResults == 0) {
                 console.log(`video not found. ${vID}`);
                 // return {
@@ -100,6 +99,11 @@ class YoutubeAPI {
             // }
 
         } catch (error) {
+            if (error.message?.includes('TLS connection')) {
+                console.log(`youtube.getVideoStatus ${error.message}`);
+                return null;
+            }
+
             // unknown error
             if (!Array.isArray(error.errors) || !error.errors[0]) {
                 console.log(error);
