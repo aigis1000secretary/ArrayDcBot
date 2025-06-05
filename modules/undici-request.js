@@ -4,27 +4,39 @@ const queryString = require('qs');
 
 module.exports = {
 
-    request: function ({ url, qs, method = 'GET', headers, body }) {
+    request: async function ({ url, qs, method = 'GET', headers, body, type = 'raw' }) {
+
         const uri = (!!qs ? new URL(url + '?' + queryString.stringify(qs)) : new URL(url)).toString();
         const options = { method, headers, body };
 
-        return undici.request(uri, options).catch(e => { throw new Error(e.message); });
+        const res = await undici.request(uri, options).catch(e => { throw new Error(e.message); });
+
+        if (type != 'raw') {
+
+            const _text = await res.body.text(); // .catch(e => console.log(method, type, 'body.text() error', e.message));
+            const _json = ((t) => { try { return JSON.parse(t); } catch (e) { } })(_text);
+
+            if (type == 'json' && res.statusCode == 200) {
+                return { statusCode: res.statusCode, body: _json || _text };
+            } else {
+                return { statusCode: res.statusCode, body: _text };
+            }
+        }
+
+        return { statusCode: res.statusCode, body: res.body };
     },
 
-    get: async function ({ url, qs, headers, json = false }) {
-        const res = await module.exports.request({ url, qs, method: 'GET', headers }).catch(e => console.log(e) || null);
-        return { statusCode: res.statusCode, body: (json ? await res.body.json() : await res.body.text()) };
+    get: function ({ url, qs, headers, json = false }) {
+        return module.exports.request({ url, qs, method: 'GET', headers, type: json ? 'json' : 'text' }).catch(e => console.log(`undici get`, e) || null);
     },
 
-    post: async function ({ url, qs, form, headers, json = false }) {
+    post: function ({ url, qs, form, headers, json = false }) {
         const body = new URLSearchParams(form);
-        const res = module.exports.request({ url, qs, method: 'POST', headers, body }).catch(e => console.log(e) || null);
-        return { statusCode: res.statusCode, body: (json ? await res.body.json() : await res.body.text()) };
+        return module.exports.request({ url, qs, method: 'POST', headers, body, type: json ? 'json' : 'text' }).catch(e => console.log(`undici post`, e) || null);
     },
 
-    delete: async function ({ url, qs, headers, json = false }) {
-        const res = module.exports.request({ url, qs, method: 'DELETE', headers }).catch(e => console.log(e) || null);
-        return { statusCode: res.statusCode, body: (json ? await res.body.json() : await res.body.text()) };
+    delete: function ({ url, qs, headers, json = false }) {
+        return module.exports.request({ url, qs, method: 'DELETE', headers, type: json ? 'json' : 'text' }).catch(e => console.log(`undici del`, e) || null);
     },
 
     pipe: require('util').promisify(require('stream').pipeline),
