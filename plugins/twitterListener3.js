@@ -1,6 +1,7 @@
 
 const fs = require('fs');
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const request = require('../modules/undici-request.js');
 
 // const
 const [EMOJI_RECYCLE] = ['♻️']
@@ -16,7 +17,7 @@ const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 
 const getTimeFromTwitterSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 1288834974657);
 
 // tl3-dlimg
-// const downloadFile = (url, filepath) => new Promise((resolve) => { require('request')(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); })
+// const downloadFile = (url, filepath) => request.request({ url }).then((response) => request.pipe(response.body, fs.createWriteStream(filepath)));
 
 const { chromeDriver, webLog } = require('./webdriver.js');
 

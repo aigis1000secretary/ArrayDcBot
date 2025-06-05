@@ -1,5 +1,6 @@
 
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const request = require('../modules/undici-request.js');
 
 const CLOCK_A = ['<:clocka_0:895230067104440350>', '<:clocka_1:895230174382129162>', '<:clocka_2:895230190169509919>'];
 const CLOCK_B = ['<:clockb_0:895230403164655627>', '<:clockb_1:895230447334866944>', '<:clockb_2:895230469992505355>', '<:clockb_3:895230483783368705>', '<:clockb_4:895230502397677628>', '<:clockb_5:895230515752357888>', '<:clockb_6:895230534169530390>', '<:clockb_7:895230548958654474>', '<:clockb_8:895230563835863072>', '<:clockb_9:895230578725638154>'];
@@ -11,8 +12,6 @@ const EMOJI_RECYCLE = '♻️';
 const regUrl = /(?:https?:\/\/)(?:(?:www\.|m\.)?youtube\.com|youtu\.be|holodex\.net)(?:\/(?:watch|v|embed|shorts|live|attribution_link(?:[\?&][^\/&]+)*))?\/(?:(?:(?:watch\?(?:[^\/&]*&)*)?v=)|(?:multiview\/\w{4}))?([\w-]{11})/;
 
 // youtube api
-const get = require('util').promisify(require('request').get);
-
 class YoutubeAPI {
     apiKey = [];
     quotaExceeded = [false, false];
@@ -45,12 +44,12 @@ class YoutubeAPI {
 
         try {
             const url = 'https://www.googleapis.com/youtube/v3/videos';
-            const params = {
+            const qs = {
                 part: 'id,snippet,liveStreamingDetails',
                 id: vID,
                 key: this.apiKey[0]
             }
-            const res = await get({ url, qs: params, json: true });
+            const res = await request.get({ url, qs, json: true });
 
             // throw error
             if (res.statusCode != 200 || (res.body && res.body.error)) {

@@ -6,8 +6,8 @@ const { EmbedBuilder } = require('discord.js');
 const xml2js = require(`xml2js`);
 // const express = require('express');
 // let client = null;
+const request = require('../modules/undici-request.js');
 
-const requestGet = require('util').promisify(require('request').get);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms, null));
 
 // check rss and send embeds
@@ -210,7 +210,7 @@ const getXML = async (url) => {
     const i = randomChoice(my_headers);
     const userAgent = my_headers[i];
     try {
-        const req = await requestGet({ url, headers: { 'User-Agent': userAgent } });
+        const req = await request.get({ url, headers: { 'User-Agent': userAgent } });
 
         // chekc error
         if (req && req.statusCode != 200) {

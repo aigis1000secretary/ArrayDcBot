@@ -18,7 +18,7 @@ app.all('/uptimeinterval/', (req, res) => {
 
 // keep online
 let interval = null;
-const request = require('request');
+const request = require('./modules/undici-request.js');
 const get = require('util').promisify(request.get);
 
 module.exports = {
@@ -30,11 +30,8 @@ module.exports = {
          console.log(`HTTP Server is online, port: ${port}! ${nowDate}`);
       });
 
-      // const res = get({ url: `${process.env.HOST_URL}/uptimeinterval/`, json: true }).then(console.log)
-      interval = setInterval(() => {
-         const res = get({ url: `${process.env.HOST_URL}/uptimeinterval/`, json: true })
-            .catch(() => { });
-      }, 5 * 60 * 1000);  // check every 5min
+      // const res = request.get({ url: `${process.env.HOST_URL}/uptimeinterval/` }).then(console.log)
+      interval = setInterval(() => request.get({ url: `${process.env.HOST_URL}/uptimeinterval/` }).catch(() => { }), 5 * 60 * 1000);  // check every 5min
    },
    terminate() {
 

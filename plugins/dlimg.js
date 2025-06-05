@@ -4,12 +4,13 @@ const [EMOJI_RECYCLE] = ['♻️']
 const fs = require('fs');
 const compressing = require('compressing');
 const { AttachmentBuilder } = require('discord.js');
+const request = require('../modules/undici-request.js');
 
 const regUrl = /^\<?https:\/\/(?:twitter|x)\.com\/([a-zA-Z0-9_]+)(?:\/status\/(\d+))?[\>\?]*$/;
 // const regUsername = /\(@([a-zA-Z0-9_]+)\)$/;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const downloadFile = (url, filepath) => new Promise((resolve) => { require('request')(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); })
+const downloadFile = (url, filepath) => request.request({ url }).then((response) => request.pipe(response.body, fs.createWriteStream(filepath)));
 
 let dilog = fs.existsSync('./.env') ? console.log : () => { };
 

@@ -4,6 +4,7 @@ const fs = require('fs');
 const compressing = require('compressing');
 const debug = fs.existsSync("./.env");
 const isLinux = (require("os").platform() == 'linux');
+const request = require('../modules/undici-request.js');
 
 // yt-dlp-wrap
 const { default: YTDlpWrap } = require("yt-dlp-wrap");
@@ -16,13 +17,6 @@ const md5 = (source) => require('crypto').createHash('md5').update(source).diges
 
 // discord
 const { EmbedBuilder, AttachmentBuilder, PermissionFlagsBits, Colors } = require('discord.js');
-
-
-// http request
-const request = require('request');
-const util = require('util');
-const get = util.promisify(request.get);
-const post = util.promisify(request.post);
 
 // discord webhook
 const redirectUri = process.env.HOST_URL;
@@ -59,13 +53,13 @@ class YoutubeAPI {
 
         try {
             const url = 'https://www.googleapis.com/youtube/v3/search';
-            const params = {
+            const qs = {
                 part: 'id,snippet', channelId,
                 eventType, order, publishedAfter,
                 maxResults: 5, type: "video",
                 key: this.apiKey[0]
             }
-            const res = await get({ url, qs: params, json: true }); // response
+            const res = await request.get({ url, qs, json: true }); // response
 
             // throw error
             if (res.statusCode != 200 || (res.body && res.body.error)) {
@@ -131,12 +125,12 @@ class YoutubeAPI {
 
         try {
             const url = 'https://www.googleapis.com/youtube/v3/videos';
-            const params = {
+            const qs = {
                 part: 'id,snippet,liveStreamingDetails',
                 id: vID,
                 key: this.apiKey[0]
             }
-            const res = await get({ url, qs: params, json: true });
+            const res = await request.get({ url, qs, json: true });
 
             // throw error
             if (res.statusCode != 200 || (res.body && res.body.error)) {
@@ -168,11 +162,11 @@ class YoutubeAPI {
             {   // get isMemberOnly by  yt.lemnoslife.com
                 // https://yt.lemnoslife.com/videos?part=isMemberOnly&id=U_7Pn04cip4
                 const url = 'https://yt.lemnoslife.com/videos';
-                const params = {
+                const qs = {
                     part: 'isMemberOnly',
                     id: vID
                 }
-                const res = await get({ url, qs: params, json: true }).catch(() => null);
+                const res = await request.get({ url, qs, json: true }).catch(() => null);
 
                 result.memberOnly = ((res?.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
             }
@@ -225,11 +219,11 @@ class YoutubeAPI {
             // get isMemberOnly by  yt.lemnoslife.com
             // https://yt.lemnoslife.com/videos?part=isMemberOnly&id=U_7Pn04cip4
             const url = 'https://yt.lemnoslife.com/videos';
-            const params = {
+            const qs = {
                 part: 'isMemberOnly',
                 id: vID
             }
-            const res = await get({ url, qs: params, json: true }).catch(() => null);;
+            const res = await request.get({ url, qs, json: true }).catch(() => null);;
 
             const memberOnly = ((res?.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
 
@@ -2292,7 +2286,7 @@ app.all('/callback', async (req, res) => {
         }
 
         // get oauth2 token
-        let tokenResponse = await post({ url: `${API_ENDPOINT}/oauth2/token`, headers, form, json: true })
+        let tokenResponse = await request.post({ url: `${API_ENDPOINT}/oauth2/token`, headers, form, json: true })
         let { access_token } = tokenResponse.body;
         // response.body = {
         //     access_token: '------------------------------', expires_in: 604800,
@@ -2301,8 +2295,8 @@ app.all('/callback', async (req, res) => {
 
         // get user connections
         headers = { Authorization: "Bearer " + access_token }
-        let identify = await get({ url: `${API_ENDPOINT}/users/@me`, headers, json: true })
-        let connections = await get({ url: `${API_ENDPOINT}/users/@me/connections`, headers, json: true })
+        let identify = await request.get({ url: `${API_ENDPOINT}/users/@me`, headers, json: true })
+        let connections = await request.get({ url: `${API_ENDPOINT}/users/@me/connections`, headers, json: true })
         // get user data
         let cIDs = [];          // YT channel ID list
         let cIDstring = '';

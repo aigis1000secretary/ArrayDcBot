@@ -3,6 +3,7 @@ const dlsiteIcon = 'https://media.discordapp.net/attachments/947064593329557524/
 
 // const fs = require('fs');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, PermissionFlagsBits, ButtonStyle } = require('discord.js');
+const request = require('../modules/undici-request.js');
 
 // web crawler
 const debugGet = async (args) => {
@@ -11,7 +12,7 @@ const debugGet = async (args) => {
     console.log(`statusCode:`, res?.statusCode, !!res?.body);
     return res;
 }
-const utilGet = require('util').promisify(require('request').get);
+const utilGet = request.get;
 let get = utilGet;
 const cheerio = require("cheerio");
 
@@ -24,14 +25,16 @@ const getDLsiteAjax = async (index) => {
         // request
         url = `https://www.dlsite.com/home/product/info/ajax?product_id=${index}`;
         res = await get({ url, json: true });
-        if (res?.statusCode == 200 && !!res?.body && !!res.body[index]) { return res; }
+        res.req = { host: new URL(url).host };
+        if (res?.statusCode == 200 && !!res?.body?.[index]) { return res; }
 
         // retry for proxy
         url = `https://dl.xn--4qs.club/home/product/info/ajax?product_id=${index}`;
         res = await get({ url, json: true });
-        if (res?.statusCode == 200 && !!res?.body && !!res.body[index]) { return res; }
+        res.req = { host: new URL(url).host };
+        if (res?.statusCode == 200 && !!res?.body?.[index]) { return res; }
 
-    } catch (e) { }
+    } catch (e) { console.log(e) }
 
     return null;
 }
@@ -47,7 +50,7 @@ const getDLsiteMakerPage = async (makerUrl) => {
             // fs.writeFileSync(`./${mIndex}.html`, req.body);  // save data
 
             // load html body
-            let html = req.body;
+            let html = res.body;
             let $ = cheerio.load(html);
             let result = {};
 
@@ -86,6 +89,7 @@ const getDLsitePage = async (index) => {
         let res = await get({ url });
         if (res?.statusCode != 200 || !res?.body) { continue; }
 
+        res.req = { path: new URL(url).pathname };
         let result = await getDLsiteResult(res, index);
         if (!result || result.table.length == 0) { continue; }
 

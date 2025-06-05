@@ -3,6 +3,7 @@ require('dotenv').config();
 const server = require('./server.js');
 
 const fs = require('fs');
+const request = require('./modules/undici-request.js');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const rebootByHerokuAPI = async () => {
@@ -11,12 +12,9 @@ const rebootByHerokuAPI = async () => {
         const apiUrl = 'https://api.heroku.com';
         const app_id_or_name = 'arraydcbot';
         const dyno_id_or_name = 'web.1';
-        // util promisify
-        // const requestGet = require('util').promisify(require('request').get);
-        const requestDelete = require('util').promisify(require('request').delete);
 
         // restart by heroku API
-        await requestDelete({
+        await request.delete({
             url: `${apiUrl}/apps/${app_id_or_name}/dynos/${dyno_id_or_name}`,
             headers: {
                 Accept: 'application/vnd.heroku+json; version=3',

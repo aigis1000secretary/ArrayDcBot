@@ -1,8 +1,7 @@
 
 const fs = require('fs');
 const { EmbedBuilder } = require('discord.js');
-
-const get = require('util').promisify(require('request').get);
+const request = require('../modules/undici-request.js');
 
 module.exports = {
     name: 'ip',
@@ -14,7 +13,7 @@ module.exports = {
         // reply button message
         if (command == 'ip' && user.id == '353625493876113440') {
 
-            let req = await get({ url: `https://myexternalip.com/raw`, json: true });
+            let req = await request.get({ url: `https://myexternalip.com/raw` });
 
             let ip = req.statusCode == 200 ? req.body : 'Failed to obtain IP address';
             let uptime = parseInt((Date.now() - client.uptime) / 1000);

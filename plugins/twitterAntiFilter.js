@@ -4,7 +4,7 @@ const path = require('path');
 const canvas = require('canvas');
 const ssim = require('image-ssim');
 const compressing = require('compressing');
-const request = require('request');
+const request = require('../modules/undici-request.js');
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 const [EMOJI_LABEL] = ['🏷️']
@@ -13,6 +13,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const md5 = (source) => require('crypto').createHash('md5').update(source).digest('hex');
 const logs = [];
 const tafLog = (msg) => { if (!logs.includes(msg)) { console.log(msg); logs.push(msg); } }
+const downloadFile = (url, filepath) => request.request({ url }).then((response) => request.pipe(response.body, fs.createWriteStream(filepath)));
 
 
 // const { twitter } = require('./twitterListener2.js');
@@ -52,19 +53,19 @@ const downloadImage = async (url, subUrl) => {
     if (!filename || !ext) { return false; }
 
     // download file
-    const file = `./${filename}_${process.uptime().toString().replace('.', '')}.${ext}`;
-    if (!fs.existsSync(file)) await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(file)).on('close', resolve); });
+    const filepath = `./${filename}_${process.uptime().toString().replace('.', '')}.${ext}`;
+    if (!fs.existsSync(filepath)) { await downloadFile(url, filepath); }
     await sleep(500);
-    if (!fs.existsSync(file)) { return false; }
+    if (!fs.existsSync(filepath)) { return false; }
 
     // read image
-    let image = await canvas.loadImage(file).catch((e) => {
+    let image = await canvas.loadImage(filepath).catch((e) => {
         console.log(`download image error: ${url}`);
-        console.log(file, e.message);
+        console.log(filepath, e.message);
         return null;
     });
     if (!image) {
-        fs.unlinkSync(file);
+        fs.unlinkSync(filepath);
         if (subUrl != null) {
             console.log(`try sub url: ${subUrl}`);
             return await downloadImage(subUrl, null);
@@ -75,7 +76,7 @@ const downloadImage = async (url, subUrl) => {
     image.channels = 4;
 
     // del twitter image
-    if (fs.existsSync(file)) { fs.unlinkSync(file); }
+    if (fs.existsSync(filepath)) { fs.unlinkSync(filepath); }
 
     return { canvas: image, url };
 }
@@ -228,7 +229,7 @@ class AntiFilterCore {
                 this.logToDiscord(`[+] ${filename}`);
 
                 // download image to blacklist
-                await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); });
+                await downloadFile(url, filepath);
                 // or use image.canvas ?
 
                 let result = { username, tID, ssim: 1.0, image: filepath }
@@ -377,8 +378,8 @@ class AntiFilterCore {
 
             // download blacklist files
             if (fs.existsSync(filepath)) { fs.unlinkSync(filepath); }
-            await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); })
-                .then(() => console.log(`[TAF] download ${filepath} ${(fs.statSync(filepath)?.size / 1024).toFixed(2)} KB`));
+            await downloadFile(url, filepath);
+            console.log(`[TAF] download ${filepath} ${(fs.statSync(filepath)?.size / 1024).toFixed(2)} KB`);
         }
 
         // unzip last version
@@ -755,7 +756,7 @@ const messageExecute = async (message) => {
                 mainAFCore.logToDiscord(`[+] ${filename}`);
 
                 // download image to blacklist
-                await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); });
+                await downloadFile(url, filepath);
                 // or use image.canvas ?
 
                 let result = { username, tID, ssim: 1.0, image: filepath }
@@ -1200,7 +1201,7 @@ module.exports = {
                     mainAFCore.logToDiscord(`[+] ${filename}`);
 
                     // download image to blacklist
-                    await new Promise((resolve) => { request(url).pipe(fs.createWriteStream(filepath)).on('close', resolve); });
+                    await downloadFile(url, filepath);
                     // or use image.canvas ?
 
                     let result = { username, tID, ssim: 1.0, image: filepath }
