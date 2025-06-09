@@ -1,12 +1,22 @@
 
-.vscode
-node_modules
+.vscode/
+node_modules/
+
+.env
 
 *.lnk
 *.csv
 *.bat
 Thumbs.db
 
-debug.js
-ngrok
+ngrok/
 ngrok.zip
+
+blacklist/
+
+cookies/
+configs/login.json
+*.live_chat.json*
+image/
+
+temp/

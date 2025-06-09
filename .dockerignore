@@ -1,0 +1,21 @@
+# flyctl launch added from .gitignore
+
+**/.vscode
+**/node_modules
+
+**/.env
+
+**/*.lnk
+**/*.csv
+**/*.bat
+**/Thumbs.db
+
+**/ngrok
+**/ngrok.zip
+
+**/blacklist
+
+**/cookies
+**/configs/login.json
+**/image
+fly.toml
