@@ -1,5 +1,6 @@
 
 const server = require('./server.js');
+const botJs = require(`./bot.js`);
 
 require('dotenv').config();
 
@@ -56,22 +57,23 @@ module.exports.getBotIDs = () => {
 
     // web server
     // process.env.PORT = 3001;    // for dice debug
-    server.init();
+    // server.init();
 
-    // for (const bot of [
-    //     'DLSITE',
-    //     'SSRB', 'POKOBE', 'OTOSE', 'BANPEN', 'RIRIKA', 'AOKU',  /*
-    //     'DICE'   //*/
-    // ]) {
-    //     const configPath = `./configs/${bot}/`;
+    for (const bot of [
+        'DLSITE',
+        'SSRB', 'POKOBE', 'OTOSE', 'BANPEN', 'RIRIKA', 'AOKU',  /*
+        'DICE'   //*/
+    ]) {
+        const configPath = `./configs/${bot}/`;
 
-    //     if (fs.existsSync(`./bot.js`)) {
-    //         let botJs = require(`./bot.js`);
+        if (!fs.existsSync(`./bot.js`)) { break; }
+        if (!fs.existsSync(configPath)) { continue; }
 
-    //         let client = await botJs.init(configPath);
-    //         if (client) { clients.push(client); }
-    //     }
-    // }
+        let client = await botJs.init(configPath);
+         if (!client) { continue; }
+
+        clients.push(client);
+    }
 
     // // load modules
     // const modulesFiles = fs.readdirSync(`./modules/`)

@@ -29,7 +29,7 @@ module.exports = {
             console.log(`HTTP Server is online, port: ${port}! ${nowDate}`);
         });
 
-        interval = setInterval(() => request.get({ url: `${process.env.HOST_URL}/uptimeinterval/` }).catch(() => { }), 1000);  // check every 5min
+        interval = setInterval(() => request.get({ url: `${process.env.HOST_URL}/uptimeinterval/` }).catch(() => { }), 5 * 60 * 1000);  // check every 5min
     },
 
     terminate() {

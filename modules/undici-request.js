@@ -1,11 +1,8 @@
 
-// const { request: _request } = require('undici');
+const { request: _request } = require('undici');
 const queryString = require('qs');
 
-const _request = async function () {
-    throw new Error('test error');
-    return null;
-}
+// const _request = async function () { throw new Error('test error'); }
 
 module.exports = {
     request: async function ({ url, qs, method = 'GET', headers = {}, body }) {
@@ -24,18 +21,15 @@ module.exports = {
             return result;
         }
 
-        const contentType = response.headers['content-type'] || '';
+        const contentType = response.headers['Content-Type'] || response.headers['content-type'] || '';
         const _text = await response.body.text();
         result.statusCode = response.statusCode;
         result.text = _text;
+        result.json = null;
+        try { result.json = JSON.parse(_text); } catch (e) { result.json = null; }
 
         if (contentType.includes('application/json')) {
-            try {
-                result.body = JSON.parse(_text);
-            } catch (e) {
-                result.body = _text;
-                result.error = new Error('Failed to parse JSON');
-            }
+            result.body = result.json;
         } else {
             result.body = _text;
         }
