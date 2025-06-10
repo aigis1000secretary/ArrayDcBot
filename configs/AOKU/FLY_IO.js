@@ -1,0 +1,33 @@
+
+// online bot cfg
+module.exports = {
+    botName: 'AOKU',
+    botID: '1266735221387300977',
+    discordToken: process.env.DISCORD_1266735221387300977_BOTTOKEN,
+    clientSecret: process.env.DISCORD_1266735221387300977_SECRET,
+    resonance: 'カキカキ',
+    plugins: [
+        // 'delall',
+        // 'fxtwitter',
+        // 'hook',
+        // 'memberChecker4',
+        // 'memberCounter',
+        // 'messageLogger',
+        // 'permissionSwitch',
+        // 'ping',
+        // 'reactionRole',
+        // 'reactionVote',
+        // 'reboot',
+        // 'reportThread',
+        // 'rssbot',
+        'spamBotKicker',
+        'streamStartTime',
+        // 'superChat',
+        // 'timeTag2',
+        'twitterAntiFilter',
+        // 'twitterListener3',
+        // 'uptimer',
+        // 'verifyThread',
+        // 'welcomeMsg',
+    ],
+}

@@ -1,0 +1,33 @@
+
+// online bot cfg
+module.exports = {
+    botName: 'OTOSE',
+    botID: '1179344721047474207',
+    discordToken: process.env.DISCORD_1179344721047474207_BOTTOKEN,
+    clientSecret: process.env.DISCORD_1179344721047474207_SECRET,
+    resonance: 'こけこっこ',
+    plugins: [
+        // 'delall',
+        // 'fxtwitter',
+        // 'hook',
+        'memberChecker4',
+        // 'memberCounter',
+        // 'messageLogger',
+        // 'permissionSwitch',
+        // 'ping',
+        // 'reactionRole',
+        // 'reactionVote',
+        // 'reboot',
+        // 'reportThread',
+        // 'rssbot',
+        'spamBotKicker',
+        'streamStartTime',
+        // 'superChat',
+        // 'timeTag2',
+        'twitterAntiFilter',
+        // 'twitterListener3',
+        // 'uptimer',
+        // 'verifyThread',
+        // 'welcomeMsg',
+    ],
+}

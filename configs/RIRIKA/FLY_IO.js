@@ -1,0 +1,33 @@
+
+// online bot cfg
+module.exports = {
+    botName: 'RIRIKA',
+    botID: '1266703631697182801',
+    discordToken: process.env.DISCORD_1266703631697182801_BOTTOKEN,
+    clientSecret: process.env.DISCORD_1266703631697182801_SECRET,
+    resonance: 'こんりり',
+    plugins: [
+        // 'delall',
+        // 'fxtwitter',
+        // 'hook',
+        // 'memberChecker4',
+        // 'memberCounter',
+        'messageLogger',
+        // 'permissionSwitch',
+        // 'ping',
+        // 'reactionRole',
+        // 'reactionVote',
+        // 'reboot',
+        // 'reportThread',
+        // 'rssbot',
+        'spamBotKicker',
+        'streamStartTime',
+        // 'superChat',
+        // 'timeTag2',
+        'twitterAntiFilter',
+        // 'twitterListener3',
+        // 'uptimer',
+        // 'verifyThread',
+        'welcomeMsg',
+    ],
+}
