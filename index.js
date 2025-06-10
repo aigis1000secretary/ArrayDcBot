@@ -1,10 +1,10 @@
 
+require('dotenv').config();
+const fs = require('fs');
+
 const server = require('./server.js');
 const botJs = require(`./bot.js`);
 
-require('dotenv').config();
-
-const fs = require('fs');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const clients = [];
@@ -70,7 +70,7 @@ module.exports.getBotIDs = () => {
         if (!fs.existsSync(configPath)) { continue; }
 
         let client = await botJs.init(configPath);
-         if (!client) { continue; }
+        if (!client) { continue; }
 
         clients.push(client);
     }
