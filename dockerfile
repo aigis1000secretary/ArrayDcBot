@@ -1,4 +1,5 @@
-FROM node:20
+# FROM node:20
+FROM node:20-bullseye
 
 # ENV DEBIAN_FRONTEND=noninteractive
 
@@ -14,8 +15,22 @@ COPY package*.json ./
 
 RUN npm install
 
-# RUN apt-get install -y fonts-noto-cjk
-# RUN apt-get install -y fonts-symbola
+# RUN apt-get install fonts-noto-cjk
+# RUN apt-get install fonts-symbola
+
+# RUN apt-get update
+# RUN apt-get install -y --no-install-recommends wget fontconfig
+# RUN mkdir -p /usr/share/fonts/noto
+# RUN cd /usr/share/fonts/noto
+# RUN wget https://noto-website-2.storage.googleapis.com/pkgs/NotoSansCJKtc-hinted.zip
+# RUN wget https://noto-website-2.storage.googleapis.com/pkgs/NotoSansCJKjp-hinted.zip
+# RUN apt-get install -y unzip
+# RUN unzip NotoSansCJKtc-hinted.zip
+# RUN unzip NotoSansCJKjp-hinted.zip
+# RUN rm NotoSansCJKtc-hinted.zip
+# RUN rm NotoSansCJKjp-hinted.zip
+# RUN fc-cache -fv
+# RUN rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
