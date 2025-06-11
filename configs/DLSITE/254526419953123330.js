@@ -1,7 +1,7 @@
 
 module.exports = {      // KTG
     name: 'K島同人音聲',
-    perfix: /^[!][\S]/,
+    perfix: /^([!])\S+/,
 
     // spamBotKicker: {
     //     LOG_CHANNEL_ID: '713623232070156309',      // #_log <#713623232070156309>

@@ -1,7 +1,7 @@
 
 module.exports = {      // KTG
     name: 'KTG',
-    perfix: /(^[\/\-!~])[\S]/,
+    perfix: /^([\/\-!~])\S+/,
 
     memberChecker4: [
         // /*
@@ -72,12 +72,10 @@ module.exports = {      // KTG
 
     messageLogger: { LOG_CHANNEL_ID: '1024627281592848434' },      // #_log <#1024627281592848434>
     memberCounter: { COUNTER_CHANNEL_ID: '1024628239865491486' },      // #群組人數-15 <#1024628239865491486>
-    reactionRole: { RULE_CHANNEL_ID: '1024628143232925706' },      // #_rule <#1024628143232925706>
 
     delall: {},
     dlimg: {},
     dlsitebot: {},
-    ping: {},
     reboot: {},
     rssbot: [],
     streamStartTime: {},

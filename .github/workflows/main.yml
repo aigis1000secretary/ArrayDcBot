@@ -1,5 +1,5 @@
 name: Fly Deploy
-on: 
+on:
   push:
     branches:
       - main
@@ -35,4 +35,4 @@ jobs:
       #   uses: superfly/flyctl-actions@master
       #   with:
       #     args: "scale count 1 -a arraydcbot"
-      
+

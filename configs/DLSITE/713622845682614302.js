@@ -1,7 +1,7 @@
 
 module.exports = {      // KTG
     name: 'KTG',
-    perfix: /(^[\/\-!~])[\S]/,
+    perfix: /^([\/\-!~])\S+/,
 
     twitterListener3: [
         // #_aigis_retweet
@@ -67,13 +67,11 @@ module.exports = {      // KTG
 
 
     eval: {},
-    fxtwitter: {},
     delall: {},
     dlimg: {},
     dlsitebot: {},
     ip: {},
     memberChecker4: [],
-    ping: {},
     reboot: {},
     streamStartTime: {},
     twitterAntiFilter: {},

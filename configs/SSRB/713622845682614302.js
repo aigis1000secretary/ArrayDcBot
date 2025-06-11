@@ -1,7 +1,7 @@
 
 module.exports = {      // KTG
     name: 'KTG',
-    perfix: /(^[\/\-!~])[\S]/,
+    perfix: /^([\/\-!~])\S+/,
 
     memberChecker4: [
         {
@@ -27,8 +27,10 @@ module.exports = {      // KTG
         //     holoChannelID: 'UCZlDXzGoo7d44bwdNObFacg',   // kanata
         // }
     ],
-    
+
     delMsgByMenu: {},
+    fxtwitter: {},
     search: {},
     superChat: {},
+    twitterAntiFilter: {},
 }

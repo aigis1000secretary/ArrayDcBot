@@ -62,7 +62,7 @@ module.exports = {
 
         // require configs
         // get all js file list
-        // const configPath = `./configs/${bot}/`;  
+        // const configPath = `./configs/${bot}/`;
         const hostType = process.env.HOST_TYPE || 'debug';
         const configFiles = fs.readdirSync(filepath).filter(file => file.endsWith('.js'));
         for (const file of configFiles) {
@@ -73,7 +73,7 @@ module.exports = {
                 mainConfig = require(`${filepath}${file}`);
 
             } else if (/^\d+$/.test(name)) {
-                // guild config 
+                // guild config
                 guildConfigs.set(name, require(`${filepath}${file}`));
 
             }
@@ -116,7 +116,7 @@ module.exports = {
         const pluginsPath = path.join(__dirname, `./plugins/`);
         if (fs.existsSync(pluginsPath)) {
 
-            // get all js file list 
+            // get all js file list
             for (const file of fs.readdirSync(pluginsPath).filter(file => file.endsWith('.js'))) {
                 const { name } = path.parse(file);
 
@@ -275,7 +275,7 @@ module.exports = {
         client.once('ready', async function () {
 
             // dc bot online
-            console.log(`=====${client.mainConfig.botName.padEnd(6, ' ')} is online!=====    setup plugins(${client.commands.size}):`);
+            console.log(`===== ${client.mainConfig.botName.padEnd(6, ' ')} is online!=====    setup plugins(${client.commands.size}):`);
 
             // if (!fs.existsSync("./.env"))
             {
@@ -306,7 +306,7 @@ module.exports = {
                         // github deploy
                         process.on('SIGINT', async () => { await recentlyBootMsg?.react(EMOJI_VIBRATION).catch(() => null); process.exit(0); });
                     }
-                    
+
                 } else {
                     recentlyBootMsg = await channel.messages.fetch({ message: recentlyBootMsg.id }).catch(() => null);
                 }
@@ -341,7 +341,18 @@ module.exports = {
                 // Registering slash commands
                 const rest = new Discord.REST().setToken(client.mainConfig.discordToken);
                 await rest.put(Discord.Routes.applicationCommands(client.user.id), { body: slashCommands })    // .then(() => console.log('Successfully deleted all application commands.'))
-                    .catch(console.error);
+                    .catch(e => console.log(`[Bot] applicationCommands`, e.message));
+                // } else {
+                //     await client.application.commands.fetch();
+                //     for (let [key, value] of client.application.commands.cache) { await value.delete(); }    // delete all slash command
+
+                //     for (let [key, value] of client.application.commands.cache) {
+                //         console.log(value.name, value.description);
+                //     }
+                //     for (let slashCmd of slashCommands) {
+                //         console.log(slashCmd.name);
+                //     }
+                //     console.log('slashCmd');
             }
 
 
