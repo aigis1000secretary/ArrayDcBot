@@ -1,7 +1,7 @@
 
 module.exports = {      // 奏的樂音工坊
     name: '奏的樂音工坊',
-    perfix: /^[\/\-!][\S]/,
+    perfix: /^([\/\-!])\S+/,
 
     /*
     memberChecker4: [

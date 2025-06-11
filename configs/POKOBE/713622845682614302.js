@@ -1,7 +1,7 @@
 
 module.exports = {      // KTG
     name: 'KTG',
-    perfix: /(^[\/\-!~])[\S]/,
+    perfix: /^([\/\-!~])\S+/,
 
     memberChecker4: [
         {

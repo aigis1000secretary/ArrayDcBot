@@ -1,7 +1,7 @@
 
 module.exports = {      // いろは幕府
     name: 'いろは幕府',
-    perfix: /^[\/\-!][\S]/,
+    perfix: /^([\/\-!])\S+/,
 
     memberChecker4: [
         {

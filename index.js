@@ -15,7 +15,7 @@ module.exports.terminate = async (force = false) => {
         // check all plugins
         for (const [key, value] of client.commands) {
             // idleCheck method
-            const idle = typeof (value?.idleCheck) == "function" ? value.idleCheck() : null;
+            const idle = typeof (value?.idleCheck) == "function" ? value.idleCheck() : true;
 
             if (idle) { continue; }
 
