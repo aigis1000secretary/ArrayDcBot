@@ -358,7 +358,7 @@ class Pg {
     };
 
     static async backup(client) {
-        if (this.dataCache.size < 300) { return; }
+        if (this.dataCache.size < 300) { console.log(`[PG] db size: ${this.dataCache.size}`); return; }
 
         const jsonFile = `./pgdbBackup.json`;
         const zipFile = `./pgdbBackup.zip`;
@@ -374,9 +374,9 @@ class Pg {
 
         // get channel/message by id
         const channel = await client.channels.fetch(`872122458545725451`).catch(() => { return null; });
-        if (!channel) { return; }
+        if (!channel) { console.log(`[PG] can't found: <#872122458545725451> ${client.username}`); return; }
         const msg = await channel.messages.fetch({ message: `1055852678913196042`, force: true }).catch(() => { return null; });
-        if (!msg) { return; }
+        if (!msg) { console.log(`[PG] can't found message: 1055852678913196042 ${client.username}`); return; }
 
         // zip db files
         const nowDate = (new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }))
