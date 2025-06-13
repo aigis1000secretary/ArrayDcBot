@@ -16,6 +16,6 @@ module.exports = {
         // 'reboot',
         'rssbot',
         // 'twitterAntiFilter',
-        'twitterListener3',
+        // 'twitterListener3',
     ],
 }

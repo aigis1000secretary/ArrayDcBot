@@ -5,7 +5,7 @@ module.exports = {      // KTG
 
     memberChecker4: [
         {
-            holoChannelID: 'UC1iA6_NT4mtAcIII6ygrvCw',   // todoroki
+            ytChannelID: 'UC1iA6_NT4mtAcIII6ygrvCw',   // todoroki
 
             streamChannelID: '1253621663187337267',      // #⚫_stream4 <#1253621663187337267>
             memberChannelID: '1253621682132877399',      // #⚫_member4 <#1253621682132877399>

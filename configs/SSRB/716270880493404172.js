@@ -5,7 +5,7 @@ module.exports = {      // SSRB的聚集地
 
     memberChecker4: [
         {
-            holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB,
+            ytChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB,
 
             streamChannelID: '775100135515750470',  // #⚫🌿獅白直播-streamchat <#775100135515750470>
             memberChannelID: '790236195794976808',  // #⚫獅白會限直播討論用 <#790236195794976808>

@@ -6,7 +6,7 @@ module.exports = {      // KTG
     memberChecker4: [
         // /*
         {
-            holoChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB
+            ytChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB
 
             streamChannelID: '1024627739023650827',      // #⚫_stream <#1024627739023650827>
             memberChannelID: '1024627744681771108',      // #⚫_member <#1024627744681771108>
@@ -21,7 +21,7 @@ module.exports = {      // KTG
         },//*/
         /*
         {
-            holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
+            ytChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
 
             streamChannelID: '1236925125434146816',      // #⚫_stream2 <#1236925125434146816>
             memberChannelID: '1236925146674106441',      // #⚫_member2 <#1236925146674106441>
@@ -32,7 +32,7 @@ module.exports = {      // KTG
         },//*/
         /*
         {
-            holoChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // otonose,
+            ytChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // otonose,
 
             streamChannelID: '1024627739023650827',      // #⚫_stream <#1024627739023650827>
             memberChannelID: '1024627744681771108',      // #⚫_member <#1024627744681771108>
