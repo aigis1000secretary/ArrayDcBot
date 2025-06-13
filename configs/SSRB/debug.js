@@ -8,7 +8,7 @@ module.exports = {
     resonance: 'ぼた',
     plugins: [
         // 'twitterAntiFilter',
-        // 'memberChecker4',
-        'delMsgByMenu',
+        'memberChecker5',
+        // 'delMsgByMenu',
     ],
 }

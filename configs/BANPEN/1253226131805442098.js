@@ -5,7 +5,7 @@ module.exports = {      // 體育館裏の真っす組
 
     memberChecker4: [
         {
-            holoChannelID: 'UC1iA6_NT4mtAcIII6ygrvCw',   // todoroki,
+            ytChannelID: 'UC1iA6_NT4mtAcIII6ygrvCw',   // todoroki,
 
             streamChannelID: '1253245713048014880',      // #⚫番長直播中 <#1253245713048014880>
             memberChannelID: '1253264373980463125',      // #⚫番長會限中 <#1253264373980463125>

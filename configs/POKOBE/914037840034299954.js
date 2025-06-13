@@ -5,7 +5,7 @@ module.exports = {      // いろは幕府
 
     memberChecker4: [
         {
-            holoChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
+            ytChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama,
 
             streamChannelID: '915171808402083910',      // #⚫隊長出動中！ <#915171808402083910>
             memberChannelID: '915171920129957898',      // #⚫隊士參上！ <#915171920129957898>

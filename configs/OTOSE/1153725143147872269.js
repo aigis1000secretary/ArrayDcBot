@@ -6,7 +6,7 @@ module.exports = {      // 奏的樂音工坊
     /*
     memberChecker4: [
         {
-            holoChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // otonose,
+            ytChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // otonose,
 
             streamChannelID: '1153725144309702767',      // #⚫奏醬華麗出演中！ <#1153725144309702767>
             memberChannelID: '1153725144309702771',      // #⚫音の勢高級貴賓交流廳 <#1153725144309702771>
