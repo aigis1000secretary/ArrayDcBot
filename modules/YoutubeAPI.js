@@ -46,9 +46,9 @@ class YoutubeAPI {
 
     async getVideoStatus({ vID, apiKey = 4 }) {
         const result = apiKeys[apiKey].quotaExceeded ? null :
-            await getVideoStatusByApi({ vID, apiKey });
+            await this.getVideoStatusByApi({ vID, apiKey });
 
-        return result || await getVideoStatusByInTube({ vID });
+        return result || await this.getVideoStatusByInTube({ vID });
     }
     async getVideoStatusByApi({ vID, apiKey = 4 }) {
         if (apiKeys[apiKey].quotaExceeded) { return null; }
@@ -83,6 +83,7 @@ class YoutubeAPI {
             console.log(`[YoutubeAPI] getVideoStatusByApi error. video not found.`, vID);
             return null;
         }
+        data.items[0].isMemberOnly = await this.getVideoIsMemberOnly({ vID });
         return data.items[0];
         // return {
         //     id: '3gH2la1zZ3A', kind: 'youtube#video', etag: 'ktzgCNL-70YVg2aP-FcihaZ_vKA',
@@ -125,7 +126,8 @@ class YoutubeAPI {
                 liveStreamingDetails: {
                     scheduledStartTime: new Date(basicInfo.start_timestamp).toISOString(),
                     activeLiveChatId: null
-                }
+                },
+                isMemberOnly: await this.getVideoIsMemberOnly({ vID })
             };
 
             return result;
@@ -171,7 +173,7 @@ class YoutubeAPI {
             const vID = item.id?.videoId || item.id;
             if (!vID) { continue; }
 
-            item.isMemberOnly = this.getVideoIsMemberOnly({ vID });
+            item.isMemberOnly = await this.getVideoIsMemberOnly({ vID });
             result.push(item);
         }
         return result;
