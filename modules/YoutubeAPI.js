@@ -33,14 +33,18 @@ class YoutubeAPI {
 
     // youtube api
     async getStreamStatus(vID) {
-        let data = await this.getVideoStatusByInTube({ vID });
+        const data = await this.getVideoStatusByInTube({ vID });
         if (!data) { return false; }
 
-        let status = data.snippet.liveBroadcastContent;
+        const status = data.snippet.liveBroadcastContent;
         if (status != "upcoming") { return false; }
 
-        let startTime = new Date(Date.parse(data.liveStreamingDetails.scheduledStartTime));
-        return `${startTime.getHours().toString().padStart(2, '0')}${startTime.getMinutes().toString().padStart(2, '0')}`;
+        const startTime = data.liveStreamingDetails?.scheduledStartTime || 0;
+        if (!startTime || Date.parse(startTime) > Date.now() + (1000 * 60 * 60 * 10)) { return false; }
+        // skip  video when upcoming after 10hr
+
+        const startTimeStr = new Date(Date.parse(startTime));
+        return `${startTimeStr.getHours().toString().padStart(2, '0')}${startTimeStr.getMinutes().toString().padStart(2, '0')}`;
     }
 
 
