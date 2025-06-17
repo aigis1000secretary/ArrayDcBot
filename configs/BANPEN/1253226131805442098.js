@@ -3,7 +3,7 @@ module.exports = {      // 體育館裏の真っす組
     name: '體育館裏の真っす組',
     perfix: /^([\/\-!])\S+/,
 
-    memberChecker4: [
+    memberChecker5: [
         {
             ytChannelID: 'UC1iA6_NT4mtAcIII6ygrvCw',   // todoroki,
 

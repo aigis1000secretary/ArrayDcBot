@@ -12,7 +12,7 @@ module.exports = {
         // 'dlsitebot',
         // 'fxtwitter',
         'ip',
-        // 'memberChecker4',
+        // 'memberChecker5',
         // 'reboot',
         'rssbot',
         // 'twitterAntiFilter',

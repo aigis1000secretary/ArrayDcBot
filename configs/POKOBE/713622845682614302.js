@@ -3,7 +3,7 @@ module.exports = {      // KTG
     name: 'KTG',
     perfix: /^([\/\-!~])\S+/,
 
-    memberChecker4: [
+    memberChecker5: [
         {
             ytChannelID: 'UC_vMYWcDjmfdpH6r4TTn1MQ',   // kazama
 

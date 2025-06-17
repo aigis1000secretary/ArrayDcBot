@@ -111,7 +111,9 @@ class YoutubeAPI {
         // }
     }
     async getVideoStatusByInTube({ vID }) {
-        const videoInfos = await innertube.getInfo(vID);
+        const videoInfos = await innertube.getInfo(vID).catch(e => console.log(`[YoutubeAPI] getVideoStatusByInTube error.`, vID, e.message) || null);
+        if (!videoInfos) { return null; }
+
         const basicInfo = videoInfos.basic_info;
 
         try {

@@ -3,7 +3,7 @@ module.exports = {      // SSRB的聚集地
     name: 'SSRB的聚集地',
     perfix: /^([\/\-!])\S+/,
 
-    memberChecker4: [
+    memberChecker5: [
         {
             ytChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB,
 
@@ -97,7 +97,7 @@ module.exports = {      // SSRB的聚集地
 
 
     messageLogger: { LOG_CHANNEL_ID: '888239393716981830' },      // #訊息刪除監視區 <#888239393716981830>
-    memberCounter: { COUNTER_CHANNEL_ID: '860528144367878154', },      // #群組人數-4,828 <#860528144367878154>
+    memberCounter: { COUNTER_CHANNEL_ID: '860528144367878154', },      // #群組人數-4,841 <#860528144367878154>
     reactionVote: { VOTE_CHANNELS: ['827129069178978324'] },      // #投票區 <#827129069178978324>
 
 

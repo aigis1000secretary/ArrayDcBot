@@ -7,7 +7,7 @@ module.exports = {
     clientSecret: process.env.null,
     resonance: 'ダイ',
     plugins: [
-        'memberChecker4',
+        'memberChecker5',
         // 'twitterListener3',
         // 'dlimg',
         'ip',

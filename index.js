@@ -57,7 +57,7 @@ module.exports.getBotIDs = () => {
 
     // web server
     // process.env.PORT = 3001;    // for dice debug
-    // server.init();
+    server.init();
 
     for (const bot of [
         'DLSITE',

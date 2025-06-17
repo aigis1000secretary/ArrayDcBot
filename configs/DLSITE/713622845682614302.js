@@ -71,7 +71,6 @@ module.exports = {      // KTG
     dlimg: {},
     dlsitebot: {},
     ip: {},
-    memberChecker4: [],
     reboot: {},
     streamStartTime: {},
     twitterAntiFilter: {},

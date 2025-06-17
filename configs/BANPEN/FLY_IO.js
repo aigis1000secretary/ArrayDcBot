@@ -17,6 +17,7 @@ module.exports = {
         // 'ip',
         // 'memberCounter',
         'messageLogger',
+        'memberChecker5',
         // 'permissionSwitch',
         // 'reactionVote',
         // 'reboot',
