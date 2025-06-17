@@ -14,7 +14,7 @@ module.exports = {
         // 'eval',
         'fxtwitter',
         'hook',
-        // 'ip',
+        'ip',
         'memberCounter',
         'messageLogger',
         'permissionSwitch',

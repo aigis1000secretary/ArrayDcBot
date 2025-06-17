@@ -32,4 +32,5 @@ module.exports = {      // KTG
     search: {},
     superChat: {},
     twitterAntiFilter: {},
+    ip: {},
 }
