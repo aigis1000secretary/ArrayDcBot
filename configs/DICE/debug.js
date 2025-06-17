@@ -10,6 +10,7 @@ module.exports = {
         'memberChecker4',
         // 'twitterListener3',
         // 'dlimg',
+        'ip',
         'delall',
         // 'rssbot', 'dlsitebot',
     ],

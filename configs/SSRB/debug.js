@@ -7,6 +7,7 @@ module.exports = {
     clientSecret: process.env.DISCORD_713624995372466179_SECRET,
     resonance: 'ぼた',
     plugins: [
+        'ip',
         // 'twitterAntiFilter',
         'memberChecker5',
         // 'delMsgByMenu',

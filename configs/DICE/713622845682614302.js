@@ -76,6 +76,7 @@ module.exports = {      // KTG
     delall: {},
     dlimg: {},
     dlsitebot: {},
+    ip: {},
     reboot: {},
     rssbot: [],
     streamStartTime: {},
