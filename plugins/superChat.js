@@ -163,6 +163,11 @@ module.exports = {
             // channel.send({ files: [attachment] }).catch(e => console.log(`[SC]`, e.message));
             editUserMessage(message, { files: [attachment] });
 
+            // Unknown Bug:
+            // [EditMsg] Cannot read properties of null (reading 'byteLength')
+            // https://www.answeroverflow.com/m/1370887431846498374
+            // need to install undici@6.21.1
+
             return true;
         }
     },
