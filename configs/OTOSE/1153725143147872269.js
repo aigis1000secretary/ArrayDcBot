@@ -4,7 +4,7 @@ module.exports = {      // 奏的樂音工坊
     perfix: /^([\/\-!])\S+/,
 
     /*
-    memberChecker4: [
+    memberChecker5: [
         {
             ytChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // otonose,
 

@@ -3,7 +3,7 @@ module.exports = {      // KTG
     name: 'KTG',
     perfix: /^([\/\-!~])\S+/,
 
-    memberChecker4: [
+    memberChecker5: [
         // /*
         {
             ytChannelID: 'UCUKD-uaobj9jiqB-VXt71mA',   // SSRB
@@ -73,6 +73,7 @@ module.exports = {      // KTG
     messageLogger: { LOG_CHANNEL_ID: '1024627281592848434' },      // #_log <#1024627281592848434>
     memberCounter: { COUNTER_CHANNEL_ID: '1024628239865491486' },      // #群組人數-15 <#1024628239865491486>
 
+    // uptimer: {},
     delall: {},
     dlimg: {},
     dlsitebot: {},
@@ -80,5 +81,4 @@ module.exports = {      // KTG
     reboot: {},
     rssbot: [],
     streamStartTime: {},
-    // uptimer: {},
 }
