@@ -212,22 +212,21 @@ async function getXML(url) {
     const i = randomChoice(my_headers);
     const userAgent = my_headers[i];
     try {
-        const req = await request.get({ url, headers: { 'User-Agent': userAgent } });
+        const res = await request.get({ url, headers: { 'User-Agent': userAgent } });
 
         // chekc error
-        if (req && req.statusCode != 200) {
+        if (res && res.statusCode != 200) {
             console.log(
                 `[rssbot] RSS error!`,
                 `userAgent: ${`#${i}`.padStart(3, ' ')}`,
-                req.statusCode ? `code: ${req.statusCode}` : '',
+                res.statusCode ? `code: ${res.statusCode}` : '',
                 `url: ${url}`
             );
             return null;
         }
 
-        const res = req.body;
         // console.log(`[rssbot] Got rss feed!`);
-        return res;
+        return res.body;
 
     } catch (error) {
         console.log(
@@ -245,9 +244,7 @@ function xmlTojson(xml) {
 
         try {
             xml = xml.replace(/&(?!(?:apos|quot|[gl]t|amp);|#)/g, '&amp;');
-        } catch (e) {
-            console.log(`[rss] ${typeof xml}, ${xml}`);
-        }
+        } catch (e) { }
 
         xml2js.parseString(xml, (err, result) => {
 
