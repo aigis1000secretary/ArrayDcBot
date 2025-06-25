@@ -7,8 +7,8 @@ module.exports = {
     clientSecret: process.env.null,
     resonance: 'ダイ',
     plugins: [
-        'ip',
         'delall',
+        'ip',
         'search'
     ],
 }

@@ -4,7 +4,7 @@ module.exports = {      // KTG
     perfix: /^([\/\-!~])\S+/,
 
     /*
-    memberChecker4: [
+    memberChecker5: [
         {
             ytChannelID: 'UCWQtYtq9EOB4-I5P-3fh8lA',   // otonose
 

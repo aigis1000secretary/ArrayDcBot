@@ -4,7 +4,7 @@ module.exports = {      // 一条株式會社
     perfix: /^([\/\-!])\S+/,
 
     /*
-    memberChecker4: [
+    memberChecker5: [
         {
             ytChannelID: 'UCtyWhCj3AqKh2dXctLkDtng',   // ririka,
 

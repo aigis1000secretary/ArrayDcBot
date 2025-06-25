@@ -66,12 +66,11 @@ module.exports = {      // KTG
     // },
 
 
-    eval: {},
     delall: {},
     dlimg: {},
     dlsitebot: {},
+    eval: {},
     ip: {},
-    memberChecker4: [],
     reboot: {},
     streamStartTime: {},
     twitterAntiFilter: {},
