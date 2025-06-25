@@ -15,7 +15,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms, null));
 
 // check rss and send embeds
 async function checkRss(client, nowMinutes) {
-    if (require('fs').existsSync("./.env")) { console.log('[rsssbot] checkRss'); }
+    if (require('fs').existsSync("./.env")) { console.log('[rssbot] checkRss'); }
 
     // get each guild config
     for (let gID of client.guildConfigs.keys()) {
@@ -69,7 +69,7 @@ async function itemsToEmbeds(items, hostColor) {
     let result = [];
 
     if (!Array.isArray(items)) {
-        console.log(`[rsssbot] itemsToEmbeds(`, items, ')');
+        console.log(`[rssbot] itemsToEmbeds(`, items, ')');
         return result;
     }
 
@@ -212,22 +212,21 @@ async function getXML(url) {
     const i = randomChoice(my_headers);
     const userAgent = my_headers[i];
     try {
-        const req = await request.get({ url, headers: { 'User-Agent': userAgent } });
+        const res = await request.get({ url, headers: { 'User-Agent': userAgent } });
 
         // chekc error
-        if (req && req.statusCode != 200) {
+        if (res && res.statusCode != 200) {
             console.log(
                 `[rssbot] RSS error!`,
                 `userAgent: ${`#${i}`.padStart(3, ' ')}`,
-                req.statusCode ? `code: ${req.statusCode}` : '',
+                res.statusCode ? `code: ${res.statusCode}` : '',
                 `url: ${url}`
             );
             return null;
         }
 
-        const res = req.body;
         // console.log(`[rssbot] Got rss feed!`);
-        return res;
+        return res.body;
 
     } catch (error) {
         console.log(
@@ -245,9 +244,7 @@ function xmlTojson(xml) {
 
         try {
             xml = xml.replace(/&(?!(?:apos|quot|[gl]t|amp);|#)/g, '&amp;');
-        } catch (e) {
-            console.log(`[rss] ${typeof xml}, ${xml}`);
-        }
+        } catch (e) { }
 
         xml2js.parseString(xml, (err, result) => {
 
@@ -421,7 +418,7 @@ async function sendRssItems(client, channel, hostColor, items) {
             if (message) {
                 await message.edit({ embeds: [new EmbedBuilder(embed)] })
                     // .catch(() => { })
-                    .catch(e => console.log(`[rsssbot]`, e.message));
+                    .catch(e => console.log(`[rssbot]`, e.message));
                 continue;
             }
         }
@@ -442,7 +439,7 @@ async function sendRssItems(client, channel, hostColor, items) {
                     await msg.react(EMOJI_RECYCLE).catch(() => { });
                     if (reg1.test(embed.footer?.text)) { await msg.react(EMOJI_ENVELOPE_WITH_ARROW).catch(() => { }); }
                     await msg.react(EMOJI_WASTEBASKET).catch(() => { });
-                }).catch(e => console.log(`[rsssbot]`, e.message));
+                }).catch(e => console.log(`[rssbot]`, e.message));
             newRss = true;
         }
     }
@@ -479,7 +476,7 @@ async function addBulkDelete2(cID, message) {
 
     // old msg can't bulk delete
     if (Date.now() - (Number(BigInt(message.id) >> 22n) + 14200704e5) > 1192320000) {   // 1192320000 = 1000 * 60 * 60 * 24 * 13.8 = 13.8day
-        message.delete().catch(e => console.log(`[rsssbot]`, e.message));
+        message.delete().catch(e => console.log(`[rssbot]`, e.message));
         return;
     }
 
@@ -517,7 +514,7 @@ async function addBulkDelete(cID, message) {
 
     // old msg can't bulk delete
     if (Date.now() - (Number(BigInt(mID) >> 22n) + 14200704e5) > 1192320000) {   // 1192320000 = 1000 * 60 * 60 * 24 * 13.8 = 13.8day
-        message.delete().catch(e => console.log(`[rsssbot]`, e.message));
+        message.delete().catch(e => console.log(`[rssbot]`, e.message));
         bulkDeletePoolA.get(cID).delete(mID);
         return;
     }
@@ -535,7 +532,7 @@ async function suppressEmbeds(message) {
 
         const [embed] = message.embeds || [];
         if (!embed) {
-            // console.log('[rsssbot] suppressEmbeds', true);
+            // console.log('[rssbot] suppressEmbeds', true);
             return true;
         }
 
@@ -543,7 +540,7 @@ async function suppressEmbeds(message) {
             message.suppressEmbeds(true).then(() => true).catch(() => false),
             sleep(30000 * Math.min(i, 4))
         ]);
-        // console.log('[rsssbot] suppressEmbeds', suppressed);
+        // console.log('[rssbot] suppressEmbeds', suppressed);
         // true: suppressed
         // false: suppress fail
         // null: timeout 30 sec
@@ -670,7 +667,7 @@ module.exports = {
             //         let channel = _bulkDelete[0].channel;
             //         await channel.bulkDelete(_bulkDelete)
             //             .then(() => console.log(`Bulk deleted ${_bulkDelete.length} messages in ${channel.name}`))
-            //             .catch(e => console.log(`[rsssbot]`, e.message));
+            //             .catch(e => console.log(`[rssbot]`, e.message));
             //         // } else {
             //         //     bulkDelete.delete(cID);
 

@@ -24,7 +24,7 @@ module.exports = {
             const _text = await response.text();
             try { result.body = JSON.parse(_text); } catch (e) { result.body = _text; }
 
-        } else if (contentType.includes('text/') || contentType.includes('/xml')) {
+        } else if (contentType.includes('text/') || contentType.includes('/xml') || contentType.includes('/rss')) {
 
             result.body = await response.text();
 
