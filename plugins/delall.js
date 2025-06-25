@@ -8,10 +8,10 @@ const workspaceChannelIDs = [
     '977860525830586379',   // #_aigis_retweet
     '1009645372831977482',  // #_bot-test
 
-    '1054284227375542333',  // #sao
-    '1113369067177381918',  // #sao2
+    // skip last message
+    '1054284227375542333', '1113369067177381918',  // #sao2
     '1156057315829624933',  // #dls
-    '1169461312657567765',  // #dlimg   // for DICE
+    '1169461312657567765',  // #dlimg, for DICE
 
     // delall
     '713623232070156309',   // #_log
@@ -19,10 +19,16 @@ const workspaceChannelIDs = [
 
     // delall, for DICE
     '1024627281592848434',  // #⁠_bot-test
-    '1024627739023650827',  // #⚫_stream
-    '1024627744681771108',  // #⚫_member
-    '1236925125434146816',  // #⚫_stream2
-    '1236925146674106441',  // #⚫_member2
+    '1024627739023650827', '1024627744681771108',  // #⚫_member
+    '1236925125434146816', '1236925146674106441',  // #⚫_member2 
+]
+const streamChannels = [
+    // filter by embed color
+    '1008565763260551188', '1010005672152281218',
+    '1010167343378333768', '1010167418598981652',
+    '1179351465765122058', '1179351515299852329',
+    '1253621663187337267', '1253621682132877399',
+    '1266709882455855165', '1266709915104313356',
 ]
 
 const botIDs = new Set(['713624995372466179', '928492714482343997', '1179344721047474207', '920485085935984641']);
@@ -31,7 +37,8 @@ async function deleteAllMessage({ channel, author }) {
 
     const cID = channel?.id;
 
-    if (!workspaceChannelIDs.includes(cID)) { return; }
+    if (!workspaceChannelIDs.includes(cID) &&
+        !streamChannels.includes(cID)) { return; }
     if (!['353625493876113440', '920485085935984641'].includes(author?.id)) { return; }
 
     // console.log(`bulkDelete ${channel.name}`);
@@ -69,6 +76,11 @@ async function deleteAllMessage({ channel, author }) {
             // #sao / #sao2 / #dls / #dlimg
             else if (['1054284227375542333', '1113369067177381918', '1156057315829624933', '1169461312657567765'].includes(cID)) {
                 delFlag = (before || i > 0);                                               // skip last message    (before == true => not first fetch; ) || (i > 0          => not last message;)
+            }
+
+            // stream channels
+            else if (streamChannels.includes(cID)) {
+                if (![0xFFD600, 0x5F84F1].includes(msg.embeds?.[0]?.color)) { delFlag = true; }
             }
 
             else {
