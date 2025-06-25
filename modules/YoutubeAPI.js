@@ -4,10 +4,11 @@ const request = require('../modules/undici-request.js');
 const { Innertube } = require('youtubei.js');
 
 /** @type {import('youtubei.js').Innertube} */
-let innertube;
+let innertube = null;
 Innertube.create().then(res => innertube = res);
 
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 
 // case 'UCUKD-uaobj9jiqB-VXt71mA': apiKey = [process.env.YOUTUBE_APIKEY_0, process.env.YOUTUBE_APIKEY_7]; break; // SSRB
@@ -15,6 +16,7 @@ Innertube.create().then(res => innertube = res);
 // case 'UC1iA6_NT4mtAcIII6ygrvCw': apiKey = [process.env.YOUTUBE_APIKEY_A, process.env.YOUTUBE_APIKEY_B]; break; // todoroki
 // default: apiKey = [process.env.YOUTUBE_APIKEY_A, process.env.YOUTUBE_APIKEY_B]; break;                         // TEST
 
+/** @type {Array<YoutubeApiKey>} */
 const apiKeys = [];
 class YoutubeApiKey {
     key;
@@ -31,6 +33,13 @@ apiKeys.push(new YoutubeApiKey(process.env.YOUTUBE_APIKEY_A)); apiKeys.push(new 
 // youtube api
 class YoutubeAPI {
 
+    async waitInnertubeInit() {
+        for (let i = 0; i < 300; ++i) {
+            if (innertube != null) { break; }
+            await sleep(1000); continue;
+        }
+    }
+
     // youtube api
     async getStreamStatus(vID) {
         const data = await this.getVideoStatusByInTube({ vID });
@@ -43,8 +52,11 @@ class YoutubeAPI {
         if (!startTime || Date.parse(startTime) > Date.now() + (1000 * 60 * 60 * 10)) { return false; }
         // skip  video when upcoming after 10hr
 
-        const startTimeStr = new Date(Date.parse(startTime));
-        return `${startTimeStr.getHours().toString().padStart(2, '0')}${startTimeStr.getMinutes().toString().padStart(2, '0')}`;
+        // const startTimeStr = new Date(Date.parse(startTime));
+        // return `${startTimeStr.getHours().toString().padStart(2, '0')}${startTimeStr.getMinutes().toString().padStart(2, '0')}`;
+
+        const startTimeStr = new Date(Date.parse(startTime)).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' })
+        return startTimeStr.replace(/^[\d\/]{10},\s/, '').replace(/:\d+$/, '').replace(':', '');
     }
 
 
@@ -66,8 +78,8 @@ class YoutubeAPI {
 
         const res = await request.get({ url, qs });
 
-        if (res.statusCode == 403 && res.error == 'quotaExceeded') {
-            quotaExceeded[0] = true;
+        if (res.statusCode == 403 && res.body?.error?.message.includes('quota')) {
+            apiKeys[apiKey].exceeded();
             console.log(`[YoutubeAPI] getVideoStatusByApi error. quotaExceeded`);
             return null;
 
@@ -76,7 +88,7 @@ class YoutubeAPI {
             return null;
 
         } else if (res.statusCode != 200) {
-            console.log(`[YoutubeAPI] getVideoStatusByApi error.`, res.error?.message);
+            console.log(`[YoutubeAPI] getVideoStatusByApi error.`, res.body?.error?.message || res);
             return null;
 
         }
@@ -111,7 +123,9 @@ class YoutubeAPI {
         // }
     }
     async getVideoStatusByInTube({ vID }) {
-        const videoInfos = await innertube.getInfo(vID);
+        const videoInfos = await innertube.getInfo(vID).catch(e => console.log(`[YoutubeAPI] getVideoStatusByInTube error.`, vID, e.message) || null);
+        if (!videoInfos) { return null; }
+
         const basicInfo = videoInfos.basic_info;
 
         try {
@@ -143,7 +157,7 @@ class YoutubeAPI {
 
 
     async getVideoSearchByApi({ channelId, eventType, order, publishedAfter, apiKey = 4 }) {
-        if (apiKeys[apiKey].quotaExceeded) { return null; }
+        if (apiKeys[apiKey].quotaExceeded) { return []; }
 
         const url = 'https://www.googleapis.com/youtube/v3/search';
         const qs = {
@@ -155,18 +169,18 @@ class YoutubeAPI {
 
         const res = await request.get({ url, qs }); // response
 
-        if (res.statusCode == 403 && res.error == 'quotaExceeded') {
-            quotaExceeded[0] = true;
+        if (res.statusCode == 403 && res.body?.error?.message.includes('quota')) {
+            apiKeys[apiKey].exceeded();
             console.log(`[YoutubeAPI] getVideoSearchByApi error. quotaExceeded`);
-            return null;
+            return [];
 
         } else if (res.statusCode == 404) {
             console.log(`[YoutubeAPI] getVideoSearchByApi error. Error 404 (Not Found)!!`);
-            return null;
+            return [];
 
         } else if (res.statusCode != 200) {
-            console.log(`[YoutubeAPI] getVideoSearchByApi error.`, res.error?.message);
-            return null;
+            console.log(`[YoutubeAPI] getVideoSearchByApi error.`, res.body?.error?.message || res);
+            return [];
 
         }
 
@@ -197,8 +211,8 @@ class YoutubeAPI {
     }
     async getVideoSearchByInTube({ channelId, eventType, isMemberOnly = false }) {
         const playlistID = isMemberOnly ? channelId.replace(/^UC/, `UUMO`) : channelId.replace(/^UC/, `UU`);
-        const playlistInfos = await innertube.getPlaylist(playlistID)
-            .catch(e => console.log(`[YoutubeAPI] getPlaylist Error.`, e.message) || { video: [] });
+        const playlistInfos = (await innertube?.getPlaylist(playlistID)
+            .catch(e => console.log(`[YoutubeAPI] getPlaylist Error.`, e.message))) || { video: [] };
 
         const results = [];
 
@@ -249,10 +263,6 @@ class YoutubeAPI {
         // return ((res?.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
         return res?.body?.items?.[0]?.isMemberOnly ? 1 : 0;
     };
-
-
-
-
 
 
     async getFetchingLiveChatByInTube(videoId) {
@@ -315,14 +325,6 @@ class YoutubeAPI {
 
         return livechat;
     }
-
-
-
-
-
-
-
-
 }
 
 module.exports = new YoutubeAPI();

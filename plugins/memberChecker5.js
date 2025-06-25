@@ -7,8 +7,6 @@ const YoutubeAPI = require('../modules/YoutubeAPI.js');
 const { EmbedBuilder, AttachmentBuilder, PermissionFlagsBits, Colors } = require('discord.js');
 
 
-
-
 const debug = fs.existsSync("./.env");
 const isLinux = (require("os").platform() == 'linux');
 
@@ -20,21 +18,11 @@ const redirectUri = process.env.HOST_URL;
 // API endpoint
 const API_ENDPOINT = 'https://discord.com/api';
 
+
 // method
 let mclog = debug ? console.log : () => { };
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const md5 = (source) => require('crypto').createHash('md5').update(source).digest('hex');
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -49,9 +37,10 @@ const memberTime = 1000 * 60 * 60 * 24 * 35;    // 1000 ms  *  60 sec  *  60 min
 class Pg {
     // <discord_id>, <discord_id, youtube_id, ****_expires>
     static dataCache = new Map();
-    static statu = 'none';
+    static state = 'none';
 
     static async init() {
+        this.state = 'init';
         // check table
         if ((await this.checkTable())?.rowCount == 0) {
             console.log(`[Pg] init user_connections database!`);
@@ -69,10 +58,20 @@ class Pg {
                 this.dataCache.set(pgUser.discord_id, pgUser);
             }
         }
+        if (this.dataCache.size == 0) {
+            this.state = 'fail';
+            return;
+        }
+
         console.log(`[Pg] Pg.init done, dataCache[${this.dataCache.size}]`);
+        this.state = 'ready';
     };
 
     static async backup(client) {
+        for (let i = 0; i < 300; ++i) {
+            if (this.state == 'ready' || this.state == 'fail') { break; }
+            await sleep(1000); continue;
+        }
         if (this.dataCache.size < 300 || debug) { console.log(`[PG] db size: ${this.dataCache.size}`); return; }
 
         const jsonFile = `./pgdbBackup.json`;
@@ -90,8 +89,8 @@ class Pg {
         // get channel/message by id
         const channel = await client.channels.fetch(`872122458545725451`).catch(() => null);
         if (!channel) { console.log(`[PG] can't found: <#872122458545725451> ${client.username}`); return; }
-        const msg = await channel.messages.fetch({ message: `1055852678913196042`, force: true }).catch(() => null);
-        if (!msg) { console.log(`[PG] can't found message: 1055852678913196042 ${client.username}`); return; }
+        const msg = await channel.messages.fetch({ message: `1386991400020607006`, force: true }).catch(() => null);
+        if (!msg) { console.log(`[PG] can't found message: 1386991400020607006 ${client.username}`); return; }
 
         // zip db files
         const nowDate = (new Date(Date.now()).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' }))
@@ -100,11 +99,14 @@ class Pg {
         await compressing.zip.compressFile(jsonFile, zipFile).catch(() => { });
 
         // upload zip file
-        let files = [new AttachmentBuilder(zipFile, { name: zipFile })];
-        await msg.edit({ files }).catch(e => console.log(`[Pg]`, e.message));
+        let files = [new AttachmentBuilder(zipFile, { name: filePath })];
+        await msg.edit({ files, embeds: [] }).catch(e => console.log(`[Pg]`, e.message));
 
-        fs.unlinkSync(jsonFile);
-        fs.unlinkSync(zipFile);
+        console.log(`[PG] backup to message: 1386991400020607006`);
+        // https://discord.com/channels/713622845682614302/872122458545725451/1386991400020607006
+
+        if (fs.existsSync(jsonFile)) { fs.unlinkSync(jsonFile); }
+        if (fs.existsSync(zipFile)) { fs.unlinkSync(zipFile); }
     }
 
     static async initColumn(expiresKey) {
@@ -266,6 +268,7 @@ class Pg {
 
 
 
+
 // ****** crypto method ******
 class crypto {
     // const ENCRYPTION_KEY = 'Put_Your_Password_Here'.padEnd(32, "_");
@@ -293,6 +296,7 @@ class crypto {
         return iv.toString('hex') + ':' + encrypted.toString('hex');
     }
 }
+
 
 
 
@@ -419,7 +423,11 @@ class RoleManager {
             this.memberLevel.push(mRole);
         }
 
-        await this.checkExpiresUser();
+        for (let i = 0; i < 300; ++i) {
+            if (Pg.state == 'fail') { break; }
+            if (Pg.state != 'ready') { await sleep(1000); continue; }
+            await this.checkExpiresUser(); break;
+        }
     }
 
     // call on startup
@@ -435,11 +443,15 @@ class RoleManager {
         for (let [dID, guildMember] of this.memberRole.members) {
 
             const pgData = (await Pg.getDataByDiscordID(dID))?.rows || [];
-            if (pgData.length <= 0) { continue; }
+            if (pgData.length > 0) { continue; }
 
             // user with role but not in database, remove role
             mclog(`[MC5] checkExpiresUser`, dID.toString().padStart(20, ' '), guildMember.user.tag.toString().padStart(40, ' '));
-            await guildMember.roles.remove(roles).catch(() => null);
+            for (const role of roles) {
+                if (!guildMember.roles.cache.has(role.id)) { continue; }
+                guildMember.roles.remove(role).catch((e) => { console.log('[MC5]', e.message) });
+                // console.log(this.client.user.tag, `roles.remove`, guildMember.user.id, role.name);
+            }
         }
 
         // check user who in database
@@ -473,24 +485,21 @@ class RoleManager {
                     for (const role of roles) {
                         if (!dcUser.roles.cache.has(role.id)) { continue; }
                         dcUser.roles.remove(role).catch((e) => { console.log('[MC5]', e.message) });
+                        // console.log(this.client.user.tag, `roles.remove`, dcUser.user.id, role.name);
                     }
                 }
-                else { mclog(`[MC5] In guild without role <${this.memberRole.name}>, User <@${dcUser.user.tag}>.`); }
+                // else { mclog(`[MC5] In guild without role <${this.memberRole.name}>, User <@${dcUser.user.tag}>.`); }
             } else {
                 if (!isSpecalUser) {
                     mclog(`[MC5] User <@${dID}> without role, Add role!`);
                     this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Blue).setDescription(`確認期限, 恢復身分組(${this.memberRole}): @${dcUser.user.tag} ${dcUser.toString()}`));
                     dcUser.roles.add(this.memberRole).catch(() => null);
+                    // console.log(this.client.user.tag, `roles.add`, dcUser.user.id, this.memberRole.name);
                 }
-                else { mclog(`[MC5] In guild with role <${this.memberRole.name}>, User <@${dcUser.user.tag}>.`); }
+                // else { mclog(`[MC5] In guild with role <${this.memberRole.name}>, User <@${dcUser.user.tag}>.`); }
             }
         }
     }
-
-
-
-
-
 
 
     // <youtubeID, isChatSponsor>
@@ -500,10 +509,11 @@ class RoleManager {
     async roleManagerOnLiveChat({ auDetails }) {   // rm.onLiveChat
 
         // get user cID
-        const youtubeID = auDetails.channelId;
+        const userYoutubeID = auDetails.channelId;
 
+        if (Pg.state != 'ready') { return; }
         // get dbData 
-        const pgUser = ((await Pg.getDataByYoutubeID(youtubeID))?.rows || [null])[0];
+        const pgUser = ((await Pg.getDataByYoutubeID(userYoutubeID))?.rows || [null])[0];
         // mclog(`[MC5] User not in database: ${auDetails.displayName}`);
         if (!pgUser) { return; }
 
@@ -519,12 +529,12 @@ class RoleManager {
         const sponsorLevel = auDetails.sponsorLevel;
 
         // skip if sponsor statu didnt change
-        if (this.memberCache.has(youtubeID)) {
-            if (this.memberCache.get(youtubeID) == isChatSponsor) { return; }
+        if (this.memberCache.has(userYoutubeID)) {
+            if (this.memberCache.get(userYoutubeID) == isChatSponsor) { return; }
             // sponsor statu changed, need to set user role again
         } else {
             // set sponsor statu flag to cache space
-            this.memberCache.set(youtubeID, isChatSponsor);
+            this.memberCache.set(userYoutubeID, isChatSponsor);
         }
 
         // set user role
@@ -545,6 +555,7 @@ class RoleManager {
                     + `@${dcUser.user.tag} ${dcUser.toString()}`;
                 await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Blue).setDescription(embedLog));
                 dcUser.roles.add(this.memberRole).catch(e => console.log(`[MC5]`, e.message));
+                // console.log(this.client.user.tag, `roles.add`, dcUser.user.id, this.memberRole.name);
             }
             // update level role
             if (sponsorLevel !== undefined) {
@@ -555,8 +566,10 @@ class RoleManager {
                     if (isThisLevel == dcUser.roles.cache.has(role.id)) { continue; }
                     if (isThisLevel) {
                         dcUser.roles.add(role).catch(() => { });
+                        // console.log(this.client.user.tag, `roles.add`, dcUser.user.id, role.name);
                     } else {
                         dcUser.roles.remove(role).catch(() => { });
+                        // console.log(this.client.user.tag, `roles.remove`, dcUser.user.id, role.name);
                     }
                 }
             }
@@ -568,6 +581,7 @@ class RoleManager {
                 mclog(`[MC5] Guild <${this.guild}>, found User <${auDetails.displayName}>, Remove role!`);
                 await this.dcPushEmbed(new EmbedBuilder().setColor(Colors.Red).setDescription(`非會員, 刪除身分組(${this.memberRole}): @${dcUser.user.tag} ${dcUser.toString()}`));
                 dcUser.roles.remove(this.memberRole).catch(() => null);
+                // console.log(this.client.user.tag, `roles.remove`, dcUser.user.id, this.memberRole.name);
             }
             // if (!isSpecalUser) {
             //     mclog(`[MC5] Guild <${this.guild}>, found User <${auDetails.displayName}>.`);
@@ -577,6 +591,7 @@ class RoleManager {
             for (const role of this.memberLevel) {
                 if (!dcUser.roles.cache.has(role.id)) { continue; }
                 dcUser.roles.remove(role).catch(() => null);
+                // console.log(this.client.user.tag, `roles.remove`, dcUser.user.id, role.name);
             }
         }
 
@@ -591,13 +606,6 @@ class RoleManager {
         //     (auDetails.channelId ? '' : '[-] cID')
         // );
     }
-
-
-
-
-
-
-
 
 
     // command
@@ -619,7 +627,6 @@ class RoleManager {
 
 
 
-
 async function livechatToEmbed(vID, auDetails) {
 
     const embed = new EmbedBuilder();
@@ -629,11 +636,6 @@ async function livechatToEmbed(vID, auDetails) {
     else if (auDetails.isVerified) { embed.setColor(0x16C60C); }
     else if (auDetails.isChatSponsor) { embed.setColor(0x13B56E); }
 
-    embed.setAuthor({
-        name: auDetails.displayName,
-        iconURL: auDetails.profileImageUrl,
-        url: `https://youtu.be/${vID}`
-    })
     if (auDetails.message) {
         let message = auDetails.message;
         let message2 = auDetails.message;
@@ -660,7 +662,22 @@ async function livechatToEmbed(vID, auDetails) {
         embed.setDescription(message);
     }
 
-    let timestamp;
+    let footerText = vID;
+    if (auDetails.timestampUsec) {
+        const timestamp = parseInt(auDetails.timestampUsec / 1000);
+        // if (Date.now() - timestamp > 30 * 1000) { timestamp = null; } 
+        const timestampString = new Date(timestamp).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' });
+        footerText += ` - ${timestampString}`;
+    }
+    // else if (auDetails.videoOffsetTimeMsec) {         // for upcoming & live, need video data
+    //     const offsetTimeMsec = auDetails.videoOffsetTimeMsec;
+    //     if (offsetTimeMsec < -30 * 1000) { timestamp = null; }
+    //     timestamp = `scheduledStartTime` + offsetTimeMsec;
+    // }
+    embed.setFooter({ text: footerText });
+
+
+    let url = `https://youtu.be/${vID}`;
     if (auDetails.timestampText) {                      // for archive
         let timeText = '00:00:' + auDetails.timestampText;
         let [, hrs, min, sec] = timeText.match(/(\d+):(\d+):(\d+)$/) || [, '00', '00', '00'];
@@ -668,31 +685,16 @@ async function livechatToEmbed(vID, auDetails) {
 
         url = `https://youtu.be/${vID}&t=${timeText}`;
         const offsetTimeMsec = ((hrs * 60 + parseInt(min)) * 60 + parseInt(sec)) * 1000;
-
-        timestamp = startTime + offsetTimeMsec;
-
-        // } else if (auDetails.timestampUsec) {
-        //     timestamp = parseInt(auDetails.timestampUsec) / 1000;
-        //     if (Date.now() - timestamp > 30 * 1000) { return; }
-
-        // } else if (auDetails.videoOffsetTimeMsec) {         // for upcoming & live
-        //     const offsetTimeMsec = parseInt(auDetails.videoOffsetTimeMsec);
-        //     if (offsetTimeMsec < -30 * 1000) { return; }
-        //     timestamp = Date.now() + offsetTimeMsec;
     }
 
-    const timestampString = new Date(timestamp).toLocaleString('en-ZA', { timeZone: 'Asia/Taipei' });
-    embed.setFooter({ text: `${vID} - ${timestampString}` });
+
+    embed.setAuthor({
+        name: auDetails.displayName, url,
+        iconURL: auDetails.profileImageUrl
+    });
 
     return embed;
 }
-
-
-
-
-
-
-
 
 
 
@@ -728,11 +730,11 @@ class YoutubeChannelTracer {
         }
 
         for (const video of source) {
-            const vID = video.id?.videoId || video.id || null;
+            const vID = video?.id?.videoId || video?.id || null;
             if (!vID) { continue; }
 
             this.videos.set(vID, video);
-            mclog(`[MC5] Tracing <${this.ytChannelID}> videos add <${video.id} ${video.snippet.liveBroadcastContent}>`);
+            mclog(`[MC5] Tracing <${this.ytChannelID}> videos add <${vID} ${video.snippet.liveBroadcastContent}>`);
         }
         mclog(`[MC5] Tracing <${this.ytChannelID}> videos[${this.videos.size}]`);
     }
@@ -826,7 +828,10 @@ class YoutubeChannelTracer {
             const status = video?.snippet?.liveBroadcastContent;
 
             if (['upcoming', 'live'].includes(status)) {
+                this.tracingLiveChats.set(vID, null);
+
                 const livechat = await YoutubeAPI.getFetchingLiveChatByInTube(vID);
+                this.tracingLiveChats.set(vID, livechat);
 
                 livechat.on('chat-update', async (raw) => {
                     if (!raw.item) { return; }
@@ -834,11 +839,13 @@ class YoutubeChannelTracer {
                     const message = raw.item.message;
                     if (!author || !message) { return; }
 
+
                     // livechat object
                     const auDetails = {
-                        channelId: this.ytChannelID, channelUrl: `https://www.youtube.com/channel/${this.ytChannelID}`,
+                        channelId: author.id, channelUrl: `https://www.youtube.com/channel/${author.id}`,
                         displayName: author.name, profileImageUrl: author.thumbnails?.pop()?.url || null,
-                        timestampUsec: raw.item.timestamp_usec || null, videoOffsetTimeMsec: Date.now() - raw.item.timestamp_usec || null,
+                        timestampUsec: parseInt(raw.item.timestamp_usec) || null,
+                        videoOffsetTimeMsec: parseInt(Date.now() - Date.parse(video.liveStreamingDetails.scheduledStartTime)) || null,
 
                         isChatOwner: false, isChatSponsor: false,
                         isChatModerator: author.is_moderator,
@@ -871,17 +878,44 @@ class YoutubeChannelTracer {
                         else if (tooltip == 'Owner') { auDetails.isChatOwner = true; }
                     }
 
+
+                    // update user role
+                    for (const rm of this.guildRoleManagers) {
+                        rm.roleManagerOnLiveChat({ auDetails });
+                    }
+
+                    // send spacel message to this channels
+                    const channels = [];
+                    const isSpacelUserMsg = auDetails.isVerified || auDetails.isChatModerator || auDetails.isChatOwner;
+                    if (isSpacelUserMsg ||
+                        (video.snippet.liveBroadcastContent == 'upcoming') ||
+                        (debug && Math.floor(Math.random() * 100) == 0)   // debug code
+                    ) {
+                        // send spacel message to channel
+                        const video = this.videos.get(vID);
+                        const isMemberOnly = video.isMemberOnly;
+                        for (const channel of (isMemberOnly ? this.moChannels : this.dcChannels)) {
+
+                            if (isSpacelUserMsg || channel.guildId == '713622845682614302') {
+                                channels.push(channel);
+                            }
+                        }
+                    }
+                    // skip if don't need to send msg (skip emoji method)
+                    if (channels.length <= 0) { return; }
+
+
                     // timestamp
-                    const videoOffsetTimeMsec = auDetails.videoOffsetTimeMsec;
+                    const videoOffsetTimeMsec = parseInt(auDetails.videoOffsetTimeMsec / 1000);
                     if (videoOffsetTimeMsec > 0) {
                         const sec = parseInt(videoOffsetTimeMsec % 60).toString().padStart(2, '0');
                         const min = parseInt((videoOffsetTimeMsec / 60) % 60).toString().padStart(2, '0');
                         const hrs = parseInt(videoOffsetTimeMsec / 3600).toString().padStart(2, '0');
-                        auDetails.timestampText = sec + ':' + min + ':' + hrs;
+                        auDetails.timestampText = hrs + ':' + min + ':' + sec;
                     }
 
-                    // message
-                    let messageStr = message.text;
+                    // message text
+                    let messageStr = message.text || '';
                     for (const run of message?.runs || []) {
                         if (!run?.emoji) { continue; }
 
@@ -897,26 +931,15 @@ class YoutubeChannelTracer {
                     }
                     auDetails.message = messageStr;
 
-                    if (auDetails.isVerified || auDetails.isChatModerator || auDetails.isChatOwner ||
-                        (debug && Math.floor(Math.random() * 20) == 0)
-                    ) {
-                        // send spacel message to channel
-                        const video = this.videos.get(vID);
-                        const isMemberOnly = video.isMemberOnly;
-                        const embed = await livechatToEmbed(vID, auDetails);
-                        for (const channel of (isMemberOnly ? this.moChannels : this.dcChannels)) {
-                            channel.send({ embeds: [embed] }).catch(e => console.log(`[MC5]`, e.message));
-                        }
-                    }
-
-                    // update user role
-                    for (const rm of this.guildRoleManagers) {
-                        rm.roleManagerOnLiveChat({ auDetails });
+                    // send embed
+                    const embed = await livechatToEmbed(vID, auDetails);
+                    for (const channel of channels) {
+                        channel.send({ embeds: [embed] }).catch(e => console.log(`[MC5]`, e.message));
                     }
                 });
 
-                livechat.on('start', (initial_data) => { console.log(`[MC5] <${vID}> start at`, new Date(Date.now()).toISOString()); });
-                livechat.on('end', async () => {
+                livechat.once('start', (initial_data) => { console.log(`[MC5] <${vID}> start at`, new Date(Date.now()).toISOString()); });
+                livechat.once('end', async () => {
                     console.log(`[MC5] <${vID}> end at`, new Date(Date.now()).toISOString());
                     // update video when end
                     const _video = await YoutubeAPI.getVideoStatusByInTube({ vID });
@@ -924,8 +947,6 @@ class YoutubeChannelTracer {
                 });
 
                 livechat.start();
-
-                this.tracingLiveChats.set(vID, livechat);
 
             } else {
                 this.tracingLiveChats.delete(vID);
@@ -941,7 +962,14 @@ class YoutubeChannelTracer {
             if (status == 'live') { ++this.tracingLive; }
         }
     }
+
+    destroy() {
+        for (const [vID, livechat] of this.tracingLiveChats) {
+            livechat.stop();
+        }
+    }
 }
+
 
 
 
@@ -952,13 +980,17 @@ class MainMemberCheckerCore {
     /** @type {Map<string, YoutubeChannelTracer>} */
     tracerList = new Map();
 
-    constructor() { Pg.init(); }
+    constructor() {
+        Pg.init();
+        // clock method
+        this.interval = setTimeout(this.timeoutMethod, 2000);
+    }
 
     async addNewTracer(client, gID, config, once = false) {
 
         const ytID = config.ytChannelID;
 
-        const tracer = new YoutubeChannelTracer(ytID, once);
+        const tracer = this.tracerList.get(ytID) || new YoutubeChannelTracer(ytID, once);
         if (!once) {
             // get upcoming by API when start up, skip if is trace cmd
             tracer.getVideoSearch({ eventType: 'upcoming', useAPI: true, useInTube: false });
@@ -995,9 +1027,27 @@ class MainMemberCheckerCore {
 
         this.tracerList.set(ytID, tracer);
 
-        mclog(`[MC5] MMCCore channel tracerList[${this.tracerList.size}]`);
+        mclog(`[MC5] MMCCore ytChannel tracerList[${this.tracerList.size}]`);
     }
 
+    interval = null;
+    // clock
+    timeoutMethod = () => {
+        const now = Date.now();
+        // get trim time
+        const nowTime = (now % 1000 > 500) ? (now - (now % 1000) + 1000) : (now - (now % 1000));
+        // check every 1sec
+        const nextTime = nowTime + 1000;
+        const offsetTime = nextTime - now;
+        this.interval = setTimeout(this.timeoutMethod, offsetTime);
+
+        const nowDate = new Date(nowTime);
+        const hours = nowDate.getHours();
+        const minutes = nowDate.getMinutes();
+        const seconds = nowDate.getSeconds();
+
+        this.clockMethod({ hours, minutes, seconds });
+    }
     async clockMethod({ hours, minutes, seconds }) {
 
         if (minutes % 15 == 5 && seconds == 0) {
@@ -1019,8 +1069,16 @@ class MainMemberCheckerCore {
             }
         }
     }
+
+    destroy() {
+        for (const [ytID, tracer] of this.tracerList) {
+            tracer.destroy();
+        }
+        clearTimeout(this.interval);
+    }
 }
 const mainMcCore = new MainMemberCheckerCore();
+
 
 
 
@@ -1034,12 +1092,12 @@ module.exports = {
         const { client, guild, channel } = message;
         const gID = guild.id;
 
-        const pluginConfig = client.getPluginConfig(gID, 'memberChecker5');
-        if (!pluginConfig) { return; }
+        const guildConfig = client.getPluginConfig(gID, 'memberChecker5');
+        if (!guildConfig) { return; }
 
         // check cmd in any config's log channel or not
         const isLogChannel = (() => {
-            for (const config of pluginConfig) {
+            for (const config of guildConfig) {
                 if (channel.id == config.logChannelID) { return true; }
             } return false;
         })();
@@ -1110,13 +1168,12 @@ module.exports = {
             return;
         }
 
-
         // get member url
         if (command == 'member') {
 
             for (const [ytID, tracer] of mainMcCore.tracerList) {
                 for (const rm of tracer.guildRoleManagers) {
-                    if (rm.guild.id != gID) { continue; }
+                    if (rm.client.user.id != client.user.id || rm.guild.id != gID) { continue; }
                     channel.send({ content: `<${rm.get301Url()}>` });
                     // return;
                 }
@@ -1128,7 +1185,8 @@ module.exports = {
 
             if (regUrl.test(args[0])) { // get vID
                 const [, vID] = args[0].match(regUrl);
-                const video = YoutubeAPI.getVideoStatusByInTube({ vID });
+                const video = await YoutubeAPI.getVideoStatusByInTube({ vID });
+                console.log(video?.snippet?.liveBroadcastContent, video?.snippet?.channelId)
                 if (!video) { return; }
                 if (!['upcoming', 'live'].includes(video.snippet.liveBroadcastContent)) { return; }
 
@@ -1141,8 +1199,8 @@ module.exports = {
                 for (const rm of mainMcCore.tracerList.get(ytChannelId).guildRoleManagers) {
                     rm.dcPushEmbed(new EmbedBuilder().setColor(Colors.DarkGold).setDescription(`手動新增直播清單`).setFooter({ text: ytChannelId }));
                 }
-            }
-            else {
+
+            } else {
                 if (isLogChannel) {
                     // update all videos
                     for (const [ytID, tracer] of mainMcCore.tracerList) {
@@ -1153,54 +1211,57 @@ module.exports = {
                     }
                 } else {
                     // show all videos
-                    // check all tracer
-                    for (const [ytID, tracer] of mainMcCore.tracerList) {
 
-                        // set stream list msg
-                        const upcomingList = [];
-                        const liveList = [];
-                        for (const [vID, video] of tracer.videos) {
-                            // get cache
-                            mclog(`[MC5] ${vID} ${video ? 'Object' : video}`);
-                            if (!video) { continue; }
-
-                            // check stream start time
-                            let status = video.snippet.liveBroadcastContent;
-                            mclog(`[MC5] ${status.padStart(12, ' ')} <${video.snippet.title}>`);
-
-                            // get video data
-                            let description = video ? video.snippet.title : vID;
-                            if (status == 'upcoming') {
-                                upcomingList.push(`[${description}](https://youtu.be/${vID})`);
-                            } else if (status == 'live') {
-                                liveList.push(`[${description}](https://youtu.be/${vID})`);
-                            }
-                        }
-                        const streamList = [].concat(['直播中:'], liveList, ['待機台:'], upcomingList);
+                    // get tracer by ytID
+                    for (const { ytChannelID } of guildConfig) {
+                        const tracer = mainMcCore.tracerList.get(ytChannelID);
+                        if (!tracer) { continue; }
 
                         // check tracer's rm
                         for (const rm of tracer.guildRoleManagers) {
                             // if tracer with rm in this guild
-                            if (gID == rm.guild) {
-                                // send/show stream list msg
-                                const embed = new EmbedBuilder().setColor(Colors.DarkGold);
-                                if (streamList.length <= 0) { embed.setDescription(`目前沒有直播台/待機台`); }
-                                else { embed.setDescription(streamList.join('\n')); }
-                                embed.setFooter({ text: rm.ytChannelID });
-                                channel.send({ embeds: [embed] });
+                            if (rm.client.user.id != client.user.id || rm.guild.id != gID) { continue; }
+
+
+                            // set stream list for msg
+                            const upcomingList = [];
+                            const liveList = [];
+
+                            for (const [vID, video] of tracer.videos) {
+                                // get cache
+                                if (!video) { mclog(`[MC5]         null <null>`); continue; }
+
+                                // check stream start time
+                                let status = video.snippet.liveBroadcastContent;
+                                mclog(`[MC5] ${status.padStart(12, ' ')} <${video.snippet.title}>`);
+
+                                // get video data
+                                let description = video ? video.snippet.title : vID;
+                                if (status == 'upcoming') {
+                                    upcomingList.push(`[${description}](https://youtu.be/${vID})`);
+                                } else if (status == 'live') {
+                                    liveList.push(`[${description}](https://youtu.be/${vID})`);
+                                }
                             }
+                            const streamList = [].concat(['直播中:'], liveList, ['待機台:'], upcomingList);
+
+
+                            // send/show stream list msg
+                            const embed = new EmbedBuilder().setColor(Colors.DarkGold);
+                            if (streamList.length <= 0) { embed.setDescription(`目前沒有直播台/待機台`); }
+                            else { embed.setDescription(streamList.join('\n')); }
+                            embed.setFooter({ text: rm.ytChannelID });
+                            channel.send({ embeds: [embed] });
                         }
                     }
                 }
-
             }
-
         }
 
-        if (command == 'trace' && message.author?.id == '353625493876113440') {
-            // get vID
-            const [, vID] = args[0].match(regUrl);
-            const video = YoutubeAPI.getVideoStatusByInTube({ vID });
+        if (command == 'trace' && regUrl.test(args[0]) && message.author?.id == '353625493876113440') {
+            // get vID 
+            const [, vID] = args[0].match(regUrl) || [, null];
+            const video = await YoutubeAPI.getVideoStatusByInTube({ vID });
             if (!video) { return; }
             if (!['upcoming', 'live'].includes(video.snippet.liveBroadcastContent)) { return; }
 
@@ -1216,20 +1277,16 @@ module.exports = {
                     logChannelID: null,
                     memberLevelID: [],
                 }
-                mainMcCore.addNewTracer(client, gID, config, true)
+                await mainMcCore.addNewTracer(client, gID, config, true)
             }
             mainMcCore.tracerList.get(ytChannelId).videos.set(vID, video);
-
-
-
         }
-
-
 
     },
 
     async setup(client) {
 
+        await YoutubeAPI.waitInnertubeInit();
 
 
         for (let gID of client.guildConfigs.keys()) {
@@ -1252,9 +1309,14 @@ module.exports = {
             //     ],
             // }
 
-            if (client.user.id == '713624995372466179') {
+
+            // pick SSRB bot for emoji manager
+            // pick SSRB bot for PG backup
+            if (client.user.id == '713624995372466179' && gID == '713622845682614302') {
                 // mclog(`[MC5] EmojiManager.init`);
                 mainMcCore.emojiManager.init(client);
+
+                Pg.backup(client);
             }
 
             for (let config of pluginConfig) {
@@ -1270,16 +1332,16 @@ module.exports = {
 
 
 
-        // client.once('close', () => {
-        //     // offline msg
-        //     mainMcCore.destroy();
-        // });
+        client.once('close', () => {
+            // offline msg
+            mainMcCore.destroy();
+        });
     },
 
 
-    async clockMethod(client, { hours, minutes, seconds }) {
-        mainMcCore.clockMethod({ hours, minutes, seconds });
-    },
+    // async clockMethod(client, { hours, minutes, seconds }) {
+    //     mainMcCore.clockMethod({ hours, minutes, seconds });
+    // },
 
     idleCheck() {
         // todo
@@ -1291,11 +1353,7 @@ module.exports = {
             return true;
         }
     }
-
-
 }
-
-
 
 
 
