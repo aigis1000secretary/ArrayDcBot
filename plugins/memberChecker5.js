@@ -833,6 +833,8 @@ class YoutubeChannelTracer {
                 const livechat = await YoutubeAPI.getFetchingLiveChatByInTube(vID);
                 this.tracingLiveChats.set(vID, livechat);
 
+                if (!livechat) { continue; }
+
                 livechat.on('chat-update', async (raw) => {
                     if (!raw.item) { return; }
                     const author = raw.item.author;
@@ -845,7 +847,7 @@ class YoutubeChannelTracer {
                         channelId: author.id, channelUrl: `https://www.youtube.com/channel/${author.id}`,
                         displayName: author.name, profileImageUrl: author.thumbnails?.pop()?.url || null,
                         timestampUsec: parseInt(raw.item.timestamp_usec) || null,
-                        videoOffsetTimeMsec: parseInt(Date.now() - Date.parse(video.liveStreamingDetails.scheduledStartTime)) || null,
+                        videoOffsetTimeMsec: parseInt(Date.now() - Date.parse(video.liveStreamingDetails?.scheduledStartTime)) || null,
 
                         isChatOwner: false, isChatSponsor: false,
                         isChatModerator: author.is_moderator,
