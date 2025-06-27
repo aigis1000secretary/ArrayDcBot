@@ -267,63 +267,18 @@ class YoutubeAPI {
 
     async getFetchingLiveChatByInTube(videoId) {
         const videoInfos = await innertube.getInfo(videoId);
-        const livechat = videoInfos.getLiveChat();
 
-        // livechat.on('chat-update', (raw) => {
-        //     const author = raw.item?.author;
-        //     const message = raw.item?.message;
-        //     if (!author || !message) { return; }
+        try {
+            const livechat = videoInfos.getLiveChat();
 
-        //     if (raw.item.context_menu_accessibility_label == "Chat actions" &&
-        //         raw.type == 'AddChatItemAction'
-        //     ) {
-        //         let authorName = author.name.padString(48);
-        //         const tooltip = author.badges?.[0]?.tooltip || 'null';
+            livechat.on('error', (err) => {
+                console.log(`[${videoId}] error at`, new Date(Date.now()).toISOString(), err.message);
+            });
 
-        //         let messageStr = message.text;
-
-        //         for (const run of message?.runs || []) {
-        //             if (!run?.emoji) { continue; }
-
-        //             // console.log(JSON.stringify(run.emoji, null, 2))
-        //             const emoji_id = run.emoji.emoji_id;
-        //             if (emoji_id.length <= 1) { continue; }
-
-        //             const shortcuts = color.FgYellow + run.emoji.shortcuts?.pop() + color.Reset;
-        //             const emojiImg = run.emoji.image?.pop();
-
-        //             messageStr = messageStr.replaceAll(emoji_id, shortcuts);
-        //         }
-
-        //         // console.log(`${authorName} ${tooltip.padEnd(20, ' ')} ${color.FgYellow}:${color.Reset}  ${messageStr}`);
-        //         process.stdout.write(`\r${authorName} ${tooltip.padEnd(20, ' ')} ${color.FgYellow}:${color.Reset}  ${messageStr.padEnd(200, ' ')}`);
-
-        //         if (videoInfos.basic_info.channel_id == author.id) {
-        //             console.log(JSON.stringify(raw.item, null, 2));
-        //             console.log('basic_info.channel_id == author.id');
-        //         }
-        //     } else {
-        //         console.log(JSON.stringify(raw.item, null, 2));
-        //         console.log('raw.item');
-        //     }
-        // });
-
-        livechat.on('error', (err) => {
-            console.log(`[${videoId}] error at`, new Date(Date.now()).toISOString(), err.message);
-        });
-
-        // livechat.on('start', (initial_data) => {
-        //     console.clear();
-        //     console.log(`[${videoId}] start at`, new Date(Date.now()).toISOString());
-        // });
-
-        // livechat.on('end', () => {
-        //     console.log(`[${videoId}] end at`, new Date(Date.now()).toISOString());
-        // });
-
-        // livechat.start();
-
-        return livechat;
+            return livechat;
+        } catch (e) { }
+        
+        return null;
     }
 }
 
