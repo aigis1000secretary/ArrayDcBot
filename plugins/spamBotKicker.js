@@ -10,6 +10,8 @@ const blacklistUser = ['GrastonBerry', '_CMRA_', 'sui1911', '_fromCanadaorg', 'C
 const blacklistWord = ['PagallKhana'];
 const regexTweet = new RegExp(`twitter\.com\/([^\/\s]+)\/?`);
 
+const getHash = (url) => require('crypto').createHash('md5').update(url.replace(/\/*$/, '\/'));
+
 // spam bot Level 1 (only delete message)
 const spamChecker = [
 
@@ -54,8 +56,9 @@ const spamChecker = [
         // 3 same message in 20.000 sec
         // 6 same message in 60.000 sec
         // 20 message in 4.000 sec
-        const judge = [spamFilter(3, 20), spamFilter(6, 60), (spamFilter(20, 4, true) && client.user.id != author.id)];
-        if (!(judge[0] || judge[1] || judge[2])) { return null; }
+        const judgeKick = spamFilter(20, 4, true);
+        const judge = judgeKick || spamFilter(3, 20) || spamFilter(6, 60) || spamFilter(12, 2, true);
+        if (!judge) { return null; }
 
         // additional delete
         // filter target messages, pick all same message in 5 min
@@ -91,7 +94,7 @@ const spamChecker = [
             content,
             reason: `洗頻訊息`,
             // delete: true, kick: true, forceDel: true,
-            delete: true, kick: judge[2], forceDel: true, silent: !judge[2],  // test run
+            delete: true, kick: judgeKick, forceDel: true, silent: !judgeKick,  // test run
         }
     },
 
@@ -209,39 +212,66 @@ module.exports = {
 
     async execute(message, pluginConfig, command, args, lines) {
         // // skip server bot
-        // if (message.author.bot) return;
+        // if (message.author.bot) { return false; }
+        if (message.client.user.id == message.author.id) { return false; }
 
-        // skip DM
-        if (!message.content) { return false; }
+        // skip message only has embed
+        if (!message.content && !(message.attachments?.size > 0)) { return false; }
 
         // get config
         const { client, guild, channel, author } = message;
         const { LOG_CHANNEL_ID, PERMISSION_ROLE_ID } = pluginConfig;
 
+        // set dummy message
+        let dammyMessage = {};
+        {
+            dammyMessage.client = message.client;
+
+            dammyMessage.id = message.id;
+            dammyMessage.guild = message.guild;
+            dammyMessage.channel = message.channel;
+
+            dammyMessage.deletable = message.deletable;
+            dammyMessage.createdTimestamp = message.createdTimestamp;
+
+            dammyMessage.author = { id: message.author.id, displayName: message.author.displayName };
+            dammyMessage.content = message.content || "";
+            dammyMessage.embed = [];
+            if (Array.isArray(message.embeds)) {
+                for (const embed of message.embeds) {
+                    dammyMessage.embed.push(embed);
+                    // dammyMessage.embed.push({ description: description || "" });
+                }
+            }
+            message.attachments = message.attachments;
+            if (!message.content && message.attachments?.size > 0) {
+                const contents = [];
+                let i = 0;
+                for (let [aID, attachment] of message.attachments) {
+                    // Assign Attachments to messages
+                    contents.push(`Attachment[${getHash(attachment.url)}]<${attachment.width}x${attachment.height}>`);
+                    ++i;
+                }
+                dammyMessage.content = contents.join('\n');
+            }
+        }
+
         // init cache
         if (!guildMessagesCache[client.user.id]) { guildMessagesCache[client.user.id] = []; }
         if (!guildMessagesCache[client.user.id][guild.id]) { guildMessagesCache[client.user.id][guild.id] = []; }
         // keep new message cache
-        if (!guildMessagesCache[client.user.id][guild.id].find((msg) => (msg.id == message.id))) {
-            let dammyMessage = {}
-            dammyMessage.id = message.id;
-            dammyMessage.author = { id: message.author.id, displayName: message.author.displayName };
-            dammyMessage.content = message.content;
-            dammyMessage.channel = message.channel;
-            dammyMessage.deletable = message.deletable;
-            dammyMessage.createdTimestamp = message.createdTimestamp;
-
+        if (!guildMessagesCache[client.user.id][guild.id].find((msg) => (msg.id == dammyMessage.id))) {
             guildMessagesCache[client.user.id][guild.id].push(dammyMessage);
         }
 
         // kick?
         let punish = null;
         for (let checker of spamChecker) {
-            let result = checker({ message, config: pluginConfig });
+            let result = checker({ message: dammyMessage, config: pluginConfig });
             if (!result) { continue; }
 
             punish = punish || {
-                content: message.content,
+                content: dammyMessage.content,
                 reason: []
             };
 
@@ -301,7 +331,8 @@ module.exports = {
                     name: `${author.username} ${author.toString()}`,
                     iconURL: author.displayAvatarURL({ format: 'png', size: 256 })
                 })
-                .setTitle(`洗頻訊息:`).setDescription(punish.content)
+                .setTitle(`洗頻訊息:`)
+                .setDescription(punish.content || "empty")
                 .addFields(fields)
                 .setTimestamp();
 
