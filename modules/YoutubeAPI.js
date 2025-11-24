@@ -1,11 +1,11 @@
 
-const request = require('../modules/undici-request.js');
-
-const { Innertube } = require('youtubei.js');
+const request = require('./undici-request.js');
 
 /** @type {import('youtubei.js').Innertube} */
 let innertube = null;
-Innertube.create().then(res => innertube = res);
+import('youtubei.js').then(async ({ Innertube }) => {
+    Innertube.create().then(res => innertube = res);
+});
 
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -132,7 +132,7 @@ class YoutubeAPI {
             const result = {
                 id: basicInfo.id,
                 snippet: {
-                    publishedAt: new Date(basicInfo.start_timestamp).toISOString(),
+                    publishedAt: new Date(basicInfo.start_timestamp || 0).toISOString(),
                     channelId: basicInfo.channel_id, channelTitle: basicInfo.author,
                     title: basicInfo.title, description: basicInfo.short_description,
                     // thumbnails: {
@@ -142,7 +142,7 @@ class YoutubeAPI {
                     liveBroadcastContent: basicInfo.is_live ? "live" : (basicInfo.is_upcoming ? "upcoming" : "none")
                 },
                 liveStreamingDetails: {
-                    scheduledStartTime: new Date(basicInfo.start_timestamp).toISOString(),
+                    scheduledStartTime: new Date(basicInfo.start_timestamp || 0).toISOString(),
                     activeLiveChatId: null
                 },
                 isMemberOnly: await this.getVideoIsMemberOnly({ vID })
@@ -211,12 +211,16 @@ class YoutubeAPI {
     }
     async getVideoSearchByInTube({ channelId, eventType, isMemberOnly = false }) {
         const playlistID = isMemberOnly ? channelId.replace(/^UC/, `UUMO`) : channelId.replace(/^UC/, `UU`);
-        const playlistInfos = (await innertube?.getPlaylist(playlistID)
-            .catch(e => console.log(`[YoutubeAPI] getPlaylist Error.`, e.message))) || { video: [] };
+        // const playlistInfos = (await innertube?.getPlaylist(playlistID)
+        //     .catch(e => console.log(`[YoutubeAPI] getPlaylist Error.`, e.message))) || { video: [] };
+        const playlistInfos = (await innertube?.getPlaylist(playlistID));
+        const videos = playlistInfos?.items || [];
 
         const results = [];
 
-        for (const video of playlistInfos.videos) {
+        for (const video of videos) {
+            if (!("is_live" in video) || !("is_upcoming" in video)) { continue; }
+
             const liveBroadcastContent = video.is_live ? "live" : (video.is_upcoming ? "upcoming" : "none");
             if (eventType != liveBroadcastContent) { continue; }
 
@@ -261,12 +265,13 @@ class YoutubeAPI {
         if (res.statusCode != 200) { return null; }
 
         // return ((res?.body?.items || [])[0] || {}).isMemberOnly ? 1 : 0;
-        return res?.body?.items?.[0]?.isMemberOnly ? 1 : 0;
+        return res?.body?.items?.[0]?.isMemberOnly ? true : false;
     };
 
 
     async getFetchingLiveChatByInTube(videoId) {
-        const videoInfos = await innertube.getInfo(videoId);
+        const videoInfos = await innertube?.getInfo(videoId);
+        if (!videoInfos) { return null; }
 
         try {
             const livechat = videoInfos.getLiveChat();
