@@ -872,6 +872,7 @@ class YoutubeChannelTracer {
                                 case 'Member (2 years)': { auDetails.sponsorLevel = 5; } break;
                                 case 'Member (3 years)': { auDetails.sponsorLevel = 6; } break;
                                 case 'Member (4 years)': { auDetails.sponsorLevel = 7; } break;
+                                case 'Member (5 years)': { auDetails.sponsorLevel = 8; } break;
                                 default: { auDetails.sponsorLevel = -1; console.log(`[MC5] unknown tooltip:`, tooltip); } break;
                             }
                         }
@@ -890,8 +891,7 @@ class YoutubeChannelTracer {
                     const channels = [];
                     const isSpacelUserMsg = auDetails.isVerified || auDetails.isChatModerator || auDetails.isChatOwner;
                     if (isSpacelUserMsg ||
-                        (video.snippet.liveBroadcastContent == 'upcoming') ||
-                        (debug && Math.floor(Math.random() * 100) == 0)   // debug code
+                        (debug && Math.floor(Math.random() * 1000) == 0)   // debug code
                     ) {
                         // send spacel message to channel
                         const video = this.videos.get(vID);
