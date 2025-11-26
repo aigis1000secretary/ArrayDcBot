@@ -1,6 +1,8 @@
 
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
+const debug = require('fs').existsSync("./.env");
+
 const EMOJI_WASTEBASKET = '🗑️';
 const DEBUG_CHANNEL_ID = '826992877925171250';
 const workspaceChannelIDs = [
@@ -33,6 +35,9 @@ const streamChannels = [
 
 const botIDs = new Set(['713624995372466179', '928492714482343997', '1179344721047474207', '920485085935984641']);
 
+const getTimeFromDiscordSnowflake = (snowflake) => (Number(BigInt(snowflake) >> 22n) + 14200704e5);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms, null));
+
 async function deleteAllMessage({ channel, author }) {
 
     const cID = channel?.id;
@@ -41,6 +46,7 @@ async function deleteAllMessage({ channel, author }) {
         !streamChannels.includes(cID)) { return; }
     if (!['353625493876113440', '920485085935984641'].includes(author?.id)) { return; }
 
+    const timelimit = Date.now() - 1209600000 + 60000;  // 14 days - 60 sec
     // console.log(`bulkDelete ${channel.name}`);
 
     let delcount = 0, before;
@@ -48,6 +54,7 @@ async function deleteAllMessage({ channel, author }) {
         const msgs = await channel.messages.fetch({ before, force: true });
         const keys = Array.from(msgs.keys());
         const bulkDel = [];
+        const delList = [];
         for (let i = 0; i < keys.length; ++i) {
             const key = keys[i];
             const msg = msgs.get(key);
@@ -96,24 +103,50 @@ async function deleteAllMessage({ channel, author }) {
 
             // await msg.delete().then(msg => console.log(`Del msg: ${msg.content}`)).catch(() => { });
             // await msg.delete().catch(() => { });
-            bulkDel.push(msg);
+            if (timelimit < getTimeFromDiscordSnowflake(msg.id)) {
+                bulkDel.push(msg);
+            } else {
+                delList.push(msg);
+            }
 
             ++delcount;
         }
-        if (require('fs').existsSync("./.env")) {
+        if (debug) {
             console.log(`     Checked ${msgs.size} messages in ${channel.name}, before: ${before}`)
         }
 
-        await channel.bulkDelete(bulkDel)
-            .catch(async (e) => {
-                if (e.message.includes('old')) { for (let msg of bulkDel) { await msg.delete().catch(() => null); } }
-            });
-        if (msgs.size != 50) { break; }
+        if (bulkDel.length > 0) {
+            channel.bulkDelete(bulkDel).catch(e => console.log(`[Delall]`, e.message));
+            await sleep(5000);
+        }
+
+        if (delList.length > 0) {
+            let timeout = false;
+
+            for (const msg of delList) {
+
+                const sTime = Date.now();
+
+                await Promise.race([
+                    msg.delete().catch(e => console.log(`[Delall]`, e.message)),
+                    sleep(10000)    // timeout in 10sec
+                ]);
+
+                const dTime = Date.now() - sTime;
+                if (dTime >= 9999) { timeout = true; break; }
+
+                if (debug) { console.log(`[Delall] delete ${msg.id} use ${dTime} ms.`); }
+                await sleep(5000);
+            }
+
+            if (timeout) { console.log(`[Delall] delete message in ${channel.name} timeout!`); break; }
+        }
+
+        if (msgs.size < 50) { break; }
     }
-    if (require('fs').existsSync("./.env")) {
+    if (debug) {
         console.log(`Bulk deleted ${delcount} messages in ${channel.name}`)
     }
-
 }
 
 module.exports = {
@@ -122,7 +155,7 @@ module.exports = {
 
     async execute(message, pluginConfig, command, args, lines) {
 
-        if (command == 'delall' || (command == 'delall2' && require('fs').existsSync("./.env"))) {
+        if (command == 'delall' || (command == 'delall2' && debug)) {
 
             let { channel, author } = message;
             await message.delete().catch(e => console.log(`[Delall]`, e.message));
