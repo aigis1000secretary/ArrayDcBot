@@ -129,7 +129,7 @@ async function deleteAllMessage({ channel, author }) {
 
                 await Promise.race([
                     msg.delete().catch(e => console.log(`[Delall]`, e.message)),
-                    sleep(10000)    // timeout in 10sec
+                    sleep(30000)    // timeout in 10sec
                 ]);
 
                 const dTime = Date.now() - sTime;
@@ -204,5 +204,9 @@ module.exports = {
         for (let botID of require(`../index.js`).getBotIDs()) { botIDs.add(botID); }
         await deleteAllMessage({ author: client.user, channel: await client.channels.fetch(DEBUG_CHANNEL_ID).catch(() => null) });
         await deleteAllMessage({ author: client.user, channel: await client.channels.fetch('1009645372831977482').catch(() => null) });
+
+         deleteAllMessage({ author: client.user, channel: await client.channels.fetch('1008565763260551188').catch(() => null) });
+         deleteAllMessage({ author: client.user, channel: await client.channels.fetch('1010167343378333768').catch(() => null) });
+         deleteAllMessage({ author: client.user, channel: await client.channels.fetch('1253621663187337267').catch(() => null) });
     }
 }
