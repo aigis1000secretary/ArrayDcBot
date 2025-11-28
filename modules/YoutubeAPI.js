@@ -3,8 +3,9 @@ const request = require('./undici-request.js');
 
 /** @type {import('youtubei.js').Innertube} */
 let innertube = null;
-import('youtubei.js').then(async ({ Innertube }) => {
-    Innertube.create().then(res => innertube = res);
+import('youtubei.js').then(async ({ Innertube, Log, UniversalCache }) => {
+    Innertube.create({ cache: new UniversalCache(false) }).then(res => innertube = res);
+    Log.setLevel(Log.Level.NONE);
 });
 
 
