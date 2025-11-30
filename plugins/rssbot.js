@@ -564,7 +564,7 @@ const bulkDelete = async () => {
         let loop = false;
 
         for (const [cID, messagesA] of bulkDeletePoolA) {
-            if (bulkDeletePoolA.get(cID).size > 0 || bulkDeletePoolB.get(cID).size > 0) { loop = true; }
+            if (bulkDeletePoolA.get(cID).size > 0 || bulkDeletePoolB.get(cID)?.size > 0) { loop = true; }
         }
 
         //     // messages in pool A
@@ -599,7 +599,7 @@ const bulkDelete = async () => {
         // delete empty message
         for (const [cID, messagesB] of bulkDeletePoolB) {
 
-            if (bulkDeletePoolB.get(cID).size < 100 && bulkDeletePoolA.get(cID).size != 0) { continue; }
+            if (bulkDeletePoolB.get(cID).size < 100 && bulkDeletePoolA.get(cID)?.size != 0) { continue; }
             if (bulkDeletePoolB.get(cID).size == 0) { continue; }
 
             const keys = Array.from(messagesB.keys()).slice(0, 100);
