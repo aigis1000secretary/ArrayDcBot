@@ -1284,6 +1284,9 @@ module.exports = {
             mainMcCore.tracerList.get(ytChannelId).videos.set(vID, video);
         }
 
+        if (command == 'initapi') {
+            YoutubeAPI.YoutubeJsInit?.();
+        }
     },
 
     async setup(client) {

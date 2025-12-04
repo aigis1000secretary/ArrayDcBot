@@ -1,14 +1,6 @@
 
 const request = require('./undici-request.js');
 
-/** @type {import('youtubei.js').Innertube} */
-let innertube = null;
-import('youtubei.js').then(async ({ Innertube, Log, UniversalCache }) => {
-    Innertube.create({ cache: new UniversalCache(false) }).then(res => innertube = res);
-    Log.setLevel(Log.Level.NONE);
-});
-
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 
@@ -34,9 +26,26 @@ apiKeys.push(new YoutubeApiKey(process.env.YOUTUBE_APIKEY_A)); apiKeys.push(new 
 // youtube api
 class YoutubeAPI {
 
+    /** @type {import('youtubei.js').Innertube} */
+    innertube = null;
+
+    constructor() {
+        this.YoutubeJsInit();
+    }
+
+    async YoutubeJsInit() {
+        this.innertube = null;
+
+        const { Innertube, Log, UniversalCache } = await import('youtubei.js');
+        this.innertube = await Innertube.create({ cache: new UniversalCache(false) });
+        Log.setLevel(Log.Level.NONE);
+
+        console.log(`YoutubeJsInit done.`);
+    }
+
     async waitInnertubeInit() {
         for (let i = 0; i < 300; ++i) {
-            if (innertube != null) { break; }
+            if (this.innertube != null) { break; }
             await sleep(1000); continue;
         }
     }
@@ -124,7 +133,7 @@ class YoutubeAPI {
         // }
     }
     async getVideoStatusByInTube({ vID }) {
-        const videoInfos = await innertube.getInfo(vID).catch(e => console.log(`[YoutubeAPI] getVideoStatusByInTube error.`, vID, e.message) || null);
+        const videoInfos = await this.innertube?.getInfo(vID).catch(e => console.log(`[YoutubeAPI] getVideoStatusByInTube error.`, vID, e.message) || null);
         if (!videoInfos) { return null; }
 
         const basicInfo = videoInfos.basic_info;
@@ -212,9 +221,9 @@ class YoutubeAPI {
     }
     async getVideoSearchByInTube({ channelId, eventType, isMemberOnly = false }) {
         const playlistID = isMemberOnly ? channelId.replace(/^UC/, `UUMO`) : channelId.replace(/^UC/, `UU`);
-        // const playlistInfos = (await innertube?.getPlaylist(playlistID)
+        // const playlistInfos = (await this.innertube?.getPlaylist(playlistID)
         //     .catch(e => console.log(`[YoutubeAPI] getPlaylist Error.`, e.message))) || { video: [] };
-        const playlistInfos = (await innertube?.getPlaylist(playlistID));
+        const playlistInfos = (await this.innertube?.getPlaylist(playlistID));
         const videos = playlistInfos?.items || [];
 
         const results = [];
@@ -271,7 +280,7 @@ class YoutubeAPI {
 
 
     async getFetchingLiveChatByInTube(videoId) {
-        const videoInfos = await innertube?.getInfo(videoId);
+        const videoInfos = await this.innertube?.getInfo(videoId);
         if (!videoInfos) { return null; }
 
         try {
