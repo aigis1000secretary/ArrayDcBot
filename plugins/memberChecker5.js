@@ -815,7 +815,7 @@ class YoutubeChannelTracer {
                 if (Date.parse(startTime) > Date.now()) { continue; }   // skip real upcoming video
 
                 // it's live time, update video data
-                const _video = await YoutubeAPI.getVideoStatusByInTube({ vID });
+                const _video = await YoutubeAPI.getVideoStatus({ vID });
                 this.videos.set(vID, _video);
             }
         }
@@ -944,7 +944,7 @@ class YoutubeChannelTracer {
                 livechat.once('end', async () => {
                     console.log(`[MC5] <${vID}> end at`, new Date(Date.now()).toISOString());
                     // update video when end
-                    const _video = await YoutubeAPI.getVideoStatusByInTube({ vID });
+                    const _video = await YoutubeAPI.getVideoStatus({ vID });
                     this.videos.set(vID, _video);
                 });
 
@@ -1187,10 +1187,9 @@ module.exports = {
 
             if (regUrl.test(args[0])) { // get vID
                 const [, vID] = args[0].match(regUrl);
-                const video = await YoutubeAPI.getVideoStatusByInTube({ vID });
-                console.log(video?.snippet?.liveBroadcastContent, video?.snippet?.channelId)
+                const video = await YoutubeAPI.getVideoStatus({ vID });
                 if (!video) { return; }
-                if (!['upcoming', 'live'].includes(video.snippet.liveBroadcastContent)) { return; }
+                if (!['upcoming', 'live'].includes(video.snippet?.liveBroadcastContent)) { console.log(`video: ${video.snippet?.liveBroadcastContent}`); return; }
 
                 const ytChannelId = video.snippet.channelId;
                 if (!mainMcCore.tracerList.has(ytChannelId)) { return; }
@@ -1263,7 +1262,7 @@ module.exports = {
         if (command == 'trace' && regUrl.test(args[0]) && message.author?.id == '353625493876113440') {
             // get vID 
             const [, vID] = args[0].match(regUrl) || [, null];
-            const video = await YoutubeAPI.getVideoStatusByInTube({ vID });
+            const video = await YoutubeAPI.getVideoStatus({ vID });
             if (!video) { return; }
             if (!['upcoming', 'live'].includes(video.snippet.liveBroadcastContent)) { return; }
 
