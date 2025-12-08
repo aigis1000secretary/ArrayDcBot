@@ -103,7 +103,12 @@ module.exports = {
         fields.push({ name: `Content:`, value: marge.join('\n') });
         fields.push({ name: `Channel:`, value: newMessage.url });
 
-        logEmbed.addFields(fields);
+        try {
+            logEmbed.addFields(fields);
+        } catch (e) {
+            console.log(`marge`, marge);
+            console.log(`newMessage.url`, newMessage.url);
+        }
 
         const { LOG_CHANNEL_ID } = pluginConfig;
         const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
