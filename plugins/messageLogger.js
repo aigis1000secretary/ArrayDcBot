@@ -125,6 +125,8 @@ module.exports = {
         if (!author) { return; }
         if (!content && attachments.size <= 0 && embeds.length <= 0) { return; }
 
+        if (client.user.id == author.id) { return; }
+
         // Generate embed
         const logEmbed = new EmbedBuilder()
             .setColor(0x0D5E53)
