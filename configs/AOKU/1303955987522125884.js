@@ -12,6 +12,8 @@ module.exports = {      // ニコ担の笑口常開俱樂部
     },
 
 
+    messageLogger: { LOG_CHANNEL_ID: '1448152629409480707' },      // #bot-log <#1448152629409480707>
+
 
     streamStartTime: {},
     twitterAntiFilter: {},

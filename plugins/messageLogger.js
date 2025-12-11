@@ -84,7 +84,7 @@ module.exports = {
                 name: `${author.username} ${author.toString()}`,
                 iconURL: author.displayAvatarURL({ format: 'png', size: 256 })
             })
-            .setTitle(`編輯訊息:`)
+            .setTitle(`發送訊息:`)
             .setTimestamp();
 
         let marge = ['```diff']
@@ -113,5 +113,52 @@ module.exports = {
         const { LOG_CHANNEL_ID } = pluginConfig;
         const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
         logChannel?.send({ embeds: [logEmbed] }).catch(e => console.log(`[MsgLogger]`, e.message));
+    },
+
+    async execute(message, pluginConfig, command, args, lines) {
+
+        const { guildId } = message;
+        if (guildId != "1303956221308571689") { return; }
+
+        // Define the data
+        let { client, channel, author, content, embeds, attachments } = message;
+        if (!author) { return; }
+        if (!content && attachments.size <= 0 && embeds.length <= 0) { return; }
+
+        // Generate embed
+        const logEmbed = new EmbedBuilder()
+            .setColor(0x0D5E53)
+            .setAuthor({
+                name: `${author.username} ${author.toString()}`,
+                iconURL: author.displayAvatarURL({ format: 'png', size: 256 })
+            })
+            .setTitle(`發送訊息:`)
+            .setTimestamp();
+
+        // event data
+        let fields = [];
+        if (content) {
+            fields.push({ name: `Content:`, value: content });
+        }
+        fields.push({ name: `Channel:`, value: message.url });
+
+        if (attachments.size > 0) {
+            let value = '';
+            for (let [i, attachment] of message.attachments) {
+                // Assign Attachments to messages
+                value += attachment.name + '\n';
+            }
+            fields.push({ name: 'Attachments', value });
+        }
+        logEmbed.addFields(fields);
+
+        // const { LOG_CHANNEL_ID } = pluginConfig;
+        // const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
+        const logChannel = await client.channels.fetch(`1448488983872143412`);
+        if (logChannel) {
+            logChannel.send(
+                { embeds: [logEmbed].concat(embeds), attachments }
+            ).catch(e => console.log(`[MsgLogger]`, e.message));
+        }
     }
 }
