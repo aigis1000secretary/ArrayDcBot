@@ -164,5 +164,35 @@ module.exports = {
                 { embeds: [logEmbed].concat(embeds), attachments }
             ).catch(e => console.log(`[MsgLogger]`, e.message));
         }
+    },
+
+    setup(client) {
+        client.on('guildMemberAdd',
+            async (member) => {
+                let guild = member.guild;
+                if (guild.id != "1303956221308571689") { return; }
+
+
+                // Generate embed
+                const logEmbed = new EmbedBuilder()
+                    .setColor(0xFFFF00)
+                    .setAuthor({
+                        name: `${member.displayName} ${member.toString()}`,
+                        iconURL: member.displayAvatarURL({ format: 'png', size: 256 })
+                    })
+                    .setTitle(`加入群組`)
+                    .setTimestamp();
+
+                // const { LOG_CHANNEL_ID } = pluginConfig;
+                // const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
+                const logChannel = await client.channels.fetch(`1448488983872143412`);
+                if (logChannel) {
+                    logChannel.send(
+                        { embeds: [logEmbed] }
+                    ).catch(e => console.log(`[MsgLogger]`, e.message));
+                }
+
+
+            });
     }
 }
