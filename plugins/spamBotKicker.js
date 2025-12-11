@@ -10,7 +10,19 @@ const blacklistUser = ['GrastonBerry', '_CMRA_', 'sui1911', '_fromCanadaorg', 'C
 const blacklistWord = ['PagallKhana'];
 const regexTweet = new RegExp(`twitter\.com\/([^\/\s]+)\/?`);
 
-const getHash = (url) => require('crypto').createHash('md5').update(url.replace(/\/*$/, '\/'));
+
+const md5 = (source) => require('crypto').createHash('md5').update(source).digest('hex');
+const md5FromUrl = async (url) => {
+    // 取得回應
+    const res = await fetch(url).catch(() => null); if (!res?.ok) { return null; };
+    // 建立 MD5 hash
+    const hash = require('crypto').createHash('md5');
+    // 將回傳的 stream 直接導入 hash
+    await require('util').promisify(require('stream').pipeline)(res.body, hash);
+    // 取得 md5 字串
+    return hash.digest('hex');
+}
+
 
 // spam bot Level 1 (only delete message)
 const spamChecker = [
@@ -34,47 +46,54 @@ const spamChecker = [
 
     // normal bot spam
     ({ message }) => {
-        const { guild, client, content, author, createdTimestamp } = message;
+        const { guild, client, author, createdTimestamp, content, embeds, attachments } = message;
         const gID = guild.id;
-        let spamMessage = [];
 
-        const spamFilter = function (count, sec, blurMode = false) {
-            let tempMessage = guildMessagesCache[client.user.id][gID]
-                .filter((msg) => (
-                    msg.author.id == author.id &&   // same author
-                    msg.author.displayName == author.displayName &&  // same author for wehhook msg
-                    (msg.content == content || blurMode) && // same message  or  random spam message
-                    (Math.abs(msg.createdTimestamp - createdTimestamp) < (sec * 1000))  // in time
-                ));
 
-            if (tempMessage.length >= count) {
-                return true;
-            }   // is spam
+        const spamFilter = function (args) {
+
+            for (const [count, sec, blurMode] of args) {
+
+                let tempMessage = guildMessagesCache[client.user.id][gID]
+                    .filter((msg) => (
+                        msg.author.id == author.id &&   // same author
+                        msg.author.displayName == author.displayName &&  // same author for wehhook msg
+                        (
+                            (content.length > 0 && msg.content == content) ||                                   // same message  or
+                            (embeds.length > 0 && msg.embeds.join('\n') == embeds.join('\n')) ||                // same embed  or
+                            (attachments.length > 0 && msg.attachments.join('\n') == attachments.join('\n')) || // same attachment  or
+                            blurMode                                                                            // random spam message
+                        ) &&
+                        (Math.abs(msg.createdTimestamp - createdTimestamp) < (sec * 1000))  // in time
+                    ));
+
+                if (tempMessage.length >= count) {
+                    return tempMessage;
+                }   // is spam
+            }
             return false;
         }
 
-        // 3 same message in 20.000 sec
-        // 6 same message in 60.000 sec
-        // 20 message in 4.000 sec
-        const judgeKick = spamFilter(20, 4, true);
-        const judge = judgeKick || spamFilter(3, 20) || spamFilter(6, 60) || spamFilter(12, 2, true);
-        if (!judge) { return null; }
+        let spamMessage = spamFilter([
+            [20, 4, true],              // 20 random message in 4.000 sec
+            [12, 2, true]               // 12 random message in 2.000 sec
+        ]);
 
-        // additional delete
-        // filter target messages, pick all same message in 5 min
-        spamMessage = guildMessagesCache[client.user.id][gID].filter(
-            (msg) => (
-                msg.author.id == author.id &&   // same author
-                msg.author.displayName == author.displayName &&  // same author for wehhook msg
-                msg.content == content && msg.deletable &&
-                msg.createdTimestamp != createdTimestamp &&
-                (Math.abs(msg.createdTimestamp - createdTimestamp) < (5 * 60 * 1000))
-            ));
+        const judgeKick = !!spamMessage;
+        if (!judgeKick) {
+            spamMessage = spamFilter([
+                [3, 20, false],         // 3 same message in 20.000 sec
+                [6, 60, false]          // 6 same message in 60.000 sec
+            ]);
+
+            if (!spamMessage) { return null; }
+        }
 
         // Prepare to delete
         // sort by channel
         let bulkDelMessage = {};
-        for (let msg of spamMessage) {
+        for (let dMsg of spamMessage) {
+            const msg = dMsg.raw;
             const { channel } = msg;
             const cID = channel.id;
             if (!bulkDelMessage[cID]) { bulkDelMessage[cID] = { channel, messages: [] }; }
@@ -225,6 +244,7 @@ module.exports = {
         // set dummy message
         let dammyMessage = {};
         {
+            dammyMessage.raw = message;
             dammyMessage.client = message.client;
 
             dammyMessage.id = message.id;
@@ -236,23 +256,37 @@ module.exports = {
 
             dammyMessage.author = { id: message.author.id, displayName: message.author.displayName };
             dammyMessage.content = message.content || "";
-            dammyMessage.embed = [];
-            if (Array.isArray(message.embeds)) {
+            dammyMessage.embeds = [];
+            if (Array.isArray(message.embeds) && message.embeds.length > 0) {
                 for (const embed of message.embeds) {
-                    dammyMessage.embed.push(embed);
-                    // dammyMessage.embed.push({ description: description || "" });
+                    // dammyMessage.embeds.push(embed);
+                    // dammyMessage.embeds.push({ description: description || "" });
+
+                    const { thumbnail } = embed;
+
+                    let embedHash = null;
+                    const url = thumbnail?.proxy_url || thumbnail?.url || embed.url || null;
+                    if (url) { embedHash = await md5FromUrl(url); }
+                    if (!embedHash) { embedHash = md5(JSON.stringify(embed)); }
+
+                    if (embedHash && thumbnail?.width && thumbnail?.height) { embedHash += ` <${thumbnail.width}x${thumbnail.height}>` }
+                    if (embedHash) { dammyMessage.embeds.push(embedHash); }
                 }
             }
-            message.attachments = message.attachments;
-            if (!message.content && message.attachments?.size > 0) {
-                const contents = [];
-                let i = 0;
-                for (let [aID, attachment] of message.attachments) {
-                    // Assign Attachments to messages
-                    contents.push(`Attachment[${getHash(attachment.url)}]<${attachment.width}x${attachment.height}>`);
-                    ++i;
+
+            dammyMessage.attachments = [];
+            if (message.attachments?.size > 0) {
+                for (const [aID, attachment] of message.attachments) {
+                    // dammyMessage.attachments.push(attachment);
+
+                    let attachHash = null;
+                    const url = attachment.proxyURL || attachment.url || null;
+                    if (url) { attachHash = await md5FromUrl(url); }
+                    if (!attachHash) { attachHash = md5(JSON.stringify(attachment)); }
+
+                    if (attachHash && attachment.width && attachment.height) { attachHash += ` <${attachment.width}x${attachment.height}>` }
+                    if (attachHash) { dammyMessage.attachments.push(attachHash); }
                 }
-                dammyMessage.content = contents.join('\n');
             }
         }
 
@@ -270,10 +304,13 @@ module.exports = {
             let result = checker({ message: dammyMessage, config: pluginConfig });
             if (!result) { continue; }
 
-            punish = punish || {
-                content: dammyMessage.content,
-                reason: []
-            };
+            const content = [
+                (dammyMessage.content ? '**Content:**' + dammyMessage.content : ''),
+                (dammyMessage.embeds.length > 0 ? '**Embeds:**' + dammyMessage.embeds.join('\n') : ''),
+                (dammyMessage.attachments.length > 0 ? '**Attachments:**' + dammyMessage.attachments.join('\n') : '')
+            ].join('\n');
+
+            punish = punish || { content, reason: [] };
 
             if (result.reason == 'Discord Bot Token') {
                 punish.content = result.content
