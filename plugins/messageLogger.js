@@ -139,10 +139,8 @@ module.exports = {
 
         // event data
         let fields = [];
-        if (content) {
-            fields.push({ name: `Content:`, value: content });
-        }
-        fields.push({ name: `Channel:`, value: message.url });
+        if (content) { fields.push({ name: `Content:`, value: content }); }
+        if (message.url) { fields.push({ name: `Channel:`, value: message.url }); }
 
         if (attachments.size > 0) {
             let value = '';
@@ -152,7 +150,7 @@ module.exports = {
             }
             fields.push({ name: 'Attachments', value });
         }
-        logEmbed.addFields(fields);
+        if (fields.length > 0) { logEmbed.addFields(fields); }
 
         // const { LOG_CHANNEL_ID } = pluginConfig;
         // const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
