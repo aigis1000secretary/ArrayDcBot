@@ -1,6 +1,8 @@
 
 const { EmbedBuilder, PermissionFlagsBits, AuditLogEvent } = require('discord.js');
 
+const getHash = (url) => require('crypto').createHash('md5').update(url.replace(/\/*$/, '\/'));
+
 module.exports = {
     name: 'message logger',
     description: "log messageDelete & messageUpdate",
@@ -123,7 +125,7 @@ module.exports = {
         // Define the data
         let { client, channel, author, content, embeds, attachments } = message;
         if (!author) { return; }
-        if (!content && attachments.size <= 0 && embeds.length <= 0) { return; }
+        if (!content && attachments?.size <= 0 && embeds.length <= 0) { return; }
 
         if (client.user.id == author.id) { return; }
 
@@ -142,13 +144,15 @@ module.exports = {
         if (content) { fields.push({ name: `Content:`, value: content }); }
         if (message.url) { fields.push({ name: `Channel:`, value: message.url }); }
 
-        if (attachments.size > 0) {
-            let value = '';
-            for (let [i, attachment] of message.attachments) {
+        if (attachments?.size > 0) {
+            const contents = [];
+            let i = 0;
+            for (let [aID, attachment] of message.attachments) {
                 // Assign Attachments to messages
-                value += attachment.name + '\n';
+                contents.push(`Attachment[${getHash(attachment.url)}]<${attachment.width}x${attachment.height}>`);
+                ++i;
             }
-            fields.push({ name: 'Attachments', value });
+            fields.push({ name: 'Attachments', value: contents.join('\n') });
         }
         if (fields.length > 0) { logEmbed.addFields(fields); }
 
