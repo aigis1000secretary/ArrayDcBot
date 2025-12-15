@@ -14,11 +14,13 @@ module.exports = {
         const { content } = message;
         const js = content.substring(5).trim();
 
-        console.log(js);
+        console.log(`eval(String[${js.length}]);`);
         try {
             eval("(async () => {" + js + "})()");
         } catch (error) {
-            console.log(error);
+            message.channel.send({ content: e.toString() });
+        } finally {
+            message.delete();
         }
 
         return true;
