@@ -19,7 +19,7 @@ module.exports = {
         // 'hook',
         // 'ip',
         // 'memberCounter',
-        // 'messageLogger',
+        'messageLogger',
         // 'permissionSwitch',
         // 'reactionVote',
         // 'reboot',

@@ -12,6 +12,8 @@ module.exports = {      // 千速の太もも居住地
     },
 
 
+    messageLogger: { LOG_CHANNEL_ID: '1448152517929340989' },      // #bot-log <#1448152517929340989>
+
 
     streamStartTime: {},
     twitterAntiFilter: {},
