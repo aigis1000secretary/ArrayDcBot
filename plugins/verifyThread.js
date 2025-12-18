@@ -14,44 +14,50 @@ module.exports = {
         // check cmd
         if (command != 'verify') { return false; }
 
-        for (const { VERIFT_CHANNEL_ID, VERIFT_ROLE_ID, ADMIN_ROLE_ID } of pluginConfig) {
-            // check channel
-            if (channel.id != VERIFT_CHANNEL_ID) { continue; }
 
-            // check permissions
-            let permissions = channel.permissionsFor(message.guild.members.me);
-            if (!permissions.has(PermissionFlagsBits.CreatePrivateThreads)) { channel.send({ content: 'Missing Permissions: CREATE_PRIVATE_THREADS' }); continue; }
-            // if (!permissions.has(PermissionFlagsBits.CreatePublicThreads)) { channel.send({ content: 'Missing Permissions: CREATE_PUBLIC_THREADS' }); continue; }
-            if (!permissions.has(PermissionFlagsBits.SendMessagesInThreads)) { channel.send({ content: 'Missing Permissions: SEND_MESSAGES_IN_THREADS' }); continue; }
-            if (!permissions.has(PermissionFlagsBits.ManageRoles)) { channel.send({ content: 'Missing Permissions: MANAGE_ROLES' }); continue; }
+        // check user
+        if (!['353625493876113440', '453038786633400340'].includes(message.author?.id)) { channel.send({ content: '[錯誤] 使用者錯誤!' }).catch(() => { }); return false; }
 
-            // check admin or not
-            const isAdmin = member.roles.cache.get(ADMIN_ROLE_ID);
-            if (!isAdmin) {
-                channel.send({ content: '[錯誤] 權限錯誤 #02!' }).catch(() => { });
-                continue;
-            }
+        const [VERIFT_ROLE_ID, VERIFT_CHANNEL_ID, ADMIN_ROLE_ID] = args;
+        if (!VERIFT_ROLE_ID || !VERIFT_CHANNEL_ID || !ADMIN_ROLE_ID) { return false; }
 
-            const description = [`驗證人員: <@&${ADMIN_ROLE_ID}>`, `驗證身分組: <@&${VERIFT_ROLE_ID}>`].join('\n');
-            const embed = new EmbedBuilder()
-                // .setColor('#010d85')
-                .setDescription(description)
+        // check channel
+        if (channel.id != VERIFT_CHANNEL_ID) { channel.send({ content: '[錯誤] 頻道錯!' }).catch(() => { }); return false; }
 
-            const actionRow =
-                new ActionRowBuilder()
-                    .addComponents(new ButtonBuilder().setStyle(ButtonStyle.Primary)
-                        .setLabel('開始驗證')
-                        .setCustomId('start authorize')
-                    )
-                    .addComponents(new ButtonBuilder().setStyle(ButtonStyle.Primary)
-                        .setLabel('🔧停用')
-                        .setCustomId('switch')
-                    )
+        // check permissions
+        let permissions = channel.permissionsFor(message.guild.members.me);
+        if (!permissions.has(PermissionFlagsBits.CreatePrivateThreads)) { channel.send({ content: 'Missing Permissions: CREATE_PRIVATE_THREADS' }); return false; }
+        // if (!permissions.has(PermissionFlagsBits.CreatePublicThreads)) { channel.send({ content: 'Missing Permissions: CREATE_PUBLIC_THREADS' }); return false; }
+        if (!permissions.has(PermissionFlagsBits.SendMessagesInThreads)) { channel.send({ content: 'Missing Permissions: SEND_MESSAGES_IN_THREADS' }); return false; }
+        if (!permissions.has(PermissionFlagsBits.ManageRoles)) { channel.send({ content: 'Missing Permissions: MANAGE_ROLES' }); return false; }
 
-            // add user
-            await channel.send({ embeds: [embed], components: [actionRow] });
-            continue;
+        // check admin or not
+        const isAdmin = member.roles.cache.get(ADMIN_ROLE_ID);
+        if (!isAdmin) {
+            channel.send({ content: '[錯誤] 權限錯誤 #02!' }).catch(() => { });
+            return false;
         }
+
+        const description = [`驗證人員: <@&${ADMIN_ROLE_ID}>`, `驗證身分組: <@&${VERIFT_ROLE_ID}>`].join('\n');
+        const embed = new EmbedBuilder()
+            // .setColor('#010d85')
+            .setDescription(description)
+
+        const actionRow =
+            new ActionRowBuilder()
+                .addComponents(new ButtonBuilder().setStyle(ButtonStyle.Primary)
+                    .setLabel('開始驗證')
+                    .setCustomId('start authorize')
+                )
+                .addComponents(new ButtonBuilder().setStyle(ButtonStyle.Primary)
+                    .setLabel('🔧停用')
+                    .setCustomId('switch')
+                )
+
+        // add user
+        await channel.send({ embeds: [embed], components: [actionRow] });
+        return false;
+
     },
 
     async interactionCreate(interaction, pluginConfig) {
