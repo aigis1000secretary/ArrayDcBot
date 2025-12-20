@@ -279,8 +279,8 @@ async function checkLastRss(client, channel, hostColor = null, wastebasket = fal
     const rssMessages = new Map();  // [hexcolor, [mID, message]];
     let before = null;
     while (true) {
-        const messages = await channel.messages.fetch({ before });
-        if (messages.size == 0) { break; }  //channel start point
+        const messages = await channel.messages.fetch({ before }).catch(() => null);
+        if (messages?.size == 0) { break; }  // channel start point
 
         for (const [mID, message] of messages) {
             before = mID;
@@ -339,9 +339,9 @@ async function checkLastRss(client, channel, hostColor = null, wastebasket = fal
 
             let message = msg;
             if (message.partial) {
-                message = await channel.messages.fetch({ message: mID });
+                message = await channel.messages.fetch({ message: msg.id }).catch(() => null);
             }
-            const reacts = message.reactions.cache.get(EMOJI_RECYCLE);
+            const reacts = message?.reactions.cache.get(EMOJI_RECYCLE);
             if (!reacts) { continue; }
 
             const reactsCount = reacts.count || 0;
@@ -353,12 +353,12 @@ async function checkLastRss(client, channel, hostColor = null, wastebasket = fal
 
             // delete
             setTimeout(async () => { addBulkDelete(channel.id, message); }, 250);
-            // console.log('[rssbot] addBulkDelete', color, mID);
+            // console.log('[rssbot] addBulkDelete', color, msg.id);
         };
 
     }
 
-    return lastMsgID ? await channel.messages.fetch({ message: lastMsgID }) : null;
+    return lastMsgID ? await channel.messages.fetch({ message: lastMsgID }).catch(() => null) : null;
 }
 
 
@@ -409,7 +409,7 @@ async function sendRssItems(client, channel, hostColor, items) {
 
     // debug
     if (require('fs').existsSync("./.env")) {
-        let messages = await channel.messages.fetch().catch(() => { }) || [];
+        let messages = (await channel.messages.fetch().catch(() => null)) || [];
 
         for (let embed of embeds) {
             // debug

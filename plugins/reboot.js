@@ -53,7 +53,7 @@ module.exports = {
                 const nowDate = parseInt(Date.now() / 1000);
                 let content = `<t:${nowDate}>  <t:${nowDate}:R> ${EMOJI_REPEAT}! \`\`Uptime: ${uptimeInHour} hr\`\``;
 
-                let rebootMsg = recentlyRebootMsg ? (await channel.messages.fetch({ message: recentlyRebootMsg })) : null;
+                let rebootMsg = recentlyRebootMsg ? (await channel.messages.fetch({ message: recentlyRebootMsg }).catch(() => null)) : null;
                 if (rebootMsg) {
                     // delete old reboot log
                     content = ((rebootMsg.content || '') + '\n' + content).trim();

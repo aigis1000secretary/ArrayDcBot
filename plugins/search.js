@@ -32,8 +32,8 @@ async function searchKeyword(channel, keyword, days = 0, source) {
         while (1) {
 
             // get messages
-            const msgs = await channel.messages.fetch({ before, force: true });
-            const keys = Array.from(msgs.keys());
+            const msgs = await channel.messages.fetch({ before, force: true }).catch(() => null);
+            const keys = Array.from(msgs?.keys() || []);
 
             for (const mID of keys) {
                 const msg = msgs.get(mID);

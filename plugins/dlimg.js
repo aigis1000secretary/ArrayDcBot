@@ -28,7 +28,7 @@ async function downloadImage({ channel, fastmode, limit = 9999 }) {
     let emptyCount = 0;
     while (1) {
         let newimg = false;
-        let msgs = await channel.messages.fetch({ before, force: true });
+        let msgs = (await channel.messages.fetch({ before, force: true }).catch(() => null)) || [];
         for (let [mID, message] of msgs) {
             before = mID;
             first = first || mID;

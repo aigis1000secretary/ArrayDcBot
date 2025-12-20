@@ -296,6 +296,7 @@ module.exports = {
                 const bootType = process.env.HOST_TYPE == 'debug' ? EMOJI_BUILDING_CONSTRUCTION : (rebooted ? EMOJI_REBOOTED : EMOJI_HAMMER_AND_WRENCH);
                 const nowDate = parseInt(Date.now() / 1000);
 
+                if (!recentlyBootMsg && client.user.id != '920485085935984641') { await sleep(1000); }
                 if (!recentlyBootMsg) {
                     recentlyBootMsg = await channel.send({ content: `<t:${nowDate}>  <t:${nowDate}:R> ${EMOJI_VIBRATION}! ${bootType}` }).catch(() => null);
 
@@ -390,7 +391,7 @@ module.exports = {
 
             if (recentlyBootMsg) {
                 const channel = await client.channels.fetch(DEBUG_CHANNEL_ID);
-                const bootMsg = await channel.messages.fetch({ message: recentlyBootMsg.id });
+                const bootMsg = await channel.messages.fetch({ message: recentlyBootMsg.id }).catch(() => null);
                 bootMsg?.react(EMOJI_PHONE_OFF).catch(e => console.log(console.log(`[Discord] Can't send react <${EMOJI_PHONE_OFF}>.`, e.message)));
             }
 

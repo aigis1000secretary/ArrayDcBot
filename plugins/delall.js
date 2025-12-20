@@ -51,8 +51,8 @@ async function deleteAllMessage({ channel, author }) {
 
     let delcount = 0, before;
     while (1) {
-        const msgs = await channel.messages.fetch({ before, force: true });
-        const keys = Array.from(msgs.keys());
+        const msgs = await channel.messages.fetch({ before, force: true }).catch(() => null);
+        const keys = Array.from(msgs?.keys() || []);
         const bulkDel = [];
         const delList = [];
         for (let i = 0; i < keys.length; ++i) {
