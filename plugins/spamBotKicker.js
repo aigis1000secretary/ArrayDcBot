@@ -305,9 +305,9 @@ module.exports = {
             if (!result) { continue; }
 
             const content = [
-                (dammyMessage.content ? '**Content:**' + dammyMessage.content : ''),
-                (dammyMessage.embeds.length > 0 ? '**Embeds:**' + dammyMessage.embeds.join('\n') : ''),
-                (dammyMessage.attachments.length > 0 ? '**Attachments:**' + dammyMessage.attachments.join('\n') : '')
+                (dammyMessage.content ? '**Content:**\n' + dammyMessage.content : ''),
+                (dammyMessage.embeds.length > 0 ? '**Embeds:**\n' + dammyMessage.embeds.join('\n') : ''),
+                (dammyMessage.attachments.length > 0 ? '**Attachments:**\n' + dammyMessage.attachments.join('\n') : '')
             ].join('\n');
 
             punish = punish || { content, reason: [] };
