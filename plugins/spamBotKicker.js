@@ -117,6 +117,68 @@ const spamChecker = [
         }
     },
 
+    // normal bot spam image
+    ({ message }) => {
+        const { guild, channel, client, author, createdTimestamp, content, embeds, attachments } = message;
+        const gID = guild.id;
+
+        const spamFilter = function () {
+
+            let tempMessage = guildMessagesCache[client.user.id][gID]
+                .filter((msg) => (
+                    msg.author.id == author.id &&   // same author
+                    msg.author.displayName == author.displayName &&  // same author for wehhook msg
+                    msg.content == content &&                                                   // same message
+                    attachments.length > 0 && msg.attachments.length == attachments.length      // same attachment
+                ));
+
+            let sameChannelMessage = tempMessage.filter((msg) => (
+                msg.channel.id == channel.id &&                                     // same channel
+                (Math.abs(msg.createdTimestamp - createdTimestamp) < (10 * 1000))   // in 10 sec  
+            ));
+            let allChannelMessage = tempMessage.filter((msg) => (
+                msg.channel.id != channel.id &&                                         // not same channel
+                (Math.abs(msg.createdTimestamp - createdTimestamp) < (3 * 60 * 1000))   // in 3 min  
+            ));
+
+            if (sameChannelMessage.length >= 5 || allChannelMessage.length >= 6) {
+                return tempMessage;
+            }   // is spam
+
+            return false;
+        }
+
+        let spamMessage = spamFilter();
+        if (!spamMessage) { return null; }
+
+        // Prepare to delete
+        // sort by channel
+        let bulkDelMessage = {};
+        for (let dMsg of spamMessage) {
+            const msg = dMsg.raw;
+            const { channel } = msg;
+            const cID = channel.id;
+            if (!bulkDelMessage[cID]) { bulkDelMessage[cID] = { channel, messages: [] }; }
+            bulkDelMessage[cID].messages.push(msg);
+        }
+        // bulkDelete by channel
+        for (let cID of Object.keys(bulkDelMessage)) {
+            const channel = bulkDelMessage[cID].channel;
+            if (channel.permissionsFor(guild.members.me).has(PermissionFlagsBits.ManageMessages)) {
+                const bulkDel = bulkDelMessage[cID].messages;
+                channel.bulkDelete(bulkDel).catch((err) => { if (err.message != 'Unknown Message') { console.log(`[SBK] ${err.message}`); } });
+            }
+        }
+
+        // result
+        return {
+            content,
+            reason: `洗頻圖片訊息`,
+            // delete: true, kick: true, forceDel: true,
+            delete: true, kick: true, forceDel: true, silent: false,  // test run
+        }
+    },
+
     // @everyone
     // @here
     // try mentions everyone messages
