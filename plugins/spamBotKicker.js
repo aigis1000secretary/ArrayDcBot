@@ -1,5 +1,5 @@
 
-const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits, Message } = require('discord.js');
 
 // regex
 const regexToken = /(mfa\.[\w-]{84}|[\w-]{24}\.[\w-]{6}\.[\w-]{27})/;
@@ -136,12 +136,20 @@ const spamChecker = [
                 msg.channel.id == channel.id &&                                     // same channel
                 (Math.abs(msg.createdTimestamp - createdTimestamp) < (10 * 1000))   // in 10 sec  
             ));
+            if (sameChannelMessage.length >= 5) {
+                return tempMessage;
+            }   // is spam
+
             let allChannelMessage = tempMessage.filter((msg) => (
                 msg.channel.id != channel.id &&                                         // not same channel
                 (Math.abs(msg.createdTimestamp - createdTimestamp) < (3 * 60 * 1000))   // in 3 min  
             ));
+            let channels = new Set();
+            for (const m of allChannelMessage) {
+                channels.add(m.channel.id)
+            }
 
-            if (sameChannelMessage.length >= 5 || allChannelMessage.length >= 6) {
+            if (allChannelMessage.length == channels.size && allChannelMessage.length >= 6) {
                 return tempMessage;
             }   // is spam
 
