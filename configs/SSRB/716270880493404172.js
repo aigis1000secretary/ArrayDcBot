@@ -22,7 +22,7 @@ module.exports = {      // SSRB的聚集地
     ],
 
     permissionSwitch: [
-        { CHANNEL_ID: '775100135515750470', ADMIN_ROLE_ID: '766316861427023882', TARGET_ROLE_ID: '777779439122776064' }    // #⚫🌿獅白直播-streamchat <#775100135515750470>
+        { CHANNEL_ID: '775100135515750470', TARGET_ROLE_ID: '777779439122776064' }    // #⚫🌿獅白直播-streamchat <#775100135515750470>
     ],
 
     twitterListener3: [
